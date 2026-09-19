@@ -27,7 +27,7 @@ for (const name of required) {
 
 const repo = process.cwd();
 const requiredFiles = [
-  "spec/domains/tunisia-dtc-phase-9.yaml",
+  "domains/tunisia-dtc/specs/phase-9.yaml",
   "contracts/external/woocommerce-staging.yaml",
   "contracts/external/meta-messenger-staging.yaml",
   "contracts/external/llm-staging.yaml",

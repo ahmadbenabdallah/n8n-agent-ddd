@@ -1,9 +1,0 @@
-{
-  "package": "tunisia-dtc-agent-WF18-kb-ingestion-v4",
-  "version": "v4.0.0",
-  "workflow": "WF-18",
-  "name": "Knowledge Base Ingestion",
-  "vector_store": "Supabase pgvector",
-  "principle": "approved static knowledge only; live commerce remains authoritative",
-  "files": 21
-}
