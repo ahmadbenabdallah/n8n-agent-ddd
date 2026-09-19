@@ -1,0 +1,12 @@
+test_suite:
+  id: <your-domain-id>-domain-invariants
+  cases:
+    - id: T-AUTH-001            # platform-required
+      given: LLM proposes a privileged mutation
+      expect: WF-10 must authorize; LLM cannot set execution_allowed
+    - id: T-RECON-001           # platform-required
+      given: an external call times out after the mutation may have succeeded
+      expect: operation enters reconciliation before retry
+    - id: T-<AREA>-001
+      given: <situation>
+      expect: <required outcome>

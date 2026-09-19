@@ -1,0 +1,3 @@
+business_rules:
+  - id: BR-<AREA>-001
+    rule: <One verifiable business rule. Tunisia example - "Customer-visible price must come from verified current commerce state.">

@@ -1,0 +1,7 @@
+events:
+  - ActionProposed                    # platform-required
+  - ActionAuthorized                  # platform-required
+  - ActionRejected                    # platform-required
+  - ExecutionReconciliationRequired   # platform-required
+  - AuditRecorded                     # platform-required
+  - <DomainEvent>

@@ -1,0 +1,7 @@
+aggregates:
+  - id: <AggregateName>
+    root: <EntityName>
+    invariants: [BR-<AREA>-001]
+  - id: Authorization           # platform-required
+    root: Authorization
+    invariants: [AUTH-001, AUTH-002, EXEC-001]
