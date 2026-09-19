@@ -9,7 +9,7 @@ const required = [
   "contracts/platform/domain-state.yaml",
   "contracts/platform/event.yaml",
   "spec/invariants/platform.yaml",
-  "spec/workflows/registry.yaml",
+  "domains/tunisia-dtc/workflows/registry.yaml",
   "domains/tunisia-dtc/domain.yaml"
 ];
 
