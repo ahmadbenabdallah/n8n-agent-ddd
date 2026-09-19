@@ -34,7 +34,7 @@ A production environment additionally needs durable PostgreSQL, persistent n8n d
 After `pnpm install`:
 
 ```bash
-pnpm doctor     # tools and expected paths
+pnpm run doctor     # tools and expected paths
 pnpm validate   # agents, skills, platform and runtime contracts
 pnpm test       # contract tests
 pnpm build      # typecheck

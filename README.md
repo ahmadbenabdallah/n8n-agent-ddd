@@ -281,7 +281,7 @@ Repository work is ready today. Running an agent is not, and the steps below say
 git clone https://github.com/ahmadbenabdallah/n8n-agent-ddd.git
 cd n8n-agent-ddd
 pnpm install
-pnpm doctor      # environment and repository structure
+pnpm run doctor      # environment and repository structure
 pnpm validate    # agents, skills, platform and runtime specifications
 pnpm test        # contract and architecture checks
 ```
@@ -312,7 +312,7 @@ The local stack starts n8n and the database it uses for itself. Importing the wo
 ```bash
 corepack enable
 pnpm install
-pnpm doctor
+pnpm run doctor
 ```
 
 **Database.** Migrations are applied with Drizzle:
@@ -333,7 +333,7 @@ Environment examples are in [`infrastructure/environments/`](infrastructure/envi
 pnpm build        # TypeScript type check
 pnpm validate     # specifications, contracts and domain packs
 pnpm test         # the full check suite
-pnpm doctor       # environment check
+pnpm run doctor       # environment check
 ```
 
 Database work:

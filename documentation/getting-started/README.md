@@ -10,7 +10,7 @@ Start with the root repository README. The recommended path is:
 1. Install Git, Node.js 22, pnpm 10.15.0, Docker and Docker Compose.
 2. Clone the repository.
 3. Run `pnpm install`.
-4. Run `pnpm doctor`, `pnpm validate`, and `pnpm test`.
+4. Run `pnpm run doctor`, `pnpm validate`, and `pnpm test`.
 5. Copy `infrastructure/environments/local/.env.example` to `.env`.
 6. Start the local n8n runtime with the Docker Compose file.
 7. Open `http://localhost:5678`.
