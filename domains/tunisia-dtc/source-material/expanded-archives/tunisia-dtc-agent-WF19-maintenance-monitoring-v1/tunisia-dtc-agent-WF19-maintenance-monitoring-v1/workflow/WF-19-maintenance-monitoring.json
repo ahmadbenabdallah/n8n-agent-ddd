@@ -1,0 +1,377 @@
+{
+  "name": "WF-19 — Maintenance & Monitoring",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1900,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const required=['monitoring_config','health_sources']; const missing=required.filter(k=>x[k]==null); return [{json:{...x,_wf19_input_ok:missing.length===0,_wf19_missing:missing}}];"
+      },
+      "id": "v",
+      "name": "Validate Monitoring Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf19_input_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "iv",
+      "name": "Monitoring Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{service:'maintenance',status:'rejected',reason:'invalid_monitoring_input',alert_allowed:false}];"
+      },
+      "id": "r",
+      "name": "Reject Invalid Monitoring Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c=$json.monitoring_config||{}, s=$json.health_sources||{}; const workflows=Array.isArray(c.workflows)?c.workflows:[]; const deps=Array.isArray(c.dependencies)?c.dependencies:[]; const staleHours=Number(c.kb_stale_hours||72); const now=Date.now(); const health={n8n:s.n8n?.healthy===true,meta:s.meta?.healthy===true,openai:s.openai?.healthy===true,supabase:s.supabase?.healthy===true,commerce:s.commerce?.healthy===true}; const healthyCount=Object.values(health).filter(Boolean).length; return [{json:{...$json,_wf19_ctx:{workflows,deps,staleHours,now,health,healthyCount,totalHealth:Object.keys(health).length}}}];"
+      },
+      "id": "ctx",
+      "name": "Build Monitoring Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c=$json._wf19_ctx; const executions=$json.health_sources?.executions||{}; const failures=Number(executions.failures_last_hour||0); const stuck=Number(executions.stuck||0); const queue=Number(executions.queue_depth||0); const wfFailures=(executions.workflow_failures||[]); const unhealthy=c.workflows.filter(w=>w.enabled!==false && w.healthy!==true); return [{json:{...$json,_wf19_execution:{failures,stuck,queue,wfFailures,unhealthy}}}];"
+      },
+      "id": "exec",
+      "name": "Check Workflow Executions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1080,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const k=$json.health_sources?.kb||{}; const age=Number(k.hours_since_update??999999); const threshold=$json._wf19_ctx.staleHours; const freshness=age<=threshold; const quarantined=Number(k.quarantined_documents||0); const failed=Number(k.failed_ingestions||0); return [{json:{...$json,_wf19_kb:{age_hours:age,threshold_hours:threshold,fresh:freshness,quarantined,failed_ingestions:failed}}}];"
+      },
+      "id": "kb",
+      "name": "Check KB Freshness",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -860,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const a=$json.health_sources?.anomalies||{}; const duplicate=Number(a.duplicate_actions||0); const velocity=Number(a.velocity_blocks||0); const security=Number(a.security_incidents||0); const render=Number(a.renderer_regenerations||0); const tx=Number(a.transaction_verification_failures||0); return [{json:{...$json,_wf19_anomalies:{duplicate,velocity,security,render,tx}}}];"
+      },
+      "id": "anom",
+      "name": "Check Security and Commerce Anomalies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json,h=x._wf19_ctx.health,e=x._wf19_execution,k=x._wf19_kb,a=x._wf19_anomalies; const alerts=[]; if(!h.n8n)alerts.push('n8n_unhealthy'); if(!h.meta)alerts.push('meta_unhealthy'); if(!h.openai)alerts.push('openai_unhealthy'); if(!h.supabase)alerts.push('supabase_unhealthy'); if(!h.commerce)alerts.push('commerce_unhealthy'); if(e.stuck>0)alerts.push('stuck_executions'); if(e.queue>100)alerts.push('high_queue_depth'); if(e.failures>10)alerts.push('high_execution_failures'); if(!k.fresh)alerts.push('kb_stale'); if(k.quarantined>0)alerts.push('kb_quarantine'); if(a.security>0)alerts.push('security_incident'); if(a.tx>5)alerts.push('transaction_verification_failures'); return [{json:{...x,_wf19_alerts:alerts,_wf19_severity:alerts.includes('security_incident')?'critical':alerts.length?'warning':'ok'}}];"
+      },
+      "id": "dec",
+      "name": "Evaluate Monitoring Thresholds",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json._wf19_severity}}",
+              "operation": "notEqual",
+              "value2": "ok"
+            }
+          ]
+        }
+      },
+      "id": "ia",
+      "name": "Alert Required?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; return [{json:{service:'maintenance',status:'alert',severity:x._wf19_severity,alerts:x._wf19_alerts,requires_human:true}}];"
+      },
+      "id": "alert",
+      "name": "Build Operational Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; return [{json:{service:'maintenance',status:'healthy',severity:'ok',alerts:[],requires_human:false}}];"
+      },
+      "id": "ok",
+      "name": "Build Healthy Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const snapshot={checked_at:new Date().toISOString(),health:x._wf19_ctx?.health||{},execution:x._wf19_execution||{},kb:x._wf19_kb||{},anomalies:x._wf19_anomalies||{},severity:x._wf19_severity||'unknown',alerts:x._wf19_alerts||[]}; return [{json:{...x,_wf19_snapshot:snapshot}}];"
+      },
+      "id": "snap",
+      "name": "Build Monitoring Snapshot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const persisted=x.monitoring_context?.persisted===true; return [{json:{...x,status:persisted?'persisted':'ready_for_persistence',persist_allowed:true}}];"
+      },
+      "id": "persist",
+      "name": "Persist Monitoring Snapshot Adapter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; return [{json:{service:'maintenance',status:x.status||'failed',severity:x._wf19_severity||'unknown',alerts:x._wf19_alerts||[],requires_human:(x._wf19_severity||'')!=='ok',snapshot:x._wf19_snapshot||null}}];"
+      },
+      "id": "out",
+      "name": "Build Maintenance Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Monitoring Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Monitoring Input": {
+      "main": [
+        [
+          {
+            "node": "Monitoring Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monitoring Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Build Monitoring Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Monitoring Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Monitoring Context": {
+      "main": [
+        [
+          {
+            "node": "Check Workflow Executions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Workflow Executions": {
+      "main": [
+        [
+          {
+            "node": "Check KB Freshness",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check KB Freshness": {
+      "main": [
+        [
+          {
+            "node": "Check Security and Commerce Anomalies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Security and Commerce Anomalies": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Monitoring Thresholds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Monitoring Thresholds": {
+      "main": [
+        [
+          {
+            "node": "Alert Required?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Required?": {
+      "main": [
+        [
+          {
+            "node": "Build Monitoring Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Healthy Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Operational Alert": {
+      "main": [
+        [
+          {
+            "node": "Build Monitoring Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Healthy Status": {
+      "main": [
+        [
+          {
+            "node": "Build Monitoring Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Monitoring Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Persist Monitoring Snapshot Adapter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Monitoring Snapshot Adapter": {
+      "main": [
+        [
+          {
+            "node": "Build Maintenance Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf19-maintenance-monitoring-v1"
+}
