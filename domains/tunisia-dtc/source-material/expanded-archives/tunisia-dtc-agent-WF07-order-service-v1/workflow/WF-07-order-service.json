@@ -1,0 +1,429 @@
+{
+  "name": "WF-07 \u2014 Order Service",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const i=$json;\nconst required=['message_id','conversation_id','identity','intent','state'];\nconst missing=required.filter(k=>i[k]===undefined);\nreturn [{json:{...i,input_valid:missing.length===0,missing_fields:missing}}];"
+      },
+      "id": "2",
+      "name": "Validate Order Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.input_valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "Order Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{route:'escalation',safe_to_reply:false,tools_allowed:false,reason:'invalid_order_input'}}];"
+      },
+      "id": "4",
+      "name": "Fail Closed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.intent}}",
+              "operation": "equals",
+              "value2": "order_status"
+            }
+          ]
+        }
+      },
+      "id": "5",
+      "name": "Order Status Intent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'support',tools_allowed:false,llm_allowed:true,reason:'non_order_status_intent'}}];"
+      },
+      "id": "6",
+      "name": "Reject Unsupported Order Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -760,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const id=$json.identity||{};\nconst level=id.level||'anonymous';\nconst allowed=['order_verified','high_assurance'].includes(level);\nconst customerKey=id.customer_id||id.channel_user_id||null;\nreturn [{json:{...$json,identity_level:level,authorized:allowed,customer_key_present:Boolean(customerKey),customer_key:customerKey}}];"
+      },
+      "id": "7",
+      "name": "Verify Order Access",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.authorized}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "8",
+      "name": "Authorized Order Access?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'clarification',tools_allowed:false,llm_allowed:true,reason:'order_verification_required',verification_required:true}}];"
+      },
+      "id": "9",
+      "name": "Require Order Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const requestedFields=Array.isArray($json.requested_fields)?$json.requested_fields:[];\nconst allowlist=['order_id','status','fulfillment_status','created_at','updated_at','estimated_delivery','tracking_available','tracking_url','items_summary'];\nconst fields=requestedFields.length?requestedFields.filter(x=>allowlist.includes(x)):['status','fulfillment_status','estimated_delivery'];\nreturn [{json:{...$json,requested_order_fields:fields,field_count:fields.length}}];"
+      },
+      "id": "10",
+      "name": "Minimize Order Fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const customerKey=$json.customer_key;\nconst fields=$json.requested_order_fields;\nconst orderId=String($json.order_id||$json.state?.order_id||'').trim()||null;\nconst query={\n customer_key:customerKey,\n order_id:orderId,\n fields,\n include_sensitive:false,\n include_payment_credentials:false,\n include_other_customers:false\n};\nreturn [{json:{...$json,transaction_query:query,transaction_lookup_required:true,execution_allowed:false}}];"
+      },
+      "id": "11",
+      "name": "Build Transaction Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -20,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result=$json.transaction_result;\nconst present=result!==undefined && result!==null;\nconst verified=present && result.verified_source===true;\nconst ownerMatch=verified && result.owner_match===true;\nconst statusAllowed=verified && ownerMatch;\nreturn [{json:{...$json,transaction_result_present:present,transaction_verified:verified,owner_match:ownerMatch,usable_order_result:statusAllowed}}];"
+      },
+      "id": "12",
+      "name": "Verify Transaction Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.usable_order_result}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "13",
+      "name": "Verified Result?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'escalation',tools_allowed:false,execution_allowed:false,llm_allowed:true,reason:'unverified_or_non_owner_order_result'}}];"
+      },
+      "id": "14",
+      "name": "Block Unverified Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$json.transaction_result;\nconst safe={\n order_id:r.order_id||null,\n status:r.status||null,\n fulfillment_status:r.fulfillment_status||null,\n created_at:r.created_at||null,\n updated_at:r.updated_at||null,\n estimated_delivery:r.estimated_delivery||null,\n tracking_available:r.tracking_available===true,\n tracking_url:r.tracking_available===true?r.tracking_url||null:null,\n items_summary:Array.isArray(r.items_summary)?r.items_summary:null\n};\nreturn [{json:{...$json,verified_order_data:safe,route:'support',tools_allowed:false,execution_allowed:false,safe_to_reply:true}}];"
+      },
+      "id": "15",
+      "name": "Build Verified Order Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{message_id:$json.message_id,conversation_id:$json.conversation_id,route:$json.route,intent:'order_status',identity_level:$json.identity_level,verification_required:$json.verification_required||false,transaction_lookup_required:$json.transaction_lookup_required||false,transaction_query:$json.transaction_query||null,verified_order_data:$json.verified_order_data||null,execution_allowed:false,tools_allowed:false,llm_allowed:true,safe_to_reply:$json.safe_to_reply??true,reason:$json.reason||null}}];"
+      },
+      "id": "16",
+      "name": "Build Order Service Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        -20
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Order Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Order Input": {
+      "main": [
+        [
+          {
+            "node": "Order Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Order Status Intent?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail Closed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order Status Intent?": {
+      "main": [
+        [
+          {
+            "node": "Verify Order Access",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Unsupported Order Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Order Access": {
+      "main": [
+        [
+          {
+            "node": "Authorized Order Access?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorized Order Access?": {
+      "main": [
+        [
+          {
+            "node": "Minimize Order Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Require Order Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Minimize Order Fields": {
+      "main": [
+        [
+          {
+            "node": "Build Transaction Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Transaction Query": {
+      "main": [
+        [
+          {
+            "node": "Verify Transaction Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Transaction Result": {
+      "main": [
+        [
+          {
+            "node": "Verified Result?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verified Result?": {
+      "main": [
+        [
+          {
+            "node": "Build Verified Order Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Block Unverified Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Verified Order Result": {
+      "main": [
+        [
+          {
+            "node": "Build Order Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Block Unverified Result": {
+      "main": [
+        [
+          {
+            "node": "Build Order Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Require Order Verification": {
+      "main": [
+        [
+          {
+            "node": "Build Order Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reject Unsupported Order Query": {
+      "main": [
+        [
+          {
+            "node": "Build Order Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf07-v1"
+}

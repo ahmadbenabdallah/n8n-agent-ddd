@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DTC Agent Event",
+  "type": "object",
+  "required": [
+    "event_id",
+    "event_type",
+    "timestamp",
+    "conversation_id",
+    "channel"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "conversation_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "channel": {
+      "type": "string"
+    },
+    "agent_version": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,88 @@
+version: "0.15.0"
+name: phase-15.0-live-runtime-integration
+status: evidence-foundation
+
+purpose: >
+  Establish the first real-runtime execution gate for n8n-agent-ddd. This
+  release moves Phase 14 contracts into an evidence-producing staging runtime.
+  It does not claim live execution unless the runtime evidence is captured.
+
+prerequisites:
+  - "0.14.6"
+
+required_runtime:
+  n8n:
+    required: true
+    version: "2.39.8"
+    health_endpoint: required
+    authenticated_api: required
+  postgres:
+    required: true
+    version: "16"
+  domain:
+    required: true
+    id: "tunisia-dtc"
+  workflows:
+    required_count: 21
+  project:
+    required: true
+  adapter:
+    commerce: test_adapter_required
+    channel: test_channel_required
+
+environment:
+  target: staging
+  production: forbidden_for_initial_execution
+  secrets:
+    source: deployment_environment
+    repository_storage: forbidden
+
+evidence_contract:
+  evidence_directory: runtime/evidence/phase-15.0
+  required_artifacts:
+    - runtime-manifest.json
+    - preflight.json
+    - n8n-readiness.json
+    - postgres-readiness.json
+    - project-binding.json
+    - workflow-inventory.json
+    - smoke-test.json
+    - evidence-summary.json
+  prohibited_content:
+    - passwords
+    - api_keys
+    - n8n_encryption_key
+    - payment_credentials
+    - customer_pii
+    - authorization_tokens
+
+gates:
+  runtime_reachable: NOT_EXECUTED
+  postgres_reachable: NOT_EXECUTED
+  project_bound: NOT_EXECUTED
+  workflows_present: NOT_EXECUTED
+  contracts_verified: NOT_EXECUTED
+  smoke_test: NOT_EXECUTED
+
+execution_policy:
+  rule: >
+    A gate becomes PASS only from captured evidence produced against the
+    configured live staging runtime. Static checks cannot promote a live gate.
+  failed_gate: block
+  unknown_gate: block
+  production_certification: forbidden
+
+test_sequence:
+  - preflight
+  - n8n_readiness
+  - postgres_readiness
+  - project_binding
+  - workflow_inventory
+  - contract_validation
+  - smoke_test
+  - evidence_summary
+
+safety:
+  commerce_mutations: disabled_for_phase_15.0
+  wf10_authorization: required_if_test_mutation_is_enabled
+  unknown_external_outcome: reconcile_before_retry

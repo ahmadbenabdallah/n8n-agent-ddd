@@ -1,0 +1,17 @@
+version: "2026.09.9"
+provider: meta-messenger
+environment: staging
+
+verification:
+  webhook_verify_token_source: runtime_secret_store
+  signature_header: X-Hub-Signature-256
+  signature_algorithm: HMAC-SHA256
+  app_secret_source: runtime_secret_store
+
+rules:
+  - reject_invalid_webhook_signature
+  - reject_unknown_page
+  - normalize_event_before_domain_processing
+  - deduplicate_event_id
+  - never expose private customer/order data without identity scope
+  - outbound messages use server-side page credential only

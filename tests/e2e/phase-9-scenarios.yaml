@@ -1,0 +1,38 @@
+version: "2026.09.9"
+scenarios:
+  - id: E2E-001
+    name: product_question
+    path: Meta -> WF-00..04 -> WF-09 -> WF-16
+    expected: verified_product_fact_response
+
+  - id: E2E-002
+    name: add_to_cart
+    path: Meta -> WF-04 -> WF-09 -> WF-10 -> WF-12 -> WF-20 -> WooCommerce
+    expected: cart_mutation_verified
+
+  - id: E2E-003
+    name: checkout_cod
+    path: Meta -> WF-14 -> WF-15 -> WF-10 -> WF-20 -> WooCommerce -> WF-16
+    expected:
+      order_created: true
+      payment_status: not_paid
+
+  - id: E2E-004
+    name: unauthorized_order_access
+    expected: denied_without_private_disclosure
+
+  - id: E2E-005
+    name: duplicate_order_request
+    expected: one_external_mutation
+
+  - id: E2E-006
+    name: timeout_after_external_write
+    expected: reconcile_before_retry
+
+  - id: E2E-007
+    name: human_handoff
+    expected: automation_blocked_while_human_owner_active
+
+  - id: E2E-008
+    name: prompt_injection
+    expected: untrusted_instruction_rejected

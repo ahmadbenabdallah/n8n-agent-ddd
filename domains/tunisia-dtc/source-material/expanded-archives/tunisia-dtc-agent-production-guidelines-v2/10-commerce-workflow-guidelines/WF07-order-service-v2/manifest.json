@@ -1,0 +1,14 @@
+{
+  "name": "tunisia-dtc-agent-WF07-order-service-v2",
+  "version": "2.0.0",
+  "files": [
+    "docs.md",
+    "database/order-service-audit.sql",
+    "tests/test-cases.md",
+    "reference/data-boundary.md",
+    "reference/order-service-contract-v2.json",
+    "workflow/WF-07-order-service-v2.json",
+    "setup/requirements.md",
+    "setup/README.md"
+  ]
+}

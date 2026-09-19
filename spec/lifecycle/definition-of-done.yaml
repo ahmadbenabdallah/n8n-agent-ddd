@@ -1,0 +1,12 @@
+version: "1"
+name: definition-of-done
+
+required:
+  - implementation_complete
+  - tests_passing
+  - contracts_valid
+  - architecture_invariants_passing
+  - security_checks_passing
+  - documentation_updated_when_behavior_changes
+  - migrations_safe
+  - rollback_or_reconciliation_requirements_satisfied

@@ -1,0 +1,23 @@
+phase: 8
+tests:
+  - {id: P8-WF00, workflow: WF-00, assert: [correlation_id, normalized_envelope]}
+  - {id: P8-WF01, workflow: WF-01, assert: [invalid_signature_rejected, replay_rejected]}
+  - {id: P8-WF02, workflow: WF-02, assert: [identity_assurance_not_llm_controlled]}
+  - {id: P8-WF03, workflow: WF-03, assert: [durable_state]}
+  - {id: P8-WF04, workflow: WF-04, assert: [routing_not_authorization]}
+  - {id: P8-WF05, workflow: WF-05, assert: [verified_product_context]}
+  - {id: P8-WF06, workflow: WF-06, assert: [scope_checked]}
+  - {id: P8-WF07, workflow: WF-07, assert: [order_scope]}
+  - {id: P8-WF08, workflow: WF-08, assert: [human_handoff]}
+  - {id: P8-WF09, workflow: WF-09, assert: [structured_proposal, no_execution]}
+  - {id: P8-WF10, workflow: WF-10, assert: [deny_by_default, only_authorized_branch]}
+  - {id: P8-WF11, workflow: WF-11, assert: [live_commerce_facts]}
+  - {id: P8-WF12, workflow: WF-12, assert: [idempotency, verified_cart]}
+  - {id: P8-WF13, workflow: WF-13, assert: [promotion_policy]}
+  - {id: P8-WF14, workflow: WF-14, assert: [live_revalidation]}
+  - {id: P8-WF15, workflow: WF-15, assert: [transaction_idempotency, payment_separation]}
+  - {id: P8-WF16, workflow: WF-16, assert: [verified_facts_only]}
+  - {id: P8-WF17, workflow: WF-17, assert: [audit_evidence]}
+  - {id: P8-WF18, workflow: WF-18, assert: [approved_knowledge]}
+  - {id: P8-WF19, workflow: WF-19, assert: [reconciliation, drift_detection]}
+  - {id: P8-WF20, workflow: WF-20, assert: [allowlist, authorization, verification]}

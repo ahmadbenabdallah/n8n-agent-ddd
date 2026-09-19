@@ -1,0 +1,105 @@
+version: "0.15.5"
+name: phase-15.5-load-resilience
+status: evidence-foundation
+
+purpose: >
+  Validate runtime throughput, latency, concurrency, backpressure, dependency
+  failure handling, and bounded recovery against the live staging environment.
+
+prerequisites:
+  - "0.15.4"
+
+target:
+  environment: staging
+  domain: tunisia-dtc
+  commerce_mutations: controlled_test_adapter_only
+
+load_profiles:
+  baseline:
+    purpose: establish normal latency and error baseline
+  steady_state:
+    purpose: sustained representative traffic
+  burst:
+    purpose: short high-concurrency spike
+  saturation:
+    purpose: identify safe capacity boundary
+  recovery:
+    purpose: verify recovery after dependency/runtime degradation
+
+workload_classes:
+  - informational_request
+  - product_lookup
+  - cart_read
+  - cart_mutation
+  - support_request
+  - controlled_order_test
+  - rejected_authorization
+  - reconciliation_request
+
+safety:
+  production_load_test: forbidden
+  real_customer_traffic: forbidden
+  real_payment: forbidden
+  destructive_commerce: forbidden
+  test_adapter_required_for_mutations: true
+  bounded_test_duration: required
+  max_concurrency: environment_defined
+  rate_limit: environment_defined
+  stop_condition: required
+
+resilience_faults:
+  - n8n_restart
+  - worker_unavailable
+  - postgres_connection_pressure
+  - commerce_provider_timeout
+  - commerce_provider_5xx
+  - channel_timeout
+  - queue_backlog
+  - transient_network_failure
+  - stale_runtime_lock
+
+expected_behavior:
+  transient_failure:
+    action: bounded_retry_when_safe
+  unknown_external_outcome:
+    action: reconcile_before_retry
+  persistent_dependency_failure:
+    action: degrade_or_escalate
+  authorization_failure:
+    action: block
+  database_failure:
+    action: fail_safe_and_preserve_durable_state
+  overload:
+    action: backpressure_or_rejection
+  recovery:
+    action: health_verify_then_resume
+
+success_criteria:
+  - no unauthorized_commerce_mutation
+  - no duplicate_business_mutation
+  - no silent_data_loss
+  - no secret_leakage
+  - bounded_error_rate
+  - bounded_latency
+  - recovery_observed
+  - audit_integrity_preserved
+
+evidence:
+  directory: runtime/evidence/phase-15.5
+  required:
+    - load-profile.json
+    - latency-summary.json
+    - error-summary.json
+    - resilience-matrix.json
+    - recovery-summary.json
+    - evidence-summary.json
+  prohibited:
+    - secrets
+    - payment_credentials
+    - raw_customer_pii
+
+status:
+  live_load: NOT_EXECUTED
+  live_resilience: NOT_EXECUTED
+  live_fault_injection: NOT_EXECUTED
+  production_certification: BLOCKED

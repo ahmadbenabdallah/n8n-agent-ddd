@@ -1,0 +1,16 @@
+version: "0.13.6"
+name: operator-permissions-protected-workflows
+protected:
+  - WF-01
+  - WF-10
+  - WF-15
+  - WF-20
+operator_editable:
+  - WF-16
+  - WF-18
+  - extension_workflows
+enforcement:
+  - n8n_project_permissions
+  - platform_policy
+  - release_gate
+  - WF-10_authorization

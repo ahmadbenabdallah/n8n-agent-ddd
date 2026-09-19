@@ -1,0 +1,35 @@
+version: "1"
+project:
+  name: n8n-agent-ddd
+  type: domain-driven-autonomous-agent-runtime
+  primary_runtime: n8n
+instructions:
+  canonical: AGENTS.md
+  adapters:
+    claude: CLAUDE.md
+    codex: codex/AGENTS.md
+skills:
+  root: .agents/skills
+  required_metadata: [name, description]
+agents:
+  roles: [chief, pm, architect, developer, security, qa, reviewer]
+harness:
+  root: harness
+lifecycle: [discover, define, domain, specify, architect, design, decompose, plan, implement, test, security, review, integrate, deploy, verify, operate, learn]
+security:
+  production_agent_access: false
+  direct_production_ssh: false
+  runtime_secret_access: false
+  deployment_path: github-actions
+runtime:
+  orchestration: n8n
+  state: supabase
+  queue: redis
+validation:
+  required: [agents, skills, architecture, contracts, security]
+
+adapter_architecture:
+  channel_port: contracts/platform/channel-port.yaml
+  commerce_port: contracts/platform/commerce-port.yaml
+  registry: spec/architecture/adapter-registry.yaml
+  deployment_profiles: spec/architecture/deployment-profiles.yaml

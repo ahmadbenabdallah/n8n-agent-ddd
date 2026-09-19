@@ -1,0 +1,38 @@
+version: 1
+phase: 11
+release_model: immutable_release
+promotion:
+  source: git
+  required_checks:
+    - repository_validation
+    - phase10_gate_status
+    - database_compatibility
+    - production_preflight
+    - green_health
+    - green_smoke
+    - explicit_approval
+  sequence:
+    - build
+    - validate
+    - migrate_compatibility
+    - deploy_green
+    - health
+    - smoke
+    - approve
+    - switch
+    - drain
+    - verify
+    - record
+rollback:
+  allowed_after_switch: true
+  precondition: external_outcomes_reconciled
+  preserve:
+    - audit_events
+    - idempotency_keys
+    - execution_records
+    - reconciliation_records
+artifact:
+  workflow_source: git
+  domain_source: git
+  policy_source: git
+  database_migrations: git

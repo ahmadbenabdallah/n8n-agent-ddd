@@ -1,0 +1,63 @@
+version: 1
+name: provider-neutral-runtime
+purpose: Define where the n8n execution runtime may live without coupling the platform to a hosting provider.
+principles:
+  - provider_agnostic
+  - docker_first
+  - state_durable
+  - runtime_disposable
+  - secrets_external_to_git
+  - n8n_is_execution_runtime
+  - n8n_native_ui_is_operator_work_surface
+modes:
+  local_all:
+    description: Run PostgreSQL and n8n locally with Docker Compose.
+    n8n: local
+    postgres: local
+    recommended_for: [development, integration_testing]
+  remote_n8n_external_postgres:
+    description: Run n8n on a VPS or container provider while PostgreSQL remains external, for example Supabase or managed PostgreSQL.
+    n8n: remote
+    postgres: external
+    recommended_for: [small_production, operator_managed_deployment]
+  remote_n8n_vps_all:
+    description: Run n8n and PostgreSQL on the same VPS using Docker with persistent storage.
+    n8n: remote
+    postgres: same_vps
+    recommended_for: [self_hosted_production]
+  managed_provider:
+    description: Run the official n8n container on a provider such as Railway while PostgreSQL may be provider-managed or external.
+    n8n: managed_container
+    postgres: provider_or_external
+    recommended_for: [managed_deployment]
+required_configuration:
+  deployment:
+    - mode
+    - environment
+    - public_base_url
+    - webhook_url
+  n8n:
+    - image
+    - version
+    - encryption_key_reference
+    - timezone
+  database:
+    - provider
+    - host
+    - port
+    - database
+    - username
+    - password_reference
+optional_configuration:
+  - redis
+  - reverse_proxy
+  - external_binary_storage
+  - observability
+  - backup_provider
+  - mcp
+  - workflow_sync
+forbidden:
+  - production_secrets_in_git
+  - mutable_latest_n8n_tag_in_production
+  - ephemeral_database_for_production
+  - treating_n8n_filesystem_as_domain_state

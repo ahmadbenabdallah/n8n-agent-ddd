@@ -1,0 +1,15 @@
+valid_combinations:
+  - channel: messenger
+    commerce: woocommerce
+  - channel: messenger
+    commerce: shopify
+  - channel: whatsapp
+    commerce: shopify
+  - channel: whatsapp
+    commerce: prestashop
+  - channel: telegram
+    commerce: custom
+  - channel: webchat
+    commerce: shopify
+rule:
+  channel_and_commerce_are_independent_axes: true

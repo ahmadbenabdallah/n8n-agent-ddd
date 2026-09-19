@@ -1,0 +1,252 @@
+{
+  "name": "WF-12 Cart Service v3 \u2014 WooCommerce-Backed Cart",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"operation\": \"cart_add\", \"customer_id\": \"<uuid>\", \"channel\": \"facebook\", \"store_id\": \"default\", \"product_id\": \"<wc_product_id>\", \"variation_id\": \"<wc_variation_id>\", \"quantity\": 1, \"idempotency_key\": \"<action_id>\", \"action_id\": \"<action_id>\"}"
+      },
+      "id": "12t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nconst ops=['cart_view','cart_add','cart_update','cart_remove','cart_clear'];\nif(!ops.includes(x.operation)) throw new Error('cart_invalid_operation');\nif(typeof x.customer_id!=='string'||!x.customer_id.trim()) throw new Error('cart_missing_customer');\nif(!['facebook','whatsapp','instagram','internal'].includes(x.channel)) throw new Error('cart_invalid_channel');\n\nif(['cart_add','cart_update'].includes(x.operation)){\n  if(x.quantity==null || !Number.isInteger(x.quantity) || x.quantity<1 || x.quantity>99)\n    throw new Error('cart_invalid_quantity');\n  if(!x.product_id && !x.variation_id && !x.sku)\n    throw new Error('cart_missing_product_reference');\n}\nif(x.operation==='cart_remove' && !x.product_id && !x.variation_id && !x.sku)\n  throw new Error('cart_missing_product_reference');\n\nreturn [{json:{...x,store_id:x.store_id||'default',\n  idempotency_key:x.idempotency_key||x.action_id||`${x.customer_id}:${x.operation}`}}];\n"
+      },
+      "id": "12v",
+      "name": "Validate Cart Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM public.wc_cart_sessions WHERE customer_id=$1 AND channel=$2 AND store_id=$3 AND status='active' LIMIT 1;",
+        "options": {
+          "queryReplacement": "={{ [$json.customer_id,$json.channel,$json.store_id] }}"
+        }
+      },
+      "id": "12s",
+      "name": "Load Cart Session Mapping",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$('Validate Cart Request').first().json;\nconst row=$input.all().map(i=>i.json)[0]||{};\nreturn [{json:{\n  operation:x.operation,\n  customer_id:x.customer_id,\n  channel:x.channel,\n  store_id:x.store_id,\n  product_id:x.product_id||null,\n  variation_id:x.variation_id||null,\n  sku:x.sku||null,\n  quantity:x.quantity??null,\n  idempotency_key:x.idempotency_key,\n  action_id:x.action_id||x.idempotency_key,\n  existing_cart_reference:row.cart_reference||null,\n  // Raw cart token is deliberately NOT passed through WF-12.\n  cart_token_resolution:'internal_wf20_only'\n}}];\n"
+      },
+      "id": "12m",
+      "name": "Prepare WF-20 Cart Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_WF20_WORKFLOW_ID"
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "12e",
+      "name": "Execute WF-20 Cart Gateway",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst input=$('Prepare WF-20 Cart Request').first().json;\nconst r=$json;\nif(r.commerce_status==='unavailable'){\n  return [{json:{\n    success:false,operation:input.operation,customer_id:input.customer_id,\n    commerce_status:'unavailable',verified:false,\n    error:{code:'COMMERCE_UNAVAILABLE',transactional_action_blocked:true,\n      fallback:'preserve_purchase_intent_and_continue_kb_sales_conversation'}\n  }}];\n}\nconst success=Boolean(r.success);\nreturn [{json:{\n  success,operation:input.operation,customer_id:input.customer_id,\n  commerce_status:r.commerce_status||'available',\n  verified:Boolean(r.verified && success),\n  cart:r.cart||null,\n  error:r.error||null,\n  idempotency_key:input.idempotency_key\n}}];\n"
+      },
+      "id": "12g",
+      "name": "Normalize Cart Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(x.success && !x.verified) throw new Error('cart_success_without_verification');\nif(x.success && x.commerce_status!=='available') throw new Error('cart_success_without_live_commerce');\nif(x.operation==='cart_view' && x.success && !x.cart) throw new Error('cart_view_missing_state');\nreturn [{json:x}];\n"
+      },
+      "id": "12v2",
+      "name": "Verify Cart Semantics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nINSERT INTO public.wc_cart_sessions\n(customer_id,channel,store_id,cart_reference,status,last_validated_at,last_cart_hash,version,updated_at)\nVALUES($1,$2,$3,$4,'active',now(),encode(digest($5,'sha256'),'hex'),1,now())\nON CONFLICT(customer_id,channel,store_id)\nDO UPDATE SET cart_reference=excluded.cart_reference,status='active',\nlast_validated_at=now(),last_cart_hash=excluded.last_cart_hash,\nversion=public.wc_cart_sessions.version+1,updated_at=now()\nWHERE excluded.cart_reference IS NOT NULL\nRETURNING customer_id,channel,store_id,cart_reference,status,last_validated_at,version;\n",
+        "options": {
+          "queryReplacement": "={{ [$json.customer_id,$('Prepare WF-20 Cart Request').first().json.channel,$('Prepare WF-20 Cart Request').first().json.store_id,$json.cart?.cart_reference||$json.cart?.key||null,JSON.stringify($json.cart||{})] }}"
+        }
+      },
+      "id": "12p",
+      "name": "Persist Safe Cart Reference",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$('Verify Cart Semantics').first().json;\nreturn [{json:{\n  success:x.success,operation:x.operation,customer_id:x.customer_id,\n  commerce_status:x.commerce_status,verified:x.verified,cart:x.cart,error:x.error\n}}];\n"
+      },
+      "id": "12o",
+      "name": "Return Verified Cart",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Cart Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Cart Request": {
+      "main": [
+        [
+          {
+            "node": "Load Cart Session Mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Cart Session Mapping": {
+      "main": [
+        [
+          {
+            "node": "Prepare WF-20 Cart Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare WF-20 Cart Request": {
+      "main": [
+        [
+          {
+            "node": "Execute WF-20 Cart Gateway",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute WF-20 Cart Gateway": {
+      "main": [
+        [
+          {
+            "node": "Normalize Cart Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Cart Result": {
+      "main": [
+        [
+          {
+            "node": "Verify Cart Semantics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Cart Semantics": {
+      "main": [
+        [
+          {
+            "node": "Persist Safe Cart Reference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Safe Cart Reference": {
+      "main": [
+        [
+          {
+            "node": "Return Verified Cart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "REPLACE_ON_IMPORT",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "dtc-agent"
+    },
+    {
+      "name": "cart"
+    },
+    {
+      "name": "woocommerce"
+    },
+    {
+      "name": "supabase"
+    }
+  ]
+}

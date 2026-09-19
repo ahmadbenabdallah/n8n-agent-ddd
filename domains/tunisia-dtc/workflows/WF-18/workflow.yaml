@@ -1,0 +1,32 @@
+workflow:
+  id: WF-18
+  name: Knowledge Base Ingestion
+  bounded_context: knowledge
+  version: 1.0.0
+  purpose: Ingest, validate, version and publish approved business knowledge.
+  dependencies:
+  - WF-06
+  - WF-09
+  security: Untrusted content cannot override policy.
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Supabase; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown external
+    outcomes
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml
+  - contracts/platform/action.yaml

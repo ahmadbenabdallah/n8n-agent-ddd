@@ -1,0 +1,174 @@
+{
+  "name": "WF-11 Product Service v3 - WooCommerce First KB Fallback",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "wf11-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst op=x.operation;\nconst allowed=['get_product','get_products','get_variation','search_products','availability_check'];\nconst valid = allowed.includes(op) &&\n  x.request_id && x.caller_context &&\n  ['product_read','checkout_validation','cart_validation','sales'].includes(x.caller_context.purpose);\nif(!valid) throw new Error('WF-11 invalid request contract');\nreturn [{json:{\n  request_id:String(x.request_id),\n  operation:op,\n  caller_context:x.caller_context,\n  product_id:x.product_id ?? null,\n  sku:x.sku ?? null,\n  variation_id:x.variation_id ?? null,\n  search:x.search ?? null,\n  page:x.page ?? 1,\n  per_page:Math.min(Number(x.per_page ?? 20),50)\n}}];"
+      },
+      "id": "validate",
+      "name": "Validate Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nlet gatewayOperation='get_product';\nif(x.operation==='get_products'||x.operation==='search_products') gatewayOperation='get_products';\nif(x.operation==='get_variation') gatewayOperation='get_variation';\nif(x.operation==='availability_check') gatewayOperation='get_product';\nreturn [{json:{...x,gateway_operation:gatewayOperation}}];"
+      },
+      "id": "route",
+      "name": "Map to WF-20",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "REPLACE_WITH_WF20_WORKFLOW_ID",
+        "options": {}
+      },
+      "id": "wf20",
+      "name": "WF-20 WooCommerce Gateway",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$json;\nif(r.error || r.success===false) {\n  if(r.commerce_status==='unavailable' || r.source_of_truth==='kb_only') return [{json:{success:false, request_id:$node['Validate Request'].json.request_id, operation:$node['Validate Request'].json.operation, commerce_status:'unavailable', source:'kb', kb_fallback_allowed:true, fallback_required:true, reason:r.error_message || 'WooCommerce unavailable'}}];\n  throw new Error(r.error_message || 'WooCommerce product read failed');\n}\nif(r.commerce_status==='unavailable' || r.source_of_truth==='kb_only') return [{json:{success:false, request_id:$node['Validate Request'].json.request_id, operation:$node['Validate Request'].json.operation, commerce_status:'unavailable', source:'kb', kb_fallback_allowed:true, fallback_required:true, reason:'WooCommerce unavailable'}}];\nconst p=r.product || r.data || r;\nconst clean={\n  id:p.id ?? null,\n  name:p.name ?? null,\n  sku:p.sku ?? null,\n  type:p.type ?? null,\n  status:p.status ?? null,\n  price:p.price ?? null,\n  regular_price:p.regular_price ?? null,\n  sale_price:p.sale_price ?? null,\n  on_sale:p.on_sale ?? false,\n  purchasable:p.purchasable ?? false,\n  manage_stock:p.manage_stock ?? false,\n  stock_quantity:p.stock_quantity ?? null,\n  stock_status:p.stock_status ?? null,\n  backorders_allowed:p.backorders_allowed ?? false,\n  parent_id:p.parent_id ?? 0,\n  attributes:p.attributes ?? [],\n  variations:Array.isArray(p.variations)?p.variations:[],\n  categories:Array.isArray(p.categories)?p.categories.map(c=>({id:c.id,name:c.name,slug:c.slug})):[],\n  images:Array.isArray(p.images)?p.images.map(i=>({id:i.id,src:i.src,alt:i.alt})):[],\n  permalink:p.permalink ?? null\n};\nconst available = clean.purchasable === true &&\n  clean.stock_status === 'instock' &&\n  (clean.manage_stock !== true || clean.stock_quantity === null || Number(clean.stock_quantity) > 0);\nreturn [{json:{\n  success:true,\n  request_id:$node['Validate Request'].json.request_id,\n  operation:$node['Validate Request'].json.operation,\n  product:clean,\n  availability:{available,stock_status:clean.stock_status,stock_quantity:clean.stock_quantity},\n  source:'woocommerce',\n  verified_at:new Date().toISOString()\n}}];"
+      },
+      "id": "normalize",
+      "name": "Normalize + Verify WooCommerce Product",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.commerce_status === 'connected' && $json.source_of_truth === 'woocommerce'}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "wcgate",
+      "name": "WooCommerce Source-of-Truth Gate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        820,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$json;\nconst req=$node['Validate Request'].json;\nconst operation=req.operation;\nconst allowed=['get_product','get_products','get_variation','search_products'];\nif(!allowed.includes(operation)) throw new Error('KB fallback is not allowed for this product operation');\n// KB is informational fallback only. Do not synthesize live price, stock, sale status, or availability.\nconst supplied = r.kb_context ?? r.kb_result ?? null;\nreturn [{json:{success:true,request_id:req.request_id,operation,source:'kb',commerce_status:'unavailable',kb_fallback:true,kb_context:supplied,live_fields_unavailable:['price','sale_price','stock_quantity','stock_status','purchasable','availability'],message:supplied ? null : 'KB retrieval context required from the configured RAG/Supabase retrieval path.'}}];"
+      },
+      "id": "kbfallback",
+      "name": "KB Informational Fallback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Request": {
+      "main": [
+        [
+          {
+            "node": "Map to WF-20",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map to WF-20": {
+      "main": [
+        [
+          {
+            "node": "WF-20 WooCommerce Gateway",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF-20 WooCommerce Gateway": {
+      "main": [
+        [
+          {
+            "node": "WooCommerce Source-of-Truth Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce Source-of-Truth Gate": {
+      "main": [
+        [
+          {
+            "node": "Normalize + Verify WooCommerce Product",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "KB Informational Fallback",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "KB Informational Fallback": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

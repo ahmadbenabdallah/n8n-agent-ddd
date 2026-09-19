@@ -1,0 +1,23 @@
+version: "0.12.6"
+name: n8n-mcp-control-plane
+transport: external
+
+purpose:
+  - "Expose n8n capabilities to the AI harness through MCP."
+  - "Keep agent-facing control separate from deterministic CI/CD."
+  - "Never use MCP as commerce authorization."
+
+configuration:
+  n8n_base_url_env: N8N_BASE_URL
+  n8n_api_key_env: N8N_API_KEY
+
+policy:
+  - "MCP credentials are local runtime credentials, never committed."
+  - "Capability discovery does not imply authorization."
+  - "WF-10 remains the commerce authorization boundary."
+  - "Production MCP access requires explicit environment policy."
+  - "CI/CD remains the deterministic release mechanism."
+
+note: >
+  This file defines the repository contract for an external n8n MCP server.
+  The repository does not embed or pretend to execute a third-party MCP server.

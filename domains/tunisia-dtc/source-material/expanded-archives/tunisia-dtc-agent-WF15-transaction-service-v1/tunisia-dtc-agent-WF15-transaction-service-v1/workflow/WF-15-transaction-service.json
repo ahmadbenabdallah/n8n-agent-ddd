@@ -1,0 +1,470 @@
+{
+  "name": "WF-15 — Transaction Service",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json,a=x.authorized_action||{},i=x.identity||{},action=a.action||x.intent; const allowed=['checkout_confirm','transaction_create']; const ok=allowed.includes(action)&&a.execution_allowed===true&&['order_verified','high_assurance'].includes(i.identity_level); return [{json:{...x,_wf15_input_ok:Boolean(ok),_wf15_action:action}}];"
+      },
+      "id": "v",
+      "name": "Validate Transaction Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf15_input_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "iv",
+      "name": "Transaction Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{service:'transaction',status:'rejected',reason:'invalid_or_unauthorized_transaction_request',execution_allowed:false}}];"
+      },
+      "id": "r",
+      "name": "Reject Invalid Transaction Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c=$json.checkout_context||{}, ch=c.checkout||$json.checkout_result||{}; const cart=c.cart||{}; const required=['checkout_id','cart_id','cart_version','currency']; const missing=required.filter(k=>ch[k]==null && !(k==='cart_id'&&cart.id) && !(k==='cart_version'&&cart.version)); const ok=missing.length===0; return [{json:{...$json,_wf15_checkout:{checkout_id:ch.checkout_id||null,cart_id:ch.cart_id||cart.id||null,cart_version:ch.cart_version??cart.version??null,currency:ch.currency||cart.currency||null,total:Number(ch.total??cart.total??cart.subtotal??0)},_wf15_checkout_ok:ok,_wf15_missing:missing}}];"
+      },
+      "id": "load",
+      "name": "Load Verified Checkout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf15_checkout_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "ic",
+      "name": "Checkout Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -980,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{service:'transaction',status:'rejected',reason:'checkout_missing_or_invalid',execution_allowed:false,missing_fields:$json._wf15_missing||[]}}];"
+      },
+      "id": "rc",
+      "name": "Reject Invalid Checkout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -760,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const live=x.transaction_context?.live_revalidation; const ok=live?.verified===true&&live?.cart_version_match===true&&live?.price_verified===true&&live?.stock_verified===true&&live?.promotion_verified===true; return [{json:{...x,_wf15_live_ok:ok,_wf15_live:live||null}}];"
+      },
+      "id": "live",
+      "name": "Final Live Transaction Revalidation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf15_live_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "il",
+      "name": "Live Facts Current?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -540,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{service:'transaction',status:'revalidation_required',reason:'live_transaction_facts_not_verified',execution_allowed:false}}];"
+      },
+      "id": "rl",
+      "name": "Stop on Stale Transaction Facts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p=$json.transaction_context?.payment||{}; const method=p.method||$json._params?.payment_method||null; const supported=Array.isArray($json.transaction_context?.supported_payment_methods)?$json.transaction_context.supported_payment_methods:['cod','card','bank_transfer']; const ok=Boolean(method)&&supported.includes(method); const forbidden=Boolean($json._params?.card_number||$json._params?.cvv||$json._params?.otp||$json._params?.pin||$json._params?.password); return [{json:{...$json,_wf15_payment_method:method,_wf15_payment_ok:ok&&!forbidden,_wf15_sensitive_input:forbidden}}];"
+      },
+      "id": "pay",
+      "name": "Validate Payment Method Boundary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf15_payment_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "ip",
+      "name": "Payment Method Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{service:'transaction',status:'rejected',reason:$json._wf15_sensitive_input?'sensitive_payment_data_prohibited':'unsupported_payment_method',execution_allowed:false}}];"
+      },
+      "id": "rp",
+      "name": "Reject Invalid Payment Boundary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json,idem=($json.authorized_action||{}).idempotency_key||$json.message_id||null; const ledger=($json.transaction_context?.idempotency_keys||{}); const duplicate=Boolean(ledger[idem]); const request={operation:'create_transaction',checkout_id:x._wf15_checkout.checkout_id,cart_id:x._wf15_checkout.cart_id,cart_version:x._wf15_checkout.cart_version,total:x._wf15_checkout.total,currency:x._wf15_checkout.currency,payment_method:x._wf15_payment_method,idempotency_key:idem}; return [{json:{...x,_wf15_duplicate:duplicate,_wf15_request:request,_wf15_idempotency_key:idem}}];"
+      },
+      "id": "idem",
+      "name": "Transaction Idempotency Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf15_duplicate}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "dup",
+      "name": "Duplicate Transaction?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        340,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{service:'transaction',status:'duplicate',reason:'idempotency_key_already_seen',execution_allowed:false}}];"
+      },
+      "id": "rd",
+      "name": "Reject Duplicate Transaction",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; return [{json:{...x,status:'ready_for_transaction_adapter',execution_allowed:true,adapter:'COMMERCE_TRANSACTION_ADAPTER',request:x._wf15_request}}];"
+      },
+      "id": "req",
+      "name": "Build Commerce Transaction Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json,r=x.commerce_result||x.adapter_result; if(!r) return [{json:{...x,status:'awaiting_adapter',verification_status:'not_run',execution_allowed:false}}]; const verified=r.verified===true&&r.owner_match===true&&r.amount_verified===true&&r.currency_verified===true&&['created','authorized','captured'].includes(r.status); const state=r.status==='captured'?'paid':r.status==='authorized'?'authorized':'created'; return [{json:{...x,status:verified?'completed':'failed',verification_status:verified?'verified':'failed',execution_allowed:false,transaction_result:verified?{transaction_id:r.transaction_id,status:state,order_id:r.order_id||null}:null}}];"
+      },
+      "id": "verify",
+      "name": "Post-Transaction Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; return [{json:{service:'transaction',status:x.status||'failed',action:x._wf15_action,execution_allowed:false,verification_status:x.verification_status||'not_run',transaction:x.transaction_result||null,idempotency_key:x._wf15_idempotency_key||null}}];"
+      },
+      "id": "out",
+      "name": "Build Transaction Service Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Transaction Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Transaction Contract": {
+      "main": [
+        [
+          {
+            "node": "Transaction Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transaction Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Load Verified Checkout",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Transaction Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Verified Checkout": {
+      "main": [
+        [
+          {
+            "node": "Checkout Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checkout Valid?": {
+      "main": [
+        [
+          {
+            "node": "Final Live Transaction Revalidation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Checkout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Live Transaction Revalidation": {
+      "main": [
+        [
+          {
+            "node": "Live Facts Current?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Live Facts Current?": {
+      "main": [
+        [
+          {
+            "node": "Validate Payment Method Boundary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop on Stale Transaction Facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Payment Method Boundary": {
+      "main": [
+        [
+          {
+            "node": "Payment Method Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payment Method Valid?": {
+      "main": [
+        [
+          {
+            "node": "Transaction Idempotency Guard",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Payment Boundary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transaction Idempotency Guard": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Transaction?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Transaction?": {
+      "main": [
+        [
+          {
+            "node": "Build Commerce Transaction Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Duplicate Transaction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Commerce Transaction Request": {
+      "main": [
+        [
+          {
+            "node": "Post-Transaction Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post-Transaction Verification": {
+      "main": [
+        [
+          {
+            "node": "Build Transaction Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf15-transaction-service-v1"
+}

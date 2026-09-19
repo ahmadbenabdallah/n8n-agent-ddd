@@ -1,0 +1,17 @@
+doctor:
+  command: "harness doctor"
+  checks:
+    - git
+    - shell
+    - node
+    - package_manager
+    - docker
+    - compose
+    - repository_layout
+    - configuration_contract
+    - secrets_contract
+    - deployment_contract
+  output:
+    secret_safe: true
+    actionable_failures: true
+    machine_readable_summary: true

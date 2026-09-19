@@ -1,0 +1,36 @@
+workflow:
+  id: WF-04
+  name: Intent Router
+  bounded_context: routing
+  version: 1.0.0
+  purpose: Classify intent and route to sales, support, order, escalation or knowledge
+    paths.
+  dependencies:
+  - WF-05
+  - WF-06
+  - WF-07
+  - WF-08
+  - WF-09
+  security: Routing is not authorization.
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Supabase; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown external
+    outcomes
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml
+  - contracts/platform/action.yaml

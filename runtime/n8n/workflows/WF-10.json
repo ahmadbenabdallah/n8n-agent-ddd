@@ -1,0 +1,96 @@
+{
+  "name": "WF-10 \u2014 Action Authorization",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "if(!$json.action||!$json.identity||!$json.scope)throw new Error('authorization_context_missing');return items;"
+      },
+      "id": "context",
+      "name": "Validate Authorization Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;const ok=x.action.allowlisted===true&&x.scope.valid===true&&x.identity.assurance!=='ANONYMOUS'&&x.human_ownership!==true;return [{json:{...x,execution_allowed:ok,authorization_decision:ok?'AUTHORIZED':'DENIED'}}];"
+      },
+      "id": "auth",
+      "name": "Deny-by-Default Authorization",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,audit_event_type:$json.execution_allowed?'ActionAuthorized':'ActionRejected'}}];"
+      },
+      "id": "evidence",
+      "name": "Authorization Evidence",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Validate Authorization Context": {
+      "main": [
+        [
+          {
+            "node": "Deny-by-Default Authorization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deny-by-Default Authorization": {
+      "main": [
+        [
+          {
+            "node": "Authorization Evidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "n8n-agent-ddd": {
+      "workflow_id": "WF-10",
+      "version": "1.0.0",
+      "phase": 8,
+      "implementation_status": "contract-executable-foundation",
+      "credentials": "externalized_to_n8n_runtime",
+      "phase_9": "staging-validation-target"
+    }
+  },
+  "tags": [
+    {
+      "name": "n8n-agent-ddd"
+    },
+    {
+      "name": "phase-8"
+    },
+    {
+      "name": "WF-10"
+    },
+    {
+      "name": "phase-9"
+    }
+  ]
+}

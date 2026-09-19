@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-02 Identity Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "channel",
+    "external_user_id",
+    "conversation_external_id",
+    "turn_id"
+  ],
+  "properties": {
+    "channel": {
+      "type": "string",
+      "enum": [
+        "facebook",
+        "whatsapp",
+        "instagram",
+        "internal"
+      ]
+    },
+    "external_user_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "conversation_external_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "turn_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "display_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 200
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "package": "tunisia-dtc-agent-system-FINAL-v3",
+  "status": "production-aligned specification",
+  "workflows": "WF-00 through WF-20",
+  "created": "2026-09-17",
+  "source_basis": "Uploaded core system files plus previously established production requirements",
+  "important_note": "This package is a specification/contract layer, not executable n8n workflow JSON."
+}

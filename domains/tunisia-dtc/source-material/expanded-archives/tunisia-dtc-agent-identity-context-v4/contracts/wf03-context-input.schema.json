@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-03 Context Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "customer_id",
+    "conversation_id",
+    "turn_id",
+    "message"
+  ],
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "conversation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "turn_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10000
+    },
+    "proposed": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "commerce_status": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "available",
+        "degraded",
+        "unavailable"
+      ]
+    },
+    "source_of_truth": {
+      "type": "string",
+      "enum": [
+        "woocommerce",
+        "kb_only"
+      ]
+    }
+  }
+}

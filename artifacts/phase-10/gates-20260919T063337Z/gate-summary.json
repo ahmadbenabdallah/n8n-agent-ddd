@@ -1,0 +1,9 @@
+{
+  "run_id": "gates-20260919T063337Z",
+  "local_pass": 6,
+  "local_fail": 0,
+  "external_blocked": 10,
+  "production_certification": "BLOCKED",
+  "reason": "Real staging evidence has not been executed.",
+  "staging_environment_preserved": true
+}

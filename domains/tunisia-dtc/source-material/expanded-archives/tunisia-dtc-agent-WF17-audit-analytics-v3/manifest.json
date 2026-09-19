@@ -1,0 +1,26 @@
+{
+  "name": "tunisia-dtc-agent-WF17-audit-analytics-v3",
+  "version": "3.0.0",
+  "status": "integration-ready scaffold",
+  "purpose": "Redacted audit ledger and analytics signals",
+  "principles": [
+    "redact-before-persist",
+    "audit-is-not-authorization",
+    "minimum-necessary-data"
+  ],
+  "next": "WF-18 KB ingestion",
+  "files": [
+    "contracts/wf17-audit-input.schema.json",
+    "contracts/wf17-audit-output.schema.json",
+    "n8n/WF-17-audit-analytics-v3.json",
+    "database/004_agent_audit_events.sql",
+    "tests/regression.md",
+    "docs/05-wiring.md",
+    "docs/02-what-to-log.md",
+    "docs/06-production-gate.md",
+    "docs/01-event-model.md",
+    "docs/03-security-and-retention.md",
+    "docs/04-analytics.md",
+    "docs/README.md"
+  ]
+}

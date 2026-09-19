@@ -1,0 +1,341 @@
+{
+  "name": "WF-15 Transaction Service v2 - WooCommerce COD Order Creation",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nif(!x.request_id||!x.conversation_id||!x.customer_id) throw new Error('Missing transaction identity');\nif(x.operation!=='create_cod_order') throw new Error('Invalid transaction operation');\nif(x.confirmed!==true) throw new Error('Explicit customer confirmation required');\nif(x.payment_method!=='cod') throw new Error('Only COD is enabled');\nif(!x.cart_reference) throw new Error('Missing cart reference');\nif(!x.idempotency_key || typeof x.idempotency_key!=='string' || x.idempotency_key.length>200) throw new Error('Missing/invalid idempotency key');\nreturn [{json:{\n request_id:String(x.request_id),conversation_id:String(x.conversation_id),customer_id:String(x.customer_id),\n operation:x.operation,confirmed:true,payment_method:'cod',cart_reference:x.cart_reference,\n coupon_code:x.coupon_code??null,customer:x.customer??null,shipping:x.shipping??null,\n idempotency_key:x.idempotency_key,checkout_snapshot:x.checkout_snapshot??null,\n caller_context:x.caller_context??{}\n}}];"
+      },
+      "id": "validate",
+      "name": "Validate Transaction Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\n// Order creation is only allowed after trusted confirmation and COD policy.\nif(x.caller_context?.authorized!==true) {\n return [{json:{...x,rejected:true,error_code:'transaction_not_authorized'}}];\n}\nreturn [{json:{...x,rejected:false}}];"
+      },
+      "id": "auth",
+      "name": "Transaction Authorization",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.rejected}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if-reject",
+      "name": "Authorization Rejected?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{\n success:false,request_id:$json.request_id,operation:$json.operation,\n error_code:$json.error_code,execution_allowed:false,order_created:false\n}}];"
+      },
+      "id": "reject",
+      "name": "Reject Transaction",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\n// WF-15 deliberately requires WF-20 to perform a fresh live validation.\n// Never trust the WF-14 snapshot as final transactional truth.\nreturn [{json:{...x,gateway_operation:'transaction_preflight',execution_allowed:false}}];"
+      },
+      "id": "preflight",
+      "name": "Build Fresh Preflight Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "REPLACE_WITH_WF20_WORKFLOW_ID",
+        "options": {}
+      },
+      "id": "wf20-preflight",
+      "name": "WF-20 Fresh Transaction Validation",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$json;\nif(r.error||r.success===false||r.valid!==true){\n return [{json:{success:false,request_id:$node['Validate Transaction Contract'].json.request_id,\n operation:'create_cod_order',error_code:r.error_code||'transaction_preflight_failed',\n validation:r.validation??r.errors??null,execution_allowed:false,order_created:false}}];\n}\nconst x=$node['Validate Transaction Contract'].json;\nreturn [{json:{...x,preflight:r,preflight_verified:true}}];"
+      },
+      "id": "preflight-check",
+      "name": "Preflight Verified?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nif(x.preflight_verified!==true) throw new Error('Preflight not verified');\nreturn [{json:{\n request_id:x.request_id,conversation_id:x.conversation_id,customer_id:x.customer_id,\n operation:'create_cod_order',payment_method:'cod',\n cart_reference:x.cart_reference,coupon_code:x.coupon_code,\n customer:x.customer,shipping:x.shipping,idempotency_key:x.idempotency_key,\n gateway_operation:'create_cod_order',\n execution_allowed:true\n}}];"
+      },
+      "id": "build-order",
+      "name": "Authorize Bounded Order Creation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "REPLACE_WITH_WF20_WORKFLOW_ID",
+        "options": {}
+      },
+      "id": "wf20-create",
+      "name": "WF-20 Create WooCommerce COD Order",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$json;\nconst x=$node['Validate Transaction Contract'].json;\nif(r.error||r.success===false){\n return [{json:{success:false,request_id:x.request_id,operation:'create_cod_order',\n error_code:r.error_code||'order_creation_failed',execution_allowed:false,order_created:false}}];\n}\nconst order=r.order||r.data?.order||r;\nconst orderId=order.id??null;\nif(!orderId) return [{json:{success:false,request_id:x.request_id,operation:'create_cod_order',\nerror_code:'missing_order_id',execution_allowed:false,order_created:false}}];\nreturn [{json:{success:true,request_id:x.request_id,operation:'create_cod_order',\norder_created:true,order_id:orderId,order_number:order.number??null,\nstatus:order.status??'pending',payment_status:'not_paid',\npayment_method:'cod',source:'woocommerce',needs_verification:true}}];"
+      },
+      "id": "normalize-create",
+      "name": "Normalize Created Order",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nreturn [{json:{...x,gateway_operation:'get_order',verify_order_id:x.order_id}}];"
+      },
+      "id": "build-verify",
+      "name": "Build Post-Create Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "REPLACE_WITH_WF20_WORKFLOW_ID",
+        "options": {}
+      },
+      "id": "wf20-verify",
+      "name": "WF-20 Verify Created Order",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        2420,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$json;\nconst original=$node['Normalize Created Order'].json;\nif(r.error||r.success===false){\n return [{json:{success:false,request_id:original.request_id,operation:'create_cod_order',\n order_created:original.order_created,order_id:original.order_id,\n verification:'failed',error_code:'post_create_verification_failed',\n execution_allowed:false}}];\n}\nconst o=r.order||r.data?.order||r;\nconst sameId=String(o.id)===String(original.order_id);\nconst status=o.status??null;\nconst safeStatus=['pending','processing','on-hold','completed','cancelled','refunded','failed'].includes(status)?status:'unknown';\nconst verified=sameId && safeStatus!=='unknown';\nreturn [{json:{\n success:verified,request_id:original.request_id,operation:'create_cod_order',\n order_created:original.order_created,order_id:original.order_id,\n order_number:o.number??original.order_number,status:safeStatus,\n payment_status:'not_paid',payment_method:'cod',\n verification:verified?'verified':'failed',\n execution_allowed:false,\n source:'woocommerce',verified_at:new Date().toISOString()\n}}];"
+      },
+      "id": "verify",
+      "name": "Verify Final Transaction State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        120
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Transaction Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Transaction Contract": {
+      "main": [
+        [
+          {
+            "node": "Transaction Authorization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transaction Authorization": {
+      "main": [
+        [
+          {
+            "node": "Authorization Rejected?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorization Rejected?": {
+      "main": [
+        [
+          {
+            "node": "Reject Transaction",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Fresh Preflight Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Fresh Preflight Request": {
+      "main": [
+        [
+          {
+            "node": "WF-20 Fresh Transaction Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF-20 Fresh Transaction Validation": {
+      "main": [
+        [
+          {
+            "node": "Preflight Verified?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preflight Verified?": {
+      "main": [
+        [
+          {
+            "node": "Authorize Bounded Order Creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorize Bounded Order Creation": {
+      "main": [
+        [
+          {
+            "node": "WF-20 Create WooCommerce COD Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF-20 Create WooCommerce COD Order": {
+      "main": [
+        [
+          {
+            "node": "Normalize Created Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Created Order": {
+      "main": [
+        [
+          {
+            "node": "Build Post-Create Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Post-Create Verification": {
+      "main": [
+        [
+          {
+            "node": "WF-20 Verify Created Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF-20 Verify Created Order": {
+      "main": [
+        [
+          {
+            "node": "Verify Final Transaction State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

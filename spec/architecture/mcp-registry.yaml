@@ -1,0 +1,32 @@
+version: 1
+principle: MCP_is_control_interface_not_authorization
+servers:
+  - id: n8n
+    purpose: developer_and_agent_workflow_control
+    permissions:
+      - workflow.read
+      - workflow.validate
+      - workflow.create
+      - workflow.update
+      - workflow.test
+    forbidden:
+      - direct_commerce_mutation
+      - credential_export
+      - bypass_wf10
+  - id: supabase
+    purpose: database_development_and_operations
+    permissions:
+      - schema.inspect
+      - migration.validate
+      - query.read
+    forbidden:
+      - production_secret_export
+      - bypass_runtime_authorization
+  - id: github
+    purpose: source_control_and_review
+    permissions:
+      - branch.create
+      - pull_request.create
+      - pull_request.read
+    forbidden:
+      - direct_production_ssh

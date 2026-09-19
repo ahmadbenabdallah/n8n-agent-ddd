@@ -1,0 +1,499 @@
+{
+  "name": "WF-20 \u2014 WooCommerce Native Adapter v2",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "6af4aa904ad14a79",
+      "name": "WF20 Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json||{};const errors=[];\nconst ops=['get_product','get_products','create_cod_order','get_order','update_order_status','health'];\nif(!ops.includes(x.operation)) errors.push('unsupported_operation');\nif(['get_product','get_order'].includes(x.operation)&&!x.id) errors.push('missing_id');\nif(x.operation==='create_cod_order'){\n if(!x.idempotency_key) errors.push('missing_idempotency_key');\n if(!Array.isArray(x.line_items)||!x.line_items.length) errors.push('missing_line_items');\n if(!x.billing?.first_name||!x.billing?.phone||!x.billing?.country) errors.push('missing_billing');\n if(x.payment_method && x.payment_method!=='cod') errors.push('cod_only');\n if(x.set_paid===true) errors.push('paid_flag_forbidden');\n}\nreturn [{json:{...x,_valid:errors.length===0,validation_errors:errors}}];"
+      },
+      "id": "5f9f06de10e4cf35",
+      "name": "Validate Adapter Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "ad0e88f37468b60e",
+      "name": "Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{success:false,error_code:'INVALID_ADAPTER_REQUEST',customer_safe_message:'The commerce request could not be processed.',correlation_id:$execution.id}}];"
+      },
+      "id": "5e910e95b1ccbf7f",
+      "name": "Reject Invalid Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        650,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.operation}}",
+                    "operation": "equals",
+                    "value2": "get_product"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.operation}}",
+                    "operation": "equals",
+                    "value2": "get_products"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.operation}}",
+                    "operation": "equals",
+                    "value2": "create_cod_order"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.operation}}",
+                    "operation": "equals",
+                    "value2": "get_order"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.operation}}",
+                    "operation": "equals",
+                    "value2": "update_order_status"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.operation}}",
+                    "operation": "equals",
+                    "value2": "health"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "id": "0291b9ca54235dd6",
+      "name": "Operation Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        650,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "product",
+        "operation": "get",
+        "productId": "={{$json.id}}"
+      },
+      "id": "426f95bd6d6afef7",
+      "name": "WooCommerce \u2014 Get Product",
+      "type": "n8n-nodes-base.wooCommerce",
+      "typeVersion": 1,
+      "position": [
+        920,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "product",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 20,
+        "filters": {
+          "search": "={{$json.search || ''}}",
+          "status": "publish"
+        }
+      },
+      "id": "e26006af241c10f2",
+      "name": "WooCommerce \u2014 Get Products",
+      "type": "n8n-nodes-base.wooCommerce",
+      "typeVersion": 1,
+      "position": [
+        920,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "order",
+        "operation": "create",
+        "customerId": "={{$json.customer_id || 0}}",
+        "billing": "={{$json.billing}}",
+        "shipping": "={{$json.shipping || $json.billing}}",
+        "paymentMethod": "={{'cod'}}",
+        "paymentMethodTitle": "={{$env.WOOCOMMERCE_COD_PAYMENT_TITLE || 'Cash on Delivery'}}",
+        "setPaid": false,
+        "lineItems": "={{$json.line_items}}",
+        "status": "={{$env.WOOCOMMERCE_INITIAL_COD_STATUS || 'processing'}}"
+      },
+      "id": "7a0cc9992d5e4fb8",
+      "name": "WooCommerce \u2014 Create COD Order",
+      "type": "n8n-nodes-base.wooCommerce",
+      "typeVersion": 1,
+      "position": [
+        920,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "order",
+        "operation": "get",
+        "orderId": "={{$json.id}}"
+      },
+      "id": "f7349eba2b4daa6d",
+      "name": "WooCommerce \u2014 Get Order",
+      "type": "n8n-nodes-base.wooCommerce",
+      "typeVersion": 1,
+      "position": [
+        920,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "order",
+        "operation": "update",
+        "orderId": "={{$json.id}}",
+        "status": "={{$json.status}}"
+      },
+      "id": "e3255cca8aafe5dc",
+      "name": "WooCommerce \u2014 Update Order Status",
+      "type": "n8n-nodes-base.wooCommerce",
+      "typeVersion": 1,
+      "position": [
+        920,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/v3/system_status'}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "8c3f47e8f053ac16",
+      "name": "WooCommerce \u2014 Health Check (HTTP fallback)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        920,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw=$json;const input=$input.first().json;const op=input.operation;\nconst out={success:true,operation:op,correlation_id:$execution.id,verified_source:'woocommerce'};\nif(op==='create_cod_order'){\n out.order={id:raw.id,number:raw.number,status:raw.status,currency:raw.currency,total:raw.total,payment_method:raw.payment_method,payment_method_title:raw.payment_method_title,set_paid:raw.set_paid};\n out.verified_execution=Number.isInteger(raw.id)&&!!raw.number&&raw.payment_method==='cod'&&raw.set_paid!==true;\n} else if(op==='get_order'){\n out.order={id:raw.id,number:raw.number,status:raw.status,currency:raw.currency,total:raw.total,payment_method:raw.payment_method,set_paid:raw.set_paid,line_items:(raw.line_items||[]).map(i=>({product_id:i.product_id,variation_id:i.variation_id,name:i.name,quantity:i.quantity,total:i.total}))};\n} else if(op==='get_product'){\n out.product={id:raw.id,sku:raw.sku,name:raw.name,type:raw.type,price:raw.price,regular_price:raw.regular_price,sale_price:raw.sale_price,stock_status:raw.stock_status,stock_quantity:raw.stock_quantity,manage_stock:raw.manage_stock,in_stock:raw.in_stock,purchasable:raw.purchasable,variations:raw.variations};\n} else { out.data=raw; }\nreturn [{json:out}];"
+      },
+      "id": "399259b6ea1cc9ba",
+      "name": "Normalize WooCommerce Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.verified_execution !== false}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "0c056c1c9390a6bb",
+      "name": "Success Semantics Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{success:false,error_code:'COMMERCE_VERIFICATION_FAILED',customer_safe_message:'The commerce system did not provide enough confirmation to report success.',correlation_id:$execution.id}}];"
+      },
+      "id": "4c917a34a35615c7",
+      "name": "Safe Failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1670,
+        180
+      ]
+    }
+  ],
+  "connections": {
+    "WF20 Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Adapter Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Adapter Contract": {
+      "main": [
+        [
+          {
+            "node": "Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Operation Router",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Operation Router": {
+      "main": [
+        [
+          {
+            "node": "WooCommerce \u2014 Get Product",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WooCommerce \u2014 Get Products",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WooCommerce \u2014 Create COD Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WooCommerce \u2014 Get Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WooCommerce \u2014 Update Order Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WooCommerce \u2014 Health Check (HTTP fallback)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce \u2014 Get Product": {
+      "main": [
+        [
+          {
+            "node": "Normalize WooCommerce Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce \u2014 Get Products": {
+      "main": [
+        [
+          {
+            "node": "Normalize WooCommerce Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce \u2014 Create COD Order": {
+      "main": [
+        [
+          {
+            "node": "Normalize WooCommerce Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce \u2014 Get Order": {
+      "main": [
+        [
+          {
+            "node": "Normalize WooCommerce Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce \u2014 Update Order Status": {
+      "main": [
+        [
+          {
+            "node": "Normalize WooCommerce Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce \u2014 Health Check (HTTP fallback)": {
+      "main": [
+        [
+          {
+            "node": "Normalize WooCommerce Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize WooCommerce Result": {
+      "main": [
+        [
+          {
+            "node": "Success Semantics Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Semantics Check": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Safe Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "tunisia-dtc"
+    },
+    {
+      "name": "commerce"
+    },
+    {
+      "name": "woocommerce"
+    },
+    {
+      "name": "native-node"
+    },
+    {
+      "name": "wf-20"
+    }
+  ]
+}

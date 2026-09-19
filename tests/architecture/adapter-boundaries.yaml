@@ -1,0 +1,18 @@
+version: "2026.09.10"
+tests:
+  - id: ADR-001
+    rule: domain_has_no_channel_provider_dependency
+  - id: ADR-002
+    rule: domain_has_no_commerce_vendor_dependency
+  - id: ADR-003
+    rule: provider_credentials_stay_in_infrastructure
+  - id: ADR-004
+    rule: provider_api_paths_stay_in_adapters
+  - id: ADR-005
+    rule: canonical_commands_are_provider_neutral
+  - id: ADR-006
+    rule: unsupported_provider_capability_is_explicit
+  - id: ADR-007
+    rule: adapter_switch_requires_no_domain_rule_change
+  - id: ADR-008
+    rule: all_mutations_preserve_idempotency_and_reconciliation

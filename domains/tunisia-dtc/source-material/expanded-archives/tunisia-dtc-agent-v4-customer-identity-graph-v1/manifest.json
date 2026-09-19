@@ -1,0 +1,15 @@
+{
+  "version": "4.0.0-identity-graph-item-1",
+  "scope": "Version 4 / Item 1 \u2014 Customer Identity Graph",
+  "files": [
+    "README.md",
+    "01-CUSTOMER-IDENTITY-GRAPH-SPEC.md",
+    "02-SUPABASE-IDENTITY-MIGRATION.sql",
+    "03-WF-02-IDENTITY-IMPLEMENTATION.md",
+    "04-WF-07-ORDER-LOOKUP-CONTRACT.md",
+    "05-WF-10-ORDER-SCOPE-AUTHORIZATION.md",
+    "06-IDENTITY-REDTEAM-TESTS.md",
+    "07-IDENTITY-E2E-FLOWS.md",
+    "manifest.json"
+  ]
+}

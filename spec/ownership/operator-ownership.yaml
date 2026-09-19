@@ -1,0 +1,29 @@
+version: "1.0"
+principle: "The installer/operator owns deployment-specific configuration and permitted extensions; the platform owns safety-critical core behavior."
+actors:
+  platform:
+    owns: [core_workflows, contracts, security_policy, authorization_policy, migrations, release_manifests]
+    source_of_truth: git
+  operator:
+    owns: [business_configuration, permitted_extensions, n8n_credentials]
+    source_of_truth: postgres_or_n8n
+  infrastructure:
+    owns: [runtime_environment, network, database_connection, deployment_secrets]
+    source_of_truth: deployment_system
+surfaces:
+  core:
+    editable_by_operator: false
+    release_controlled: true
+  configuration:
+    editable_by_operator: true
+    source_of_truth: postgres
+  extension:
+    editable_by_operator: true
+    source_of_truth: n8n
+  secret:
+    editable_by_operator: true
+    source_of_truth: n8n_credentials_or_external_secrets
+  infrastructure:
+    editable_by_operator: false
+    source_of_truth: deployment_system
+protected_workflows: [WF-01, WF-10, WF-15, WF-20]

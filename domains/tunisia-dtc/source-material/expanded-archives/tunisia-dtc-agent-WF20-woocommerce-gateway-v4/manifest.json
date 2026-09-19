@@ -1,0 +1,15 @@
+{
+  "name": "tunisia-dtc-agent-WF20-woocommerce-gateway-v4",
+  "version": "4.0.0",
+  "purpose": "Central WooCommerce commerce boundary with deterministic availability and source-of-truth policy",
+  "changes": [
+    "Added WooCommerce preflight health gate",
+    "WooCommerce is authoritative when connected",
+    "Informational product reads may fall back to KB when WooCommerce is unavailable",
+    "Transactional commerce operations are hard-blocked when WooCommerce is unavailable"
+  ],
+  "notes": [
+    "n8n node field names and credential configuration must be verified in the target n8n version",
+    "KB fallback is performed by callers such as WF-11, not by WF-20 itself"
+  ]
+}

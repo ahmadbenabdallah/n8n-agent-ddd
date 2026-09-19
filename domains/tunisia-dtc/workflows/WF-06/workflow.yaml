@@ -1,0 +1,34 @@
+workflow:
+  id: WF-06
+  name: Support Engine
+  bounded_context: support
+  version: 1.0.0
+  purpose: Handle product/order/support questions and propose safe next steps.
+  dependencies:
+  - WF-07
+  - WF-08
+  - WF-09
+  - WF-18
+  security: Private data requires verified scope.
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Supabase; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown external
+    outcomes
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml
+  - contracts/platform/action.yaml

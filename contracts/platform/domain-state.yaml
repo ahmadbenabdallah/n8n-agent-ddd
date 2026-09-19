@@ -1,0 +1,10 @@
+version: "1"
+name: domain-state
+
+principle: durable-state-outlives-runtime
+
+rules:
+  - n8n_execution_history_is_not_domain_state
+  - business_state_lives_in_durable_storage
+  - state_transitions_are_explicit
+  - mutations_are_auditable

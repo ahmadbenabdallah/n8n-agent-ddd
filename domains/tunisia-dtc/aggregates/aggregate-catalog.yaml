@@ -1,0 +1,22 @@
+aggregates:
+  - id: Customer
+    root: CustomerIdentity
+    invariants: [BR-ID-001, BR-ID-002, BR-SEC-003]
+  - id: Conversation
+    root: Conversation
+    invariants: [BR-HUM-001]
+  - id: Cart
+    root: Cart
+    invariants: [BR-COM-001, BR-COM-002, BR-COM-004]
+  - id: Checkout
+    root: Order
+    invariants: [BR-COM-001, BR-COM-002, BR-COM-005]
+  - id: Transaction
+    root: Transaction
+    invariants: [BR-COM-005, BR-OPS-001]
+  - id: Authorization
+    root: Authorization
+    invariants: [AUTH-001, AUTH-002, EXEC-001]
+  - id: Escalation
+    root: Escalation
+    invariants: [BR-HUM-001]

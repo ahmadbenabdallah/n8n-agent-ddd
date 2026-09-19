@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-15 Transaction Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation",
+    "customer_id",
+    "channel",
+    "action_id",
+    "customer_confirmation"
+  ],
+  "properties": {
+    "operation": {
+      "const": "create_cod_order"
+    },
+    "customer_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "channel": {
+      "type": "string"
+    },
+    "store_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "action_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "customer_confirmation": {
+      "const": true
+    },
+    "authorization_result": {
+      "const": "allow"
+    }
+  }
+}

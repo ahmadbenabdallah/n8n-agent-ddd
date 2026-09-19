@@ -1,0 +1,18 @@
+version: "1.0"
+upgrade_rules:
+  preserve:
+    - operator_configuration
+    - operator_extensions
+    - n8n_credentials
+    - durable_business_state
+  replaceable:
+    - platform_core_workflows
+    - platform_runtime
+    - platform_code
+  compatibility:
+    - "Extension declares compatible platform/runtime range."
+    - "Incompatible extension is quarantined, not silently rewritten."
+    - "Configuration migrations are explicit and versioned."
+  rollback:
+    - "Runtime rollback must not implicitly rewind durable business state."
+    - "Extension/configuration rollback requires explicit operator action or migration policy."

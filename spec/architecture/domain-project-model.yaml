@@ -1,0 +1,51 @@
+version: "2026.09.10"
+
+concept:
+  "A domain project is a deployable bounded-context package, not merely an n8n folder."
+
+domain_project:
+  identity:
+    domain_id: stable_identifier
+    version: semver
+    owner: team_or_operator
+  contracts:
+    domain: domain_contract
+    channels: channel_adapter_requirements
+    commerce: commerce_adapter_requirement
+    knowledge: kb_profile
+  runtime:
+    n8n_project: required
+    workflow_prefix: required
+    credential_scope: project
+    environment: dev|staging|production
+  state:
+    postgres_schema: domain_or_shared_schema
+    vector_namespace: domain_id
+  security:
+    authorization_policy: required
+    allowed_adapters: required
+  lifecycle:
+    - discover
+    - validate
+    - package
+    - publish_dev
+    - promote_staging
+    - certify
+    - promote_production
+    - operate
+    - rollback
+
+isolation:
+  logical:
+    - domain_id
+    - n8n_project
+    - workflow_namespace
+    - credential_scope
+    - postgres_schema_or_domain_id
+    - kb_namespace
+  required:
+    - no_cross_domain_workflow_calls_without_explicit_contract
+    - no_cross_domain_credentials
+    - no_cross_domain_customer_data
+    - no_cross_domain_kb_retrieval
+    - no_cross_domain_authorization

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-13 Promotion Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation",
+    "customer_id",
+    "channel"
+  ],
+  "properties": {
+    "operation": {
+      "type": "string",
+      "enum": [
+        "coupon_validate",
+        "coupon_preview",
+        "promotion_info"
+      ]
+    },
+    "customer_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "channel": {
+      "type": "string"
+    },
+    "store_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "coupon_code": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    },
+    "action_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 256
+    }
+  }
+}

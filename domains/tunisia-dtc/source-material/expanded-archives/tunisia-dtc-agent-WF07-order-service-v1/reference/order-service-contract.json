@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "request": {
+    "intent": "order_status",
+    "identity_level": "order_verified|high_assurance",
+    "transaction_query": {
+      "customer_key": "trusted application identity",
+      "order_id": "optional",
+      "fields": "allowlisted only",
+      "include_sensitive": false,
+      "include_payment_credentials": false,
+      "include_other_customers": false
+    }
+  },
+  "result": {
+    "verified_source": "boolean",
+    "owner_match": "boolean",
+    "verified_order_data": "allowlisted object or null"
+  },
+  "rules": [
+    "read-only",
+    "minimum necessary fields",
+    "server-side credentials only",
+    "never trust customer claims as transactional truth",
+    "never expose secrets"
+  ]
+}

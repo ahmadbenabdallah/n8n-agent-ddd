@@ -1,0 +1,5 @@
+phase: "0.15.9"
+environment: "staging"
+state: "NOT_READY"
+production_traffic_switch: "EXPLICIT_APPROVAL_REQUIRED"
+generated_at: "2026-09-19T10:04:59Z"

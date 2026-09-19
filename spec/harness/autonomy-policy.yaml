@@ -1,0 +1,4 @@
+autonomy:
+  allowed: [inspect_repository, plan_tasks, create_worktrees, implement_scoped_changes, run_tests, run_security_checks, prepare_review, prepare_deployment, bounded_non_production_operations]
+  requires_review: [merge, production_deployment, destructive_migration, credential_rotation, high_impact_runtime_change]
+  forbidden: [bypass_WF-10, direct_commerce_mutation_from_agent, direct_production_ssh, secret_exfiltration, blind_retry_unknown_commerce_mutation]

@@ -1,0 +1,30 @@
+release: "0.10.0"
+phase: 10
+production_status: blocked
+
+required_evidence:
+  - INT
+  - SEC
+  - E2E
+  - IDEMP
+  - RECON
+  - RT
+  - LOAD
+  - DR
+  - BG
+  - DRIFT
+  - ARCH
+  - SECURITY
+
+decision:
+  pass_only_if:
+    - every required evidence item is PASS
+    - every required evidence item is fresh
+    - zero open critical findings
+    - zero open high findings
+    - architecture approval is present
+    - security approval is present
+
+certification_artifact:
+  path: evidence/phase-10/certification.json
+  generated_by: scripts/readiness/evaluate.ts

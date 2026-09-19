@@ -1,0 +1,61 @@
+version: "1"
+name: n8n-agent-ddd-ai-sdlc
+states:
+  - DISCOVER
+  - DEFINE
+  - DOMAIN
+  - SPECIFY
+  - ARCHITECT
+  - DESIGN
+  - DECOMPOSE
+  - PLAN
+  - IMPLEMENT
+  - TEST
+  - SECURITY
+  - REVIEW
+  - INTEGRATE
+  - DEPLOY
+  - VERIFY
+  - OPERATE
+  - LEARN
+
+transitions:
+  DISCOVER: [DEFINE]
+  DEFINE: [DOMAIN, DISCOVER]
+  DOMAIN: [SPECIFY, DEFINE]
+  SPECIFY: [ARCHITECT, DOMAIN]
+  ARCHITECT: [DESIGN, SPECIFY]
+  DESIGN: [DECOMPOSE, ARCHITECT]
+  DECOMPOSE: [PLAN, DESIGN]
+  PLAN: [IMPLEMENT, DECOMPOSE]
+  IMPLEMENT: [TEST, PLAN]
+  TEST: [SECURITY, IMPLEMENT]
+  SECURITY: [REVIEW, IMPLEMENT]
+  REVIEW: [INTEGRATE, IMPLEMENT]
+  INTEGRATE: [DEPLOY, REVIEW]
+  DEPLOY: [VERIFY, INTEGRATE]
+  VERIFY: [OPERATE, DEPLOY]
+  OPERATE: [LEARN, VERIFY]
+  LEARN: [DEFINE, OPERATE]
+
+gates:
+  definition_of_ready:
+    required:
+      - requirements_explicit
+      - acceptance_criteria_defined
+      - domain_impact_identified
+      - contracts_identified
+      - security_impact_assessed
+      - test_strategy_defined
+      - migration_impact_known
+      - rollback_strategy_defined
+  definition_of_done:
+    required:
+      - implementation_complete
+      - tests_passing
+      - contracts_valid
+      - architecture_invariants_passing
+      - security_checks_passing
+      - documentation_updated
+      - migration_safe
+      - rollback_or_reconciliation_verified

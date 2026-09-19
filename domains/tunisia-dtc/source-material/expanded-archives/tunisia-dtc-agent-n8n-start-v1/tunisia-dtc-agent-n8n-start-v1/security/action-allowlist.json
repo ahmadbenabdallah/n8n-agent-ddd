@@ -1,0 +1,19 @@
+{
+  "read": [
+    "cart_view",
+    "order_status"
+  ],
+  "write": [
+    "cart_add",
+    "cart_remove",
+    "cart_update",
+    "cart_clear",
+    "checkout_start",
+    "checkout_confirm"
+  ],
+  "human": [
+    "human_request",
+    "escalate"
+  ],
+  "rule": "All write actions require identity, business-rule validation, idempotency, execution and post-action verification."
+}

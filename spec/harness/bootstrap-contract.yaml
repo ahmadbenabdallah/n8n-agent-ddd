@@ -1,0 +1,15 @@
+bootstrap:
+  supported_agents:
+    - claude-code
+    - codex
+  sequence:
+    - inspect_repository
+    - verify_git
+    - run_doctor
+    - initialize_local_configuration
+    - configure_non_secret_defaults
+    - validate
+  safety:
+    no_secret_values_in_agent_context: true
+    no_direct_production_mutation: true
+    no_authorization_bypass: true

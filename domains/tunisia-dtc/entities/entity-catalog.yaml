@@ -1,0 +1,46 @@
+entities:
+  CustomerIdentity:
+    key: identity_id
+    attributes: [channel_identity, commerce_customer_id, assurance_level, verified_at]
+  Conversation:
+    key: conversation_id
+    attributes: [customer_identity_id, channel, status, language, script, register]
+  ConversationState:
+    key: conversation_state_id
+    attributes: [conversation_id, intent, active_workflow, human_owner_id, context_version]
+  Product:
+    key: product_id
+    attributes: [name, sku, status, price, stock_state, variation_state]
+  Cart:
+    key: cart_id
+    attributes: [customer_identity_id, currency, status, version]
+  CartItem:
+    key: cart_item_id
+    attributes: [cart_id, product_id, variation_id, quantity, verified_unit_price]
+  Promotion:
+    key: promotion_id
+    attributes: [code, eligibility, discount_policy, validity]
+  OrderScope:
+    key: order_scope_id
+    attributes: [customer_identity_id, order_id, verification_level, expires_at]
+  Order:
+    key: order_id
+    attributes: [commerce_order_id, status, payment_status, total, currency]
+  Transaction:
+    key: transaction_id
+    attributes: [order_id, status, provider_reference, idempotency_key]
+  Action:
+    key: action_id
+    attributes: [type, target, arguments, source, risk]
+  Authorization:
+    key: authorization_id
+    attributes: [action_id, decision, scope, expires_at]
+  Escalation:
+    key: escalation_id
+    attributes: [conversation_id, reason, owner, status]
+  AuditEvent:
+    key: audit_event_id
+    attributes: [event_type, actor_type, action_id, correlation_id, evidence]
+  IdempotencyKey:
+    key: key
+    attributes: [operation, request_hash, status, result_reference]

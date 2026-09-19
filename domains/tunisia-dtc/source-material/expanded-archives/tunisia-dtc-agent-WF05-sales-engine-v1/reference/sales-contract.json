@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0",
+  "purpose": "bounded sales orchestration contract",
+  "fields": {
+    "message_id": "string",
+    "conversation_id": "string",
+    "intent": "intent enum from WF-04",
+    "current_stage": "sales stage",
+    "next_stage": "sales stage",
+    "proposed_action": "answer|cart_view|cart_add|cart_remove|cart_update|cart_clear|checkout_start|checkout_confirm",
+    "route": "sales|clarification|support|escalation",
+    "language": "tn|ar|fr|en",
+    "script": "latin|arabic|unknown",
+    "register": "casual|neutral",
+    "retrieval_required": "boolean",
+    "tools_allowed": "boolean",
+    "action_proposal_allowed": "boolean",
+    "execution_allowed": "always false",
+    "needs_clarification": "boolean",
+    "reason": "nullable string"
+  },
+  "rule": "WF-05 proposes business intent and state transition only. WF-10 authorizes actions."
+}

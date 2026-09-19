@@ -1,0 +1,417 @@
+{
+  "name": "WF-06 \u2014 Support Engine",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const i=$json;\nconst required=['message_id','conversation_id','text','intent','identity','state','security'];\nconst missing=required.filter(k=>i[k]===undefined);\nreturn [{json:{...i,input_valid:missing.length===0,missing_fields:missing}}];"
+      },
+      "id": "2",
+      "name": "Validate Support Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.input_valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "Support Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{route:'escalation',reason:'invalid_support_input',safe_to_reply:false,llm_allowed:false,tools_allowed:false}}];"
+      },
+      "id": "4",
+      "name": "Fail Closed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const supported=['shipping','payment','order_status','return_exchange'];\nconst escalated=['complaint','payment_dispute','human_request','safety','security_suspicion'];\nconst intent=$json.intent;\nreturn [{json:{...$json,is_support_intent:supported.includes(intent),is_escalation_intent:escalated.includes(intent)}}];"
+      },
+      "id": "5",
+      "name": "Classify Support Scope",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.is_support_intent}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "6",
+      "name": "Standard Support?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'escalation',tools_allowed:false,llm_allowed:true,reason:'specialist_support_or_escalation_intent'}}];"
+      },
+      "id": "7",
+      "name": "Escalation Support Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -440,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const intent=$json.intent;\nconst identity=$json.identity||{};\nconst level=identity.level||'anonymous';\nconst needsOrderAccess=intent==='order_status'||intent==='return_exchange';\nconst authorizedOrderAccess=['order_verified','high_assurance'].includes(level);\nconst verificationRequired=needsOrderAccess&&!authorizedOrderAccess;\nreturn [{json:{...$json,identity_level:level,needs_order_access:needsOrderAccess,authorized_order_access:authorizedOrderAccess,verification_required:verificationRequired}}];"
+      },
+      "id": "8",
+      "name": "Apply Support Identity Policy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.verification_required}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "9",
+      "name": "Order Verification Required?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'clarification',tools_allowed:false,llm_allowed:true,reason:'order_identity_verification_required',verification_required:true}}];"
+      },
+      "id": "10",
+      "name": "Request Safe Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        40,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const retrievalMap={\n shipping:['shipping_policy','delivery_regions','delivery_estimates'],\n payment:['payment_methods','payment_policy'],\n order_status:['order_status_policy'],\n return_exchange:['return_exchange_policy']\n};\nconst sources=retrievalMap[$json.intent]||[];\nreturn [{json:{...$json,route:'support',retrieval_required:true,retrieval_topics:sources,tools_allowed:$json.authorized_order_access||['shipping','payment'].includes($json.intent),llm_allowed:true,execution_allowed:false}}];"
+      },
+      "id": "11",
+      "name": "Build Support Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        40,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stageMap={\n shipping:'POST_PURCHASE',\n payment:'POST_PURCHASE',\n order_status:'POST_PURCHASE',\n return_exchange:'POST_PURCHASE'\n};\nreturn [{json:{\n message_id:$json.message_id,conversation_id:$json.conversation_id,\n intent:$json.intent,route:$json.route,\n identity_level:$json.identity_level,\n verification_required:$json.verification_required||false,\n retrieval_required:$json.retrieval_required||false,\n retrieval_topics:$json.retrieval_topics||[],\n tools_allowed:$json.tools_allowed||false,\n execution_allowed:false,\n llm_allowed:$json.llm_allowed??true,\n suggested_stage:stageMap[$json.intent]||$json.state?.stage||'POST_PURCHASE',\n reason:$json.reason||null\n}}];"
+      },
+      "id": "12",
+      "name": "Build Support Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const intent=$json.intent;\nconst sensitiveTerms=/(password|otp|one.?time|cvv|cvc|full card|api key|secret|token)/i;\nconst text=String($json.text||'');\nconst asksForSecret=sensitiveTerms.test(text);\nreturn [{json:{...$json,credential_request_detected:asksForSecret,secret_request_must_refuse:asksForSecret}}];"
+      },
+      "id": "13",
+      "name": "Sensitive Request Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.credential_request_detected}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "14",
+      "name": "Credential Request?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        740,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'escalation',tools_allowed:false,execution_allowed:false,llm_allowed:true,reason:'sensitive_credential_request'}}];"
+      },
+      "id": "15",
+      "name": "Safe Sensitive Response Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,contract_version:'1.0.0',support_engine_version:'1.0.0',safe_to_reply:true}}];"
+      },
+      "id": "16",
+      "name": "Finalize Support Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -100
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Support Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Support Input": {
+      "main": [
+        [
+          {
+            "node": "Support Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Support Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Classify Support Scope",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail Closed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Support Scope": {
+      "main": [
+        [
+          {
+            "node": "Standard Support?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Standard Support?": {
+      "main": [
+        [
+          {
+            "node": "Apply Support Identity Policy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Escalation Support Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Support Identity Policy": {
+      "main": [
+        [
+          {
+            "node": "Order Verification Required?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order Verification Required?": {
+      "main": [
+        [
+          {
+            "node": "Request Safe Verification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Support Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Support Plan": {
+      "main": [
+        [
+          {
+            "node": "Build Support Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Support Contract": {
+      "main": [
+        [
+          {
+            "node": "Sensitive Request Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sensitive Request Check": {
+      "main": [
+        [
+          {
+            "node": "Credential Request?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Credential Request?": {
+      "main": [
+        [
+          {
+            "node": "Safe Sensitive Response Route",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Support Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Safe Verification": {
+      "main": [
+        [
+          {
+            "node": "Finalize Support Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Safe Sensitive Response Route": {
+      "main": [
+        [
+          {
+            "node": "Finalize Support Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf06-v1"
+}

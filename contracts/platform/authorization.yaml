@@ -1,0 +1,19 @@
+version: "1"
+name: authorization
+
+states:
+  - REQUESTED
+  - AUTHORIZED
+  - EXECUTION_STARTED
+  - WOOCOMMERCE_MUTATION
+  - VERIFICATION
+  - COMPLETED
+  - REJECTED
+  - RECONCILIATION_REQUIRED
+
+rules:
+  - only_wf10_can_authorize_commerce_execution
+  - only_authorized_branch_can_set_execution_allowed_true
+  - audit_does_not_authorize
+  - llm_does_not_authorize
+  - unknown_external_outcome_requires_reconciliation

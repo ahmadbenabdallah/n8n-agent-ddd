@@ -1,0 +1,28 @@
+version: "1.0"
+ownership:
+  platform_core:
+    source: git
+    update: release
+    editable_in_n8n: false
+  customer_config:
+    source: postgres
+    update: n8n_or_config_ui
+    editable_in_n8n: false
+  customer_extension:
+    source: n8n
+    update: customer_or_authorized_operator
+    editable_in_n8n: true
+  secrets:
+    source: n8n_credentials_or_external_secrets
+    update: customer_or_authorized_operator
+    editable_in_n8n: true
+protected_workflows: [WF-01, WF-10, WF-15, WF-20]
+upgrade_strategy:
+  - "Back up durable state before migration."
+  - "Snapshot extension registry and customer configuration versions."
+  - "Deploy new core into green runtime."
+  - "Validate protected workflow invariants."
+  - "Validate extension compatibility."
+  - "Switch traffic only after health and smoke checks."
+  - "Rollback runtime without rolling back durable business state unless an explicit migration rollback is approved."
+  - "Never overwrite customer-owned extensions with platform core files."

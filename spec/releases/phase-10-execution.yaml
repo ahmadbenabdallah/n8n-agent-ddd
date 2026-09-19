@@ -1,0 +1,26 @@
+release: "0.10.0"
+phase: 10
+execution_mode: staging
+
+domain:
+  id: tunisia-dtc
+  n8n_project: domain-tunisia-dtc
+  commerce_adapter: configurable
+  channel_adapter: configurable
+  knowledge: postgres-pgvector
+
+truth_policy:
+  knowledge: pgvector_kb
+  commerce: configured_commerce_adapter
+  transaction_without_adapter: assisted_commerce_handoff
+  transaction_with_adapter: authorized_live_execution
+
+hard_blocks:
+  - production_credentials_in_staging
+  - missing_wf10_authorization
+  - missing_wf20_allowlist
+  - unverified_external_mutation
+  - failed_idempotency
+  - failed_reconciliation
+  - missing_backup_restore_evidence
+  - missing_rollback_evidence

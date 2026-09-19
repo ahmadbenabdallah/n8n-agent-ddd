@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "fields": {
+    "message_id": "string",
+    "conversation_id": "string",
+    "intent": "shipping|payment|order_status|return_exchange|escalation",
+    "route": "support|clarification|escalation",
+    "identity_level": "anonymous|channel_linked|order_verified|high_assurance",
+    "verification_required": "boolean",
+    "retrieval_required": "boolean",
+    "retrieval_topics": "array",
+    "tools_allowed": "boolean",
+    "execution_allowed": "false",
+    "llm_allowed": "boolean",
+    "suggested_stage": "POST_PURCHASE or current stage",
+    "reason": "nullable string",
+    "safe_to_reply": "boolean"
+  },
+  "rule": "Support engine does not authorize actions or disclose protected transactional data."
+}

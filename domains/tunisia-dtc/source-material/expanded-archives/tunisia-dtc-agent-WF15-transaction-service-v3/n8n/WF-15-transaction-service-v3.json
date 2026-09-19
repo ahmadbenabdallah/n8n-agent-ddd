@@ -1,0 +1,367 @@
+{
+  "name": "WF-15 Transaction Service v3 \u2014 COD Order Creation Boundary",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"operation\": \"create_cod_order\", \"customer_id\": \"<uuid>\", \"channel\": \"facebook\", \"store_id\": \"default\", \"action_id\": \"<stable-id>\", \"customer_confirmation\": true}"
+      },
+      "id": "15t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(x.operation!=='create_cod_order') throw new Error('transaction_invalid_operation');\nif(typeof x.customer_id!=='string'||!x.customer_id.trim()) throw new Error('transaction_missing_customer');\nif(!['facebook','whatsapp','instagram','internal'].includes(x.channel))\n throw new Error('transaction_invalid_channel');\nif(x.customer_confirmation!==true) throw new Error('transaction_confirmation_required');\nif(typeof x.action_id!=='string'||!x.action_id.trim()||x.action_id.length>256)\n throw new Error('transaction_missing_action_id');\nreturn [{json:{...x,store_id:x.store_id||'default'}}];\n"
+      },
+      "id": "15v",
+      "name": "Validate Transaction Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\n// WF-10 must be the actual authorization boundary. This node fails closed\n// if the upstream authorization result is explicitly absent/denied.\nif(x.authorization_result!=='allow')\n throw new Error('transaction_not_authorized_by_wf10');\nreturn [{json:{...x,authorization_asserted:true}}];\n"
+      },
+      "id": "15a",
+      "name": "Authorization Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM public.commerce_idempotency WHERE customer_id=$1 AND action_id=$2 LIMIT 1;",
+        "options": {
+          "queryReplacement": "={{ [$json.customer_id,$json.action_id] }}"
+        }
+      },
+      "id": "15i",
+      "name": "Check Idempotency",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst req=$('Authorization Gate').first().json;\nconst row=$input.first()?.json||{};\nif(row.action_id){\n  return [{json:{\n    idempotent_replay:true,customer_id:req.customer_id,action_id:req.action_id,\n    existing_result:row.result_json||row.response_json||null,\n    existing_status:row.status||null,\n    operation:req.operation\n  }}];\n}\nreturn [{json:{...req,idempotent_replay:false}}];\n"
+      },
+      "id": "15r",
+      "name": "Route Existing Transaction",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_WF20_WORKFLOW_ID"
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "15b",
+      "name": "Fresh Transaction Preflight",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst req=$('Authorization Gate').first().json;\nconst pre=$input.first()?.json||{};\nif(pre.success!==true || pre.verified!==true || pre.commerce_status!=='available')\n throw new Error('transaction_preflight_failed');\nif(!pre.preflight) throw new Error('transaction_missing_preflight');\n\nreturn [{json:{\n operation:'create_cod_order',\n customer_id:req.customer_id,channel:req.channel,store_id:req.store_id,\n action_id:req.action_id,\n customer_confirmation:true,\n payment_method:'cod',\n payment_status:'not_paid',\n preflight:pre.preflight,\n // Order creation must be bounded by WF-20; caller cannot provide\n // arbitrary endpoint, status, price or payment state.\n authorization_scope:'cod_order_create_only'\n}}];\n"
+      },
+      "id": "15c",
+      "name": "Prepare COD Order Creation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_WF20_WORKFLOW_ID"
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "15e",
+      "name": "Execute WF-20 COD Order Creation",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst req=$('Prepare COD Order Creation').first().json;\nconst r=$json;\nif(r.commerce_status==='unavailable')\n throw new Error('commerce_unavailable_during_order_creation');\n\nreturn [{json:{\n success:Boolean(r.success),\n customer_id:req.customer_id,channel:req.channel,store_id:req.store_id,\n action_id:req.action_id,commerce_status:r.commerce_status||'available',\n verified:Boolean(r.verified && r.success),\n order:r.order||null,error:r.error||null\n}}];\n"
+      },
+      "id": "15n",
+      "name": "Normalize Order Creation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_WF20_WORKFLOW_ID"
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "15g",
+      "name": "Post-Create Get & Verify",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst create=$('Normalize Order Creation').first().json;\nconst verify=$json;\nif(create.success!==true || create.verified!==true) throw new Error('order_creation_not_verified');\nif(verify.success!==true || verify.verified!==true) throw new Error('post_create_verification_failed');\nconst o=verify.order||create.order;\nif(!o || o.id===undefined) throw new Error('missing_verified_order_id');\nif(o.payment_method && o.payment_method!=='cod') throw new Error('unexpected_payment_method');\nif(o.payment_status && o.payment_status!=='not_paid')\n throw new Error('cod_order_must_not_be_claimed_paid');\n\nreturn [{json:{\n success:true,operation:'create_cod_order',customer_id:create.customer_id,\n channel:create.channel,action_id:create.action_id,\n commerce_status:'available',verified:true,\n order:{\n   id:o.id,status:o.status||null,payment_method:'cod',\n   payment_status:o.payment_status||'not_paid',\n   total:o.total??null,currency:o.currency||null\n },\n message_state:'order_created_not_paid'\n}}];\n"
+      },
+      "id": "15v2",
+      "name": "Verify COD Semantics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nINSERT INTO public.commerce_idempotency\n(customer_id,action_id,operation,status,result_json,created_at,updated_at)\nVALUES($1,$2,$3,'succeeded',$4::jsonb,now(),now())\nON CONFLICT(customer_id,action_id)\nDO UPDATE SET status='succeeded',result_json=excluded.result_json,updated_at=now()\nRETURNING *;\n",
+        "options": {
+          "queryReplacement": "={{ [$json.customer_id,$json.action_id,$json.operation,JSON.stringify($json)] }}"
+        }
+      },
+      "id": "15p",
+      "name": "Persist Idempotency Result",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$('Verify COD Semantics').first().json;\nreturn [{json:x}];\n"
+      },
+      "id": "15o",
+      "name": "Return Verified Transaction",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Transaction Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Transaction Request": {
+      "main": [
+        [
+          {
+            "node": "Authorization Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorization Gate": {
+      "main": [
+        [
+          {
+            "node": "Check Idempotency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Idempotency": {
+      "main": [
+        [
+          {
+            "node": "Route Existing Transaction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Existing Transaction": {
+      "main": [
+        [
+          {
+            "node": "Fresh Transaction Preflight",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fresh Transaction Preflight": {
+      "main": [
+        [
+          {
+            "node": "Prepare COD Order Creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare COD Order Creation": {
+      "main": [
+        [
+          {
+            "node": "Execute WF-20 COD Order Creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute WF-20 COD Order Creation": {
+      "main": [
+        [
+          {
+            "node": "Normalize Order Creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Order Creation": {
+      "main": [
+        [
+          {
+            "node": "Post-Create Get & Verify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post-Create Get & Verify": {
+      "main": [
+        [
+          {
+            "node": "Verify COD Semantics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify COD Semantics": {
+      "main": [
+        [
+          {
+            "node": "Persist Idempotency Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Idempotency Result": {
+      "main": [
+        [
+          {
+            "node": "Return Verified Transaction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "REPLACE_ON_IMPORT",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "dtc-agent"
+    },
+    {
+      "name": "transaction"
+    },
+    {
+      "name": "cod"
+    },
+    {
+      "name": "woocommerce"
+    },
+    {
+      "name": "security"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "name": "tunisia-dtc-agent-WF20-woocommerce-adapter-v2",
+  "version": "2.0.0",
+  "primary_integration": "n8n native WooCommerce node",
+  "fallback": "HTTP Request only for explicit gaps",
+  "trigger": "n8n WooCommerce Trigger",
+  "target": {
+    "commerce": "WooCommerce",
+    "payment": "COD",
+    "shipping": "manual",
+    "n8n": "self-hosted",
+    "channel": "Messenger"
+  },
+  "files": [
+    "n8n/WF-20-woocommerce-native-adapter-v2.json",
+    "n8n/WF-20B-woocommerce-trigger.json",
+    "database/commerce-idempotency.sql",
+    "tests/test-matrix.md",
+    "docs/05-trigger-usage.md",
+    "docs/06-production-gate.md",
+    "docs/03-security.md",
+    "docs/07-known-limitations.md",
+    "docs/02-contracts.md",
+    "docs/04-verification-and-retry.md",
+    "docs/README.md",
+    "docs/08-wiring-checklist.md",
+    "docs/01-setup.md"
+  ],
+  "verified_web_sources": [
+    "turn0search1",
+    "turn0search0",
+    "turn0search2"
+  ]
+}

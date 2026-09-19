@@ -1,0 +1,37 @@
+{
+  "package": "Tunisia DTC Agent System FINAL v4 \u2014 WF-06 Support Engine",
+  "version": "v4",
+  "workflow": "WF-06",
+  "status": "production-spec",
+  "files": [
+    "README.md",
+    "01-WF-06-SUPPORT-ENGINE-SPEC.md",
+    "02-WF-06-SUPPORT-INTENT-MATRIX.md",
+    "03-WF-06-IDENTITY-PRIVACY.md",
+    "04-WF-06-LLM-CONTRACT.md",
+    "05-WF-06-N8N-IMPLEMENTATION.md",
+    "06-WF-06-SECURITY-OWASP-TESTS.md",
+    "07-WF-06-E2E-FLOWS.md",
+    "08-WF-06-PRODUCTION-CHECKLIST.md"
+  ],
+  "dependencies": [
+    "WF-02",
+    "WF-03",
+    "WF-04",
+    "WF-07",
+    "WF-08",
+    "WF-10",
+    "WF-16",
+    "WF-17",
+    "WF-20"
+  ],
+  "invariants": [
+    "WF-06 does not authorize protected actions",
+    "LLM output is untrusted",
+    "Order-specific support requires verified order scope",
+    "Payment disputes escalate",
+    "Human ownership blocks conflicting automation",
+    "Live operational facts must be authoritative",
+    "Public channels cannot expose private customer data"
+  ]
+}

@@ -1,0 +1,99 @@
+version: "0.15.1"
+name: phase-15.1-21-workflow-execution
+status: evidence-foundation
+
+purpose: >
+  Execute and verify the canonical 21-workflow Tunisia DTC runtime set against
+  a real staging n8n instance without claiming execution when the instance is
+  unavailable.
+
+prerequisites:
+  - "0.15.0"
+
+canonical_workflows:
+  - {key: WF-00, name: Inbound Gateway}
+  - {key: WF-01, name: Security Gate}
+  - {key: WF-02, name: Customer Identity}
+  - {key: WF-03, name: Conversation State}
+  - {key: WF-04, name: Intent Router}
+  - {key: WF-05, name: Sales Engine}
+  - {key: WF-06, name: Support Engine}
+  - {key: WF-07, name: Order Service}
+  - {key: WF-08, name: Escalation Engine}
+  - {key: WF-09, name: LLM Reasoning}
+  - {key: WF-10, name: Action Authorization}
+  - {key: WF-11, name: Product Service}
+  - {key: WF-12, name: Cart Service}
+  - {key: WF-13, name: Promotion Service}
+  - {key: WF-14, name: Checkout Service}
+  - {key: WF-15, name: Transaction/Payment}
+  - {key: WF-16, name: Response Renderer}
+  - {key: WF-17, name: Audit & Analytics}
+  - {key: WF-18, name: Knowledge Base Ingestion}
+  - {key: WF-19, name: Maintenance & Monitoring}
+  - {key: WF-20, name: WooCommerce Gateway}
+
+identity:
+  canonical_key: domain_id/workflow_key
+  example: tunisia-dtc/WF-00
+  duplicate_keys: forbidden
+  missing_keys: fail
+
+protected_workflows:
+  - WF-01
+  - WF-10
+  - WF-15
+  - WF-20
+
+execution_modes:
+  inventory_only:
+    commerce_mutations: forbidden
+    purpose: verify presence, metadata, and activation state
+  smoke:
+    commerce_mutations: disabled
+    purpose: verify trigger/routing contracts without external mutation
+  controlled:
+    commerce_mutations: explicitly gated
+    required_authorization: WF-10
+    required_adapter: test_adapter
+
+inventory_gates:
+  expected_count: 21
+  exact_set: required
+  duplicate_set: forbidden
+  protected_set: required
+  project_binding: required
+
+execution_gates:
+  each_workflow:
+    trigger_contract: required
+    response_contract: required
+    error_path: required
+    audit_path: required
+  protected:
+    activation_change: release_gated
+    direct_execution: controlled
+  commerce:
+    WF-10_before_WF-20: required
+    direct_WF-20_from_LLM: forbidden
+
+evidence:
+  directory: runtime/evidence/phase-15.1
+  required:
+    - inventory.json
+    - project.json
+    - protected-set.json
+    - execution-matrix.json
+    - evidence-summary.json
+  prohibited:
+    - credentials
+    - n8n_encryption_key
+    - customer_pii
+    - payment_data
+    - authorization_tokens
+
+status:
+  live_inventory: NOT_EXECUTED
+  live_workflow_execution: NOT_EXECUTED
+  live_protected_set_verification: NOT_EXECUTED
+  live_execution_matrix: NOT_EXECUTED

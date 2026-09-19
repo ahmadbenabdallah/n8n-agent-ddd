@@ -1,0 +1,15 @@
+version: "1"
+name: identity
+
+levels:
+  - ANONYMOUS
+  - CHANNEL-LINKED
+  - COMMERCE-MATCHED
+  - ORDER-VERIFIED
+  - HIGH-ASSURANCE
+
+rules:
+  - llm_cannot_promote_identity
+  - identity_scope_is_explicit
+  - order_scope_is_narrower_than_customer_identity
+  - sensitive_disclosure_requires_verified_scope

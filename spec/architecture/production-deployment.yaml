@@ -1,0 +1,26 @@
+version: 1
+strategy: blue_green
+steps:
+  - id: preflight
+  - id: database_compatibility
+  - id: deploy_green
+  - id: health_check
+  - id: smoke_test
+  - id: approval
+  - id: switch_traffic
+  - id: drain_blue
+  - id: verify
+  - id: record_release
+gates:
+  preflight:
+    required: true
+  phase10:
+    required: true
+  health:
+    required: true
+  smoke:
+    required: true
+  approval:
+    required: true
+  rollback:
+    required: true

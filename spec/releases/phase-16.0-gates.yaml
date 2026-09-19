@@ -1,0 +1,29 @@
+phase: "0.16.0"
+gates:
+  STAGING:
+    requirement: "Real staging runtime is reachable and healthy."
+    status: "NOT_EXECUTED"
+  CONFIG:
+    requirement: "Runtime configuration and secret injection are validated without exposing secrets."
+    status: "NOT_EXECUTED"
+  WORKFLOWS:
+    requirement: "Canonical WF-00..WF-20 are synchronized and verified."
+    status: "NOT_EXECUTED"
+  EVIDENCE:
+    requirement: "Phase 15 live evidence suites execute against the real staging runtime."
+    status: "NOT_EXECUTED"
+  CERTIFICATION:
+    requirement: "Phase 15.9 certification state is CERTIFIED from captured evidence."
+    status: "NOT_EXECUTED"
+  PRODUCTION_PREFLIGHT:
+    requirement: "Production deployment preflight passes without changing production traffic."
+    status: "NOT_EXECUTED"
+  APPROVAL:
+    requirement: "Explicit production release approval exists."
+    status: "NOT_EXECUTED"
+
+gate_rule:
+  - "NOT_EXECUTED is the default."
+  - "PASS requires runtime evidence."
+  - "A local contract test cannot satisfy a live operational gate."
+  - "One failed mandatory gate blocks progression."

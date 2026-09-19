@@ -1,0 +1,23 @@
+version: "0.13.1"
+adapters:
+  local:
+    files:
+      - infrastructure/docker/docker-compose.local.yml
+  vps:
+    files:
+      - infrastructure/docker/docker-compose.n8n-only.yml
+      - infrastructure/environments/vps/.env.example
+  railway:
+    files:
+      - infrastructure/providers/railway/README.md
+      - infrastructure/providers/railway/railway.env.example
+contract:
+  all_adapters_must_provide:
+    - n8n
+    - persistent_n8n_data
+    - configured_database
+    - secret_injection
+    - health_check
+    - HTTPS_strategy
+    - backup_strategy
+    - rollback_strategy

@@ -1,0 +1,51 @@
+{
+  "version": "1.0",
+  "input": {
+    "monitoring_config": {
+      "kb_stale_hours": 72,
+      "workflows": [],
+      "dependencies": []
+    },
+    "health_sources": {
+      "n8n": {
+        "healthy": true
+      },
+      "meta": {
+        "healthy": true
+      },
+      "openai": {
+        "healthy": true
+      },
+      "supabase": {
+        "healthy": true
+      },
+      "commerce": {
+        "healthy": true
+      },
+      "executions": {
+        "failures_last_hour": 0,
+        "stuck": 0,
+        "queue_depth": 0
+      },
+      "kb": {
+        "hours_since_update": 12,
+        "quarantined_documents": 0,
+        "failed_ingestions": 0
+      },
+      "anomalies": {
+        "duplicate_actions": 0,
+        "velocity_blocks": 0,
+        "security_incidents": 0,
+        "renderer_regenerations": 0,
+        "transaction_verification_failures": 0
+      }
+    }
+  },
+  "output": {
+    "status": "healthy|alert",
+    "severity": "ok|warning|critical",
+    "alerts": [],
+    "requires_human": false
+  },
+  "principle": "Observational workflow; must not modify authorization or commerce state."
+}

@@ -1,0 +1,15 @@
+version: "1"
+name: domain-event
+
+fields:
+  - event_id
+  - event_type
+  - aggregate_id
+  - occurred_at
+  - schema_version
+  - correlation_id
+
+rules:
+  - events_are_immutable
+  - events_are_versioned
+  - consumers_must_be_idempotent

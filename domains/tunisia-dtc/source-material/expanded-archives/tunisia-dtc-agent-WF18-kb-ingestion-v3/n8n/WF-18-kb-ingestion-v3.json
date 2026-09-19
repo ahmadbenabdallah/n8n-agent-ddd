@@ -1,0 +1,223 @@
+{
+  "name": "WF-18 KB Ingestion v3 \u2014 Versioned RAG Corpus",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"operation\": \"ingest_document\", \"source_uri\": \"<approved-source>\", \"source_type\": \"product\", \"language\": \"fr\", \"version\": \"2026-09-17\", \"content\": \"<approved business content>\", \"source_id\": \"<stable-id>\"}"
+      },
+      "id": "18t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(!['ingest_document','reindex_source','disable_source'].includes(x.operation))\n throw new Error('kb_invalid_operation');\nif(typeof x.source_id!=='string'||!x.source_id.trim()) throw new Error('kb_missing_source_id');\nif(typeof x.source_type!=='string'||!x.source_type.trim()) throw new Error('kb_missing_source_type');\nif(x.operation==='ingest_document' && typeof x.content!=='string')\n throw new Error('kb_missing_content');\nif(x.content && x.content.length>200000) throw new Error('kb_content_too_large');\nreturn [{json:{...x,ingestion_id:x.ingestion_id||`kb_${Date.now()}_${Math.random().toString(36).slice(2,10)}`}}];\n"
+      },
+      "id": "18v",
+      "name": "Validate KB Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nconst text=String(x.content||'');\nconst suspicious=[\n /ignore\\s+(all|previous)\\s+instructions/i,\n /system\\s+prompt/i,\n /developer\\s+message/i,\n /reveal\\s+(the\\s+)?secret/i,\n /api[_-]?key/i,\n /access[_-]?token/i,\n /execute\\s+(this|the)\\s+tool/i,\n /override\\s+(security|authorization)/i\n];\nconst flags=[];\nfor(const re of suspicious) if(re.test(text)) flags.push(re.source);\nreturn [{json:{\n ...x,\n security_flags:flags,\n ingestion_status:flags.length?'quarantine':'approved_pending_validation'\n}}];\n"
+      },
+      "id": "18s",
+      "name": "Security Scan Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(x.ingestion_status==='quarantine'){\n return [{json:{...x,accepted:false,reason:'security_review_required'}}];\n}\nconst dynamicTerms=[\n 'current stock','live stock','current price','live price','order status',\n 'payment status','checkout url','active promotion eligibility','cart token',\n 'nonce','api key'\n];\nconst lower=String(x.content||'').toLowerCase();\nconst dynamic_hits=dynamicTerms.filter(t=>lower.includes(t));\nreturn [{json:{\n ...x,accepted:true,\n dynamic_truth_warnings:dynamic_hits,\n // Dynamic commerce facts must never be treated as KB-authoritative.\n source_role:dynamic_hits.length?'informational_only':'approved_business_knowledge'\n}}];\n"
+      },
+      "id": "18c",
+      "name": "Classify & Sanitize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nINSERT INTO public.kb_documents\n(source_id,source_type,source_uri,language,version,status,content,security_flags,source_role,created_at)\nVALUES($1,$2,$3,$4,$5,'active',$6::text,$7::jsonb,$8,now())\nON CONFLICT(source_id,version) DO UPDATE SET\nstatus=excluded.status,content=excluded.content,security_flags=excluded.security_flags,\nsource_role=excluded.source_role\nRETURNING id,source_id,version,status,source_role;\n",
+        "options": {
+          "queryReplacement": "={{ [$json.source_id,$json.source_type,$json.source_uri||null,$json.language||null,String($json.version||''),$json.content,JSON.stringify($json.security_flags||[]),$json.source_role||'approved_business_knowledge'] }}"
+        }
+      },
+      "id": "18e",
+      "name": "Create KB Document Version",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$('Classify & Sanitize').first().json;\nif(!x.accepted) return [{json:{...x,chunk_count:0}}];\nconst text=String(x.content||'').replace(/\\s+/g,' ').trim();\nconst size=1200, overlap=150, chunks=[];\nlet start=0;\nwhile(start<text.length){\n const end=Math.min(text.length,start+size);\n chunks.push(text.slice(start,end));\n if(end===text.length) break;\n start=end-overlap;\n}\nreturn [{json:{...x,chunks,chunk_count:chunks.length}}];\n"
+      },
+      "id": "18x",
+      "name": "Chunk Document",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nINSERT INTO public.kb_chunks(document_id,chunk_index,content,metadata)\nSELECT $1, row_number() over () - 1, value,\n       jsonb_build_object('source_id',$2,'version',$3,'source_type',$4,'source_role',$5)\nFROM jsonb_array_elements_text($6::jsonb) AS value\nON CONFLICT(document_id,chunk_index) DO UPDATE SET content=excluded.content,metadata=excluded.metadata;\n",
+        "options": {
+          "queryReplacement": "={{ [$json.id, $json.source_id, String($json.version||''), $json.source_type, $json.source_role, JSON.stringify($json.chunks||[])] }}"
+        }
+      },
+      "id": "18i",
+      "name": "Insert KB Chunks",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$('Classify & Sanitize').first().json;\nconst db=$('Create KB Document Version').first().json||{};\nif(!x.accepted) return [{json:{\n accepted:false,status:'quarantined',source_id:x.source_id,\n ingestion_id:x.ingestion_id,security_flags:x.security_flags||[]\n}}];\nreturn [{json:{\n accepted:true,status:'active',source_id:x.source_id,version:String(x.version||''),\n ingestion_id:x.ingestion_id,chunk_count:x.chunk_count||0,\n source_role:x.source_role,\n dynamic_truth_warnings:x.dynamic_truth_warnings||[]\n}}];\n"
+      },
+      "id": "18o",
+      "name": "Return Ingestion Receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate KB Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate KB Input": {
+      "main": [
+        [
+          {
+            "node": "Security Scan Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security Scan Content": {
+      "main": [
+        [
+          {
+            "node": "Classify & Sanitize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify & Sanitize": {
+      "main": [
+        [
+          {
+            "node": "Create KB Document Version",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create KB Document Version": {
+      "main": [
+        [
+          {
+            "node": "Chunk Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk Document": {
+      "main": [
+        [
+          {
+            "node": "Insert KB Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert KB Chunks": {
+      "main": [
+        [
+          {
+            "node": "Return Ingestion Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "REPLACE_ON_IMPORT",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "dtc-agent"
+    },
+    {
+      "name": "kb"
+    },
+    {
+      "name": "rag"
+    },
+    {
+      "name": "security"
+    },
+    {
+      "name": "supabase"
+    }
+  ]
+}

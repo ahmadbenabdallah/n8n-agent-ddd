@@ -1,2 +1,28 @@
-.DS_Store
-Thumbs.db
+node_modules/
+.pnpm-store/
+.env
+.env.*
+!.env.example
+dist/
+coverage/
+*.log
+
+docs/
+# ai-sdlc: local dev-lifecycle tooling, not part of the runtime
+.ai-sdlc/
+.worktrees/
+
+# ai-sdlc:runtime-gitignore
+.ai-sdlc/state.db
+.ai-sdlc/state/
+.ai-sdlc/audit.jsonl
+CLAUDE.local.md
+.mcp.json
+.cursor/mcp.json
+.vscode/mcp.json
+.github/workflows/ai-sdlc-gate.yml
+.github/workflows/ai-sdlc-review.yml
+.github/workflows/auto-enable-auto-merge.yml
+.github/workflows/dor-ingress.yml
+.github/workflows/verify-attestation.yml
+.claude/settings.local.json

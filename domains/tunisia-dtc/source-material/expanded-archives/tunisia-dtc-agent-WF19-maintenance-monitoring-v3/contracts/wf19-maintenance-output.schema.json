@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-19 Maintenance Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "operation",
+    "scope",
+    "operational_state"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "operation": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "operational_state": {
+      "type": "string"
+    },
+    "failed_count": {
+      "type": "integer"
+    },
+    "pending_count": {
+      "type": "integer"
+    },
+    "results": {
+      "type": "array"
+    }
+  }
+}

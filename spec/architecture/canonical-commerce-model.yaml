@@ -1,0 +1,49 @@
+version: "2026.09.10"
+
+canonical_entities:
+  Product:
+    id: ProductId
+    title: string
+    description: string
+    status: enum
+    variants: Variant[]
+  Variant:
+    id: VariantId
+    product_id: ProductId
+    attributes: map
+    price: Money
+    currency: Currency
+    inventory: Quantity
+  Cart:
+    id: CartId
+    customer_id: CustomerId
+    items: CartItem[]
+    totals: Money
+    currency: Currency
+  CartItem:
+    variant_id: VariantId
+    quantity: integer
+    unit_price: Money
+  Order:
+    id: OrderId
+    customer_id: CustomerId
+    items: OrderItem[]
+    totals: Money
+    currency: Currency
+    status: OrderStatus
+    payment_status: PaymentStatus
+  OrderItem:
+    variant_id: VariantId
+    quantity: integer
+    unit_price: Money
+  Promotion:
+    id: PromotionId
+    code: string
+    discount: MoneyOrPercentage
+    eligibility: PolicyReference
+
+rules:
+  - external IDs are stored as provider references, never as domain identity
+  - money is represented as a value object, never a floating-point primitive
+  - provider-specific fields live in adapter mappings
+  - unknown provider fields are not allowed to leak into domain contracts

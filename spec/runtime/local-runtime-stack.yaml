@@ -1,0 +1,18 @@
+version: "0.14.2"
+name: local-runtime-stack
+services:
+  postgres:
+    purpose: durable_domain_and_n8n_state
+    persistence: named_volume
+    public: false
+  n8n:
+    purpose: orchestration_and_operator_surface
+    persistence: /home/node/.n8n
+    public_editor: false_by_default
+    health: /healthz/readiness
+network:
+  name: n8n-agent-ddd
+  default: private
+access:
+  local: localhost
+  remote_admin: approved_private_access

@@ -1,0 +1,22 @@
+version: "2026.09.10"
+commands:
+  preflight: pnpm staging:preflight
+  workflows: pnpm readiness:workflows
+  contracts: pnpm readiness:contracts
+  smoke: pnpm staging:smoke
+  evidence_run: ./scripts/readiness/create-run.sh
+  evaluate: pnpm readiness:evaluate
+
+evidence_gate_mapping:
+  INT: "integration suite"
+  SEC: "security suite"
+  E2E: "e2e suite"
+  IDEMP: "concurrency/idempotency suite"
+  RECON: "failure/reconciliation suite"
+  RT: "red-team suite"
+  LOAD: "load test"
+  DR: "backup/restore suite"
+  BG: "blue/green rollback suite"
+  DRIFT: "drift suite"
+  ARCH: "architecture approval"
+  SECURITY: "security approval"

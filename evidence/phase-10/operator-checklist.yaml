@@ -1,0 +1,22 @@
+release: "0.10.0"
+environment: staging
+required:
+  infrastructure:
+    - n8n
+    - postgres_or_supabase
+    - redis_if_queue_mode
+  integrations:
+    - selected_channel
+    - selected_commerce_adapter_if_required
+    - llm
+  controls:
+    - secrets
+    - tls
+    - logging
+    - backups
+  data:
+    - synthetic_customer
+    - synthetic_products
+    - synthetic_orders
+    - isolated_kb_namespace
+status: NOT_EXECUTED

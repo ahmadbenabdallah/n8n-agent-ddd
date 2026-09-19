@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tunisia DTC Agent LLM Output v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "response",
+    "language",
+    "script",
+    "register",
+    "intent",
+    "decision",
+    "escalation",
+    "actions",
+    "citations",
+    "state_suggestion"
+  ],
+  "properties": {
+    "response": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "language": {
+      "enum": [
+        "tn",
+        "ar",
+        "fr",
+        "en",
+        "mixed"
+      ]
+    },
+    "script": {
+      "enum": [
+        "latin",
+        "arabic",
+        "mixed"
+      ]
+    },
+    "register": {
+      "enum": [
+        "casual",
+        "neutral",
+        "formal"
+      ]
+    },
+    "intent": {
+      "enum": [
+        "product_discovery",
+        "product_question",
+        "comparison",
+        "pricing",
+        "promotion",
+        "availability",
+        "shipping",
+        "payment",
+        "cart_view",
+        "cart_add",
+        "cart_remove",
+        "cart_update",
+        "cart_clear",
+        "checkout_start",
+        "checkout_confirm",
+        "order_status",
+        "return_exchange",
+        "complaint",
+        "payment_dispute",
+        "human_request",
+        "safety",
+        "security_suspicion",
+        "off_topic"
+      ]
+    },
+    "decision": {
+      "enum": [
+        "answer",
+        "clarification",
+        "escalation",
+        "proposed_action"
+      ]
+    },
+    "escalation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "reason"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "idempotency_key",
+          "type",
+          "params"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,80}$"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._:-]{8,160}$"
+          },
+          "type": {
+            "enum": [
+              "product.search",
+              "product.get",
+              "cart.view",
+              "cart.add",
+              "cart.update",
+              "cart.remove",
+              "cart.clear",
+              "promotion.validate",
+              "checkout.preflight",
+              "checkout.create",
+              "order.get",
+              "order.create",
+              "order.update",
+              "order.cancel",
+              "transaction.reconcile",
+              "human.request"
+            ]
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "citations": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "claim"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string"
+          },
+          "claim": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      }
+    },
+    "state_suggestion": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "intent": {
+          "type": "string"
+        },
+        "sales_stage": {
+          "type": "string"
+        },
+        "next_step": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+version: 1
+purpose: "Executable policy for the Phase 12 observe-classify-decide-act-verify-audit-learn loop."
+loop:
+  order: [observe, classify, decide, act, verify, audit, learn]
+  invariant: "No operational action can grant business authorization."
+classification:
+  healthy: none
+  transient: bounded_retry
+  degraded: alert_and_reconcile
+  critical: freeze_and_escalate
+  unknown_external_outcome: reconcile_before_retry
+blocking_conditions:
+  - human_owner_active
+  - automation_frozen
+  - critical_integrity_failure
+commerce_safety:
+  - operational_automation_must_not_set_execution_allowed
+  - operational_automation_must_not_change_price
+  - operational_automation_must_not_change_stock
+  - operational_automation_must_not_change_payment_status
+  - unknown_commerce_outcome_requires_reconciliation
+retry:
+  max_attempts: 3
+  backoff: exponential
+  max_backoff_ms: 60000
+incident_states: [OPEN, ACKNOWLEDGED, MITIGATING, RESOLVED, ESCALATED, FROZEN]
+cost_budget:
+  warning_ratio: 0.8
+  hard_stop_ratio: 1.0
+  hard_stop_action: alert_and_freeze_new_autonomous_llm_work

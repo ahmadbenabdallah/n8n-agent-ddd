@@ -1,0 +1,96 @@
+{
+  "name": "WF-11 \u2014 Product Service",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const x=$json;if(!x.correlation_id)throw new Error('correlation_id_missing');return items;"
+      },
+      "id": "validate",
+      "name": "Validate Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,workflow_id:'WF-11',workflow_version:'1.0.0',contract_valid:true}}];"
+      },
+      "id": "policy",
+      "name": "Apply Domain Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;"
+      },
+      "id": "result",
+      "name": "Emit Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Validate Contract": {
+      "main": [
+        [
+          {
+            "node": "Apply Domain Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Domain Contract": {
+      "main": [
+        [
+          {
+            "node": "Emit Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "n8n-agent-ddd": {
+      "workflow_id": "WF-11",
+      "version": "1.0.0",
+      "phase": 8,
+      "implementation_status": "contract-executable-foundation",
+      "credentials": "externalized_to_n8n_runtime",
+      "phase_9": "staging-validation-target"
+    }
+  },
+  "tags": [
+    {
+      "name": "n8n-agent-ddd"
+    },
+    {
+      "name": "phase-8"
+    },
+    {
+      "name": "WF-11"
+    },
+    {
+      "name": "phase-9"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+version: "0.13.4"
+server_url: "${N8N_BASE_URL}/mcp-server/http"
+auth: deployment_injected
+client_roles:
+  - claude_code
+  - codex
+  - harness
+required_skill: using-n8n-skills-official
+policy:
+  workflow_management: allowed_by_project_policy
+  commerce_authorization: forbidden
+  protected_workflows: release_controlled

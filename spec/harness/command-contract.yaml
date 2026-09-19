@@ -1,0 +1,23 @@
+version: "0.17.0"
+commands:
+  - init
+  - doctor
+  - install
+  - configure
+  - develop
+  - plan
+  - test
+  - security
+  - validate
+  - deploy
+  - upgrade
+  - rollback
+  - status
+  - run
+
+rules:
+  - "Commands must be deterministic where possible."
+  - "Commands must emit machine-readable status."
+  - "Production deploy is gate-controlled."
+  - "Rollback requires a known-good target."
+  - "Secrets must not be printed."

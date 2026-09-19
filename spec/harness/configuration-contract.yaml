@@ -1,0 +1,11 @@
+configuration:
+  command: "harness configure"
+  sources:
+    infrastructure: "environment/provider"
+    application: "durable configuration"
+    secrets: "deployment secret injection"
+  invariants:
+    persistent_n8n_encryption_key: true
+    secrets_not_committed: true
+    secrets_not_logged: true
+    provider_neutral: true

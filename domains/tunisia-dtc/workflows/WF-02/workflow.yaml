@@ -1,0 +1,31 @@
+workflow:
+  id: WF-02
+  name: Customer Identity
+  bounded_context: identity
+  version: 1.0.0
+  purpose: Resolve channel identity and commerce linkage using the identity ladder.
+  dependencies:
+  - WF-03
+  security: LLM cannot promote identity assurance.
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Supabase; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown external
+    outcomes
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml
+  - contracts/platform/action.yaml

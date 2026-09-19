@@ -1,0 +1,149 @@
+{
+  "name": "WF-20B \u2014 WooCommerce Event Trigger",
+  "nodes": [
+    {
+      "parameters": {
+        "events": [
+          "order.created",
+          "order.updated",
+          "order.deleted",
+          "product.created",
+          "product.updated",
+          "product.deleted"
+        ]
+      },
+      "id": "7c5470da3af663ee",
+      "name": "WooCommerce Trigger",
+      "type": "n8n-nodes-base.wooCommerceTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json||{};return [{json:{event_type:x.event||x.topic||'woocommerce.event',resource:x.id?{id:x.id}:null,received_at:new Date().toISOString(),source:'woocommerce_trigger'}}];"
+      },
+      "id": "d970d8cd3639c3ea",
+      "name": "Normalize Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.event_type}}",
+                    "operation": "contains",
+                    "value2": "order."
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.event_type}}",
+                    "operation": "contains",
+                    "value2": "product."
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "id": "a64a63404a549156",
+      "name": "Event Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{route:'order_event',...$json}}];"
+      },
+      "id": "07c7071ed3b50df2",
+      "name": "Order Event \u2192 Audit / State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        760,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{route:'product_event',...$json}}];"
+      },
+      "id": "70ce105b3366ba12",
+      "name": "Product Event \u2192 KB Freshness",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        760,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "WooCommerce Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Event": {
+      "main": [
+        [
+          {
+            "node": "Event Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Event Router": {
+      "main": [
+        [
+          {
+            "node": "Order Event \u2192 Audit / State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Product Event \u2192 KB Freshness",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

@@ -1,0 +1,17 @@
+version: "1"
+name: workflow-contract
+
+required:
+  - workflow_id
+  - workflow_version
+  - domain
+  - inputs
+  - outputs
+  - dependencies
+  - security_boundary
+
+rules:
+  - workflow_source_is_git
+  - workflow_version_is_immutable_after_release
+  - privileged_workflows_require_explicit_boundary
+  - inputs_are_untrusted_until_validated

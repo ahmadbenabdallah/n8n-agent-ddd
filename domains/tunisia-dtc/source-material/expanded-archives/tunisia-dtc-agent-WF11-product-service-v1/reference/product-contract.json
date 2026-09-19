@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "fields": {
+    "message_id": "string",
+    "conversation_id": "string",
+    "intent": "product intent",
+    "retrieval_query": "bounded object",
+    "retrieval_valid": "boolean",
+    "retrieval_count": "number",
+    "verified_product_facts": "array",
+    "live_lookup_required": "boolean",
+    "tools_allowed": "boolean",
+    "execution_allowed": false,
+    "customer_text_is_untrusted": true
+  },
+  "rule": "Static KB facts and live transactional facts must remain distinguishable."
+}

@@ -1,0 +1,195 @@
+{
+  "name": "WF-19 Maintenance & Monitoring v3 \u2014 Operations Control",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"operation\": \"health_check\", \"scope\": \"all\", \"run_id\": \"<run-id>\"}"
+      },
+      "id": "19t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(!['health_check','reconcile','cleanup','freshness_check','security_check'].includes(x.operation))\n throw new Error('maintenance_invalid_operation');\nif(!['all','commerce','database','kb','security','workflows'].includes(x.scope||'all'))\n throw new Error('maintenance_invalid_scope');\nreturn [{json:{...x,scope:x.scope||'all',run_id:x.run_id||`maint_${Date.now()}`}}];\n"
+      },
+      "id": "19v",
+      "name": "Validate Maintenance Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nconst checks=[];\nif(x.scope==='all'||x.scope==='commerce') checks.push({check:'woocommerce_gateway',operation:'health'});\nif(x.scope==='all'||x.scope==='database') checks.push({check:'supabase_database',operation:'db_health'});\nif(x.scope==='all'||x.scope==='kb') checks.push({check:'kb_freshness',operation:'freshness_check'});\nif(x.scope==='all'||x.scope==='security') checks.push({check:'security_events',operation:'security_check'});\nif(x.scope==='all'||x.scope==='workflows') checks.push({check:'workflow_failures',operation:'reconcile'});\nreturn [{json:{...x,checks}}];\n"
+      },
+      "id": "19h",
+      "name": "Build Health Checks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\n// Integration placeholder: actual probes are wired to WF-20, Supabase and\n// n8n execution APIs in the deployment environment.\nconst results=x.checks.map(c=>({\n check:c.check,status:'requires_environment_probe',\n operation:c.operation\n}));\nreturn [{json:{...x,results}}];\n"
+      },
+      "id": "19r",
+      "name": "Run Bounded Health Probes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nconst failed=x.results.filter(r=>r.status==='failed');\nconst pending=x.results.filter(r=>r.status==='requires_environment_probe');\nlet state=failed.length?'degraded':pending.length?'pending':'healthy';\nreturn [{json:{...x,operational_state:state,failed_count:failed.length,pending_count:pending.length}}];\n"
+      },
+      "id": "19c",
+      "name": "Classify Operational State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nINSERT INTO public.agent_maintenance_runs\n(run_id,operation,scope,operational_state,results,created_at)\nVALUES($1,$2,$3,$4,$5::jsonb,now())\nON CONFLICT(run_id) DO UPDATE SET operational_state=excluded.operational_state,\nresults=excluded.results\nRETURNING run_id,operational_state;\n",
+        "options": {
+          "queryReplacement": "={{ [$json.run_id,$json.operation,$json.scope,$json.operational_state,JSON.stringify($json.results||[])] }}"
+        }
+      },
+      "id": "19a",
+      "name": "Write Maintenance Event",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nreturn [{json:{\n run_id:x.run_id,operation:x.operation,scope:x.scope,\n operational_state:x.operational_state,\n failed_count:x.failed_count,pending_count:x.pending_count,\n results:x.results\n}}];\n"
+      },
+      "id": "19o",
+      "name": "Return Maintenance Receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Maintenance Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Maintenance Request": {
+      "main": [
+        [
+          {
+            "node": "Build Health Checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Health Checks": {
+      "main": [
+        [
+          {
+            "node": "Run Bounded Health Probes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Bounded Health Probes": {
+      "main": [
+        [
+          {
+            "node": "Classify Operational State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Operational State": {
+      "main": [
+        [
+          {
+            "node": "Write Maintenance Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Maintenance Event": {
+      "main": [
+        [
+          {
+            "node": "Return Maintenance Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "REPLACE_ON_IMPORT",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "dtc-agent"
+    },
+    {
+      "name": "maintenance"
+    },
+    {
+      "name": "monitoring"
+    },
+    {
+      "name": "reliability"
+    },
+    {
+      "name": "security"
+    }
+  ]
+}

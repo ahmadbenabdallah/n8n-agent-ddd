@@ -1,0 +1,25 @@
+{
+  "name": "tunisia-dtc-agent-WF14-checkout-service-v3",
+  "version": "3.0.0",
+  "status": "integration-ready scaffold",
+  "purpose": "Live checkout validation and verified snapshot; no order creation",
+  "payment_method": "cod",
+  "source_of_truth": "woocommerce",
+  "authorization": "WF-10",
+  "commerce_boundary": "WF-20",
+  "next": "WF-15 transaction service",
+  "files": [
+    "contracts/wf14-checkout-output.schema.json",
+    "contracts/wf14-checkout-input.schema.json",
+    "n8n/WF-14-checkout-service-v3.json",
+    "tests/regression.md",
+    "docs/06-wiring.md",
+    "docs/04-outage.md",
+    "docs/01-transaction-sequence.md",
+    "docs/03-customer-confirmation.md",
+    "docs/05-security.md",
+    "docs/README.md",
+    "docs/02-checkout-snapshot.md",
+    "docs/07-production-gate.md"
+  ]
+}

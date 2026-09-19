@@ -1,0 +1,5 @@
+version: "0.13.3"
+domain_id: tunisia-dtc
+project_name: Tunisia DTC
+project_id_source: runtime/state/n8n-project-id
+workflow_namespace: tunisia-dtc/

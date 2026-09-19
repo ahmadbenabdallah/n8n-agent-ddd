@@ -1,0 +1,219 @@
+{
+  "name": "WF-14 Checkout Service v2 - Final WooCommerce Validation",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nif(!x.request_id||!x.conversation_id||!x.customer_id) throw new Error('Missing checkout identity');\nif(!['checkout_start','checkout_confirm'].includes(x.operation)) throw new Error('Invalid checkout operation');\nif(x.operation==='checkout_confirm' && x.confirmed!==true) throw new Error('Explicit checkout confirmation required');\nif(!['sales','checkout_validation'].includes(x.caller_context?.purpose)) throw new Error('Invalid caller purpose');\nreturn [{json:{\n request_id:String(x.request_id),conversation_id:String(x.conversation_id),customer_id:String(x.customer_id),\n operation:x.operation,confirmed:x.confirmed===true,\n cart_reference:x.cart_reference??null,coupon_code:x.coupon_code??null,\n customer:x.customer??null,shipping:x.shipping??null,\n payment_method:x.payment_method??'cod',caller_context:x.caller_context\n}}];"
+      },
+      "id": "validate",
+      "name": "Validate Checkout Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nif(x.payment_method!=='cod') return [{json:{...x,rejected:true,error_code:'payment_method_not_supported'}}];\nif(!x.cart_reference) return [{json:{...x,rejected:true,error_code:'missing_cart_reference'}}];\nif(x.operation==='checkout_confirm' && !x.customer) return [{json:{...x,rejected:true,error_code:'missing_customer_details'}}];\nreturn [{json:{...x,rejected:false}}];"
+      },
+      "id": "policy",
+      "name": "Checkout Policy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.rejected}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if-reject",
+      "name": "Policy Rejected?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{\n success:false,request_id:$json.request_id,operation:$json.operation,\n error_code:$json.error_code,execution_allowed:false\n}}];"
+      },
+      "id": "reject",
+      "name": "Reject Checkout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nreturn [{json:{\n ...x,\n gateway_operation:'checkout_validate',\n validation_requirements:{\n  cart:true,products:true,variations:true,stock:true,prices:true,\n  coupon:!!x.coupon_code,customer:true,payment_method:true\n },\n execution_allowed:false\n}}];"
+      },
+      "id": "build",
+      "name": "Build Final Validation Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "REPLACE_WITH_WF20_WORKFLOW_ID",
+        "options": {}
+      },
+      "id": "wf20",
+      "name": "WF-20 WooCommerce Gateway",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$json;\nconst original=$node['Validate Checkout Contract'].json;\nif(r.error||r.success===false){\n return [{json:{success:false,request_id:original.request_id,operation:original.operation,\n error_code:r.error_code||'checkout_validation_failed',execution_allowed:false}}];\n}\nconst v=r.checkout_validation||r.data?.checkout_validation||r;\nconst valid=v.valid===true;\nif(!valid){\n return [{json:{success:false,request_id:original.request_id,operation:original.operation,\n validation:v.validation??v.errors??null,error_code:v.error_code||'checkout_not_ready',\n execution_allowed:false,source:'woocommerce'}}];\n}\nreturn [{json:{\n success:true,request_id:original.request_id,conversation_id:original.conversation_id,\n customer_id:original.customer_id,operation:original.operation,\n checkout:{ready:true,payment_method:'cod',cart:v.cart??null,coupon:v.coupon??null,\n totals:v.totals??null,customer:v.customer??null},\n execution_allowed:false,\n verification_required_before_order:true,\n source:'woocommerce',verified_at:new Date().toISOString()\n}}];"
+      },
+      "id": "normalize",
+      "name": "Normalize Final Validation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\n// Checkout never creates an order. It produces a verified snapshot for WF-15.\n// WF-15 must perform its own final live validation immediately before creation.\nreturn [{json:{...x,next_service:'WF-15',handoff_type:'verified_checkout_snapshot'}}];"
+      },
+      "id": "handoff",
+      "name": "Prepare WF-15 Handoff",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        120
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Checkout Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Checkout Contract": {
+      "main": [
+        [
+          {
+            "node": "Checkout Policy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checkout Policy": {
+      "main": [
+        [
+          {
+            "node": "Policy Rejected?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Policy Rejected?": {
+      "main": [
+        [
+          {
+            "node": "Reject Checkout",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Final Validation Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Final Validation Request": {
+      "main": [
+        [
+          {
+            "node": "WF-20 WooCommerce Gateway",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF-20 WooCommerce Gateway": {
+      "main": [
+        [
+          {
+            "node": "Normalize Final Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Final Validation": {
+      "main": [
+        [
+          {
+            "node": "Prepare WF-15 Handoff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

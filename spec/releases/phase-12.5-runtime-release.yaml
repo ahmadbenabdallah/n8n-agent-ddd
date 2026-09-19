@@ -1,0 +1,13 @@
+version: "0.12.5"
+name: runtime-and-release-control-plane
+planes:
+  agent_control: [skills, mcp, harness, agents, policies]
+  release_control: [ci, validation, signing, provenance, deployment]
+  runtime_execution: [n8n, workflows, adapters]
+  durable_data: [postgresql, audit, domain_state, migrations, backups]
+invariants:
+  - "MCP capability does not equal business authorization."
+  - "Production accepts only verified releases."
+  - "Database is external to disposable runtime containers."
+  - "Runtime replacement must not destroy durable state."
+  - "WF-10 remains the commerce authorization boundary."

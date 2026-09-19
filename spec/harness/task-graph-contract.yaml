@@ -1,0 +1,5 @@
+task_graph:
+  node_required: [task_id, state, owner, dependencies, acceptance_criteria, evidence]
+  states: [PLANNED, ANALYZING, SPEC_READY, IMPLEMENTING, TESTING, SECURITY_REVIEW, ARCHITECTURE_REVIEW, READY_FOR_REVIEW, APPROVED, MERGED, DEPLOYED, VERIFIED, OPERATE]
+  dependency_must_be_satisfied_before_execution: true
+  evidence_required_before_verified: true

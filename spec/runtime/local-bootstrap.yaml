@@ -1,0 +1,30 @@
+version: "0.12.4"
+purpose: "Define the deterministic local runtime bootstrap contract."
+
+steps:
+  - id: preflight
+    action: verify-tools-and-env
+  - id: infrastructure
+    action: start-local-services
+  - id: database
+    action: apply-migrations
+  - id: domain
+    action: validate-domain-manifest
+  - id: workflows
+    action: discover-and-validate-workflows
+  - id: n8n
+    action: wait-for-health
+  - id: sync
+    action: synchronize-workflows-to-n8n
+  - id: smoke
+    action: execute-non-mutating-smoke-checks
+  - id: report
+    action: emit-runtime-readiness-report
+
+invariants:
+  - "Git is the desired workflow state."
+  - "n8n is the workflow execution runtime."
+  - "Bootstrap never authorizes commerce."
+  - "Bootstrap never enables production credentials."
+  - "Workflow synchronization is idempotent."
+  - "Activation is explicit and environment-scoped."

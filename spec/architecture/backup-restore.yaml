@@ -1,0 +1,29 @@
+version: 1
+backup:
+  database:
+    required: true
+    encryption: required
+    retention_policy: configured
+    off_host_copy: required
+  runtime_configuration:
+    required: true
+    secrets: never_exported_as_plaintext
+  workflows:
+    source_of_truth: git
+    runtime_export: optional
+restore:
+  must_validate:
+    - backup_integrity
+    - database_connectivity
+    - schema_version
+    - row_counts_for_critical_tables
+    - indexes
+    - required_extensions
+    - rls_and_policies
+  post_restore:
+    - smoke_test
+    - authorization_boundary_test
+    - audit_write_test
+    - reconciliation_check
+disaster_recovery:
+  unknown_external_execution: reconcile_before_retry

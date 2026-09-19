@@ -1,0 +1,19 @@
+policies:
+  authorization:
+    owner: WF-10
+    deny_by_default: true
+  commerce_execution:
+    owner: WF-20
+    allowed_targets: [WooCommerce]
+    arbitrary_endpoint: false
+  response:
+    owner: WF-16
+    source: verified_facts_only
+  secrets:
+    rule: secrets_never_enter_llm_or_customer_context
+  identity:
+    rule: assurance_changes_require_verification_evidence
+  human_handoff:
+    rule: active_human_owner_blocks_conflicting_automation
+  reconciliation:
+    rule: unknown_external_outcome_must_be_reconciled_before_retry

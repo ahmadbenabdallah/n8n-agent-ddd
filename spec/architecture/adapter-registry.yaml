@@ -1,0 +1,39 @@
+version: "2026.09.10"
+
+channels:
+  meta_messenger:
+    implements: ChannelPort
+    status: available
+  whatsapp:
+    implements: ChannelPort
+    status: planned
+  telegram:
+    implements: ChannelPort
+    status: planned
+  webchat:
+    implements: ChannelPort
+    status: planned
+
+commerce:
+  woocommerce:
+    implements: CommercePort
+    status: available
+  shopify:
+    implements: CommercePort
+    status: planned
+  prestashop:
+    implements: CommercePort
+    status: planned
+  custom:
+    implements: CommercePort
+    status: adapter_required
+
+selection:
+  deployment_config_selects_adapter: true
+  domain_code_changes_required: false
+  application_contract_changes_required: false
+
+capability_policy:
+  unsupported_operation:
+    behavior: explicit_capability_error
+    never: silently_fallback_to_different_business_rule

@@ -1,0 +1,11 @@
+external_contract:
+  id: woocommerce
+  owner: WF-20
+  source_of_truth: true
+  operations: [get_product, get_variation, get_order, create_order, update_order, verify_order, verify_stock, verify_price]
+  restrictions:
+    arbitrary_endpoint: false
+    client_supplied_credentials: false
+    client_supplied_price: false
+    verify_after_mutation: true
+    idempotency_required: true

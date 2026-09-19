@@ -1,0 +1,43 @@
+version: "1.0"
+name: customer-runtime-configuration
+principles:
+  - "Infrastructure environment variables are deployment-owned and are never exposed as a raw customer configuration surface."
+  - "Business configuration is durable application state stored in PostgreSQL."
+  - "Secrets are managed by n8n credentials/external secrets and are never copied into business configuration."
+  - "Configuration changes are schema-validated, versioned, audited, and reversible."
+  - "Configuration cannot weaken security policy, WF-10 authorization, WF-20 privilege, or identity guarantees."
+classes:
+  infrastructure:
+    owner: platform
+    storage: deployment_environment
+    editable_by_customer: false
+  business:
+    owner: customer
+    storage: postgres
+    editable_by_customer: true
+  secret:
+    owner: customer_or_platform
+    storage: n8n_credentials_or_external_secrets
+    editable_by_customer: true
+    raw_value_visible_to_agent: false
+  workflow_extension:
+    owner: customer
+    storage: n8n
+    editable_by_customer: true
+    protected_workflows: [WF-01, WF-10, WF-15, WF-20]
+  platform_core:
+    owner: platform
+    storage: git_release
+    editable_by_customer: false
+forbidden_keys:
+  - DATABASE_URL
+  - N8N_ENCRYPTION_KEY
+  - N8N_USER_MANAGEMENT_JWT_SECRET
+  - OPENAI_API_KEY
+  - WOO_COMMERCE_CONSUMER_SECRET
+  - WOO_COMMERCE_CONSUMER_KEY
+  - payment_status
+  - execution_allowed
+  - authorization_decision
+  - verified_unit_price
+  - stock_quantity

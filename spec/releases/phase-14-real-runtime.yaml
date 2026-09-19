@@ -1,0 +1,23 @@
+version: "0.14.0"
+name: real-runtime-integration
+status: evidence-required
+required:
+  - live_n8n
+  - live_postgresql
+  - initialized_project
+  - 21_synchronized_workflows
+  - configured_test_adapter
+gates:
+  - INT
+  - SEC
+  - E2E
+  - IDEMP
+  - RECON
+  - RT
+  - LOAD
+  - DR
+  - BG
+  - DRIFT
+  - ARCH
+  - SECURITY
+rule: never mark PASS without captured runtime evidence

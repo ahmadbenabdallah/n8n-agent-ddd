@@ -1,0 +1,19 @@
+value_objects:
+  LanguageProfile:
+    fields: [language, script, register, mixed_languages]
+  IdentityAssurance:
+    values: [ANONYMOUS, CHANNEL-LINKED, COMMERCE-MATCHED, ORDER-VERIFIED, HIGH-ASSURANCE]
+  Money:
+    fields: [amount, currency]
+    invariant: amount is derived from verified commerce state
+  Quantity:
+    fields: [value]
+    invariant: positive integer
+  ProductReference:
+    fields: [product_id, variation_id]
+  ActionScope:
+    fields: [customer_id, order_id, cart_id, allowed_operations]
+  IdempotencyKey:
+    fields: [key, operation, request_hash]
+  CorrelationContext:
+    fields: [correlation_id, causation_id, actor_id]

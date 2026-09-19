@@ -1,0 +1,45 @@
+workflow:
+  id: WF-10
+  name: Action Authorization
+  bounded_context: authorization
+  version: 1.0.0
+  purpose: Validate proposed action against identity, scope, policy, live state and
+    authorization rules.
+  dependencies:
+  - WF-20
+  - WF-16
+  - WF-17
+  security: Only authorized branch may set execution_allowed=true.
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Supabase; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown external
+    outcomes
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml
+  - contracts/platform/action.yaml
+  authorization_contract:
+    deny_by_default: true
+    only_authorized_branch_can_set_execution_allowed: true
+    required_checks:
+    - identity_assurance
+    - scope
+    - action_allowlist
+    - business_policy
+    - live_commerce_state
+    - human_ownership
+    - idempotency

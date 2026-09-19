@@ -1,0 +1,36 @@
+version: "1.0"
+name: customer-extension-contract
+extension_id_format: "^[a-z0-9][a-z0-9._-]{2,63}$"
+required_fields:
+  - extension_id
+  - version
+  - owner
+  - type
+  - compatibility
+  - permissions
+  - workflows
+  - provenance
+  - lifecycle
+lifecycle:
+  states: [DRAFT, VALIDATED, ENABLED, DISABLED, INCOMPATIBLE, RETIRED]
+  transitions:
+    - [DRAFT, VALIDATED]
+    - [VALIDATED, ENABLED]
+    - [ENABLED, DISABLED]
+    - [DISABLED, ENABLED]
+    - [ENABLED, INCOMPATIBLE]
+    - [DISABLED, RETIRED]
+    - [INCOMPATIBLE, RETIRED]
+protected_workflows: [WF-01, WF-10, WF-15, WF-20]
+forbidden_permissions:
+  - commerce.authorization
+  - commerce.payment_mutation
+  - secret.export
+  - credential.export
+  - arbitrary_http.production
+upgrade_rules:
+  - "Core workflow identity is never replaced by a customer extension."
+  - "Extensions declare compatibility against runtime and domain contract versions."
+  - "An incompatible extension is disabled before core upgrade completion."
+  - "Customer-owned workflow changes are preserved across core releases unless explicitly retired."
+  - "Every enable, disable, upgrade, and incompatibility event is audited."

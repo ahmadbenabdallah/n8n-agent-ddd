@@ -1,0 +1,7 @@
+* @maintainers
+/AGENTS.md @maintainers
+/.agents/ @maintainers
+/harness/ @maintainers
+/platform/ @maintainers
+/runtime/ @maintainers
+/.github/ @maintainers

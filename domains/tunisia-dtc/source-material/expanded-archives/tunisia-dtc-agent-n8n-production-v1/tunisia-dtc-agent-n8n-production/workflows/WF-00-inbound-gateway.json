@@ -1,0 +1,137 @@
+{
+  "name": "WF-00 \u2014 Inbound Gateway \u2014 Facebook Messenger",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "facebook-messenger/inbound",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "messenger-webhook",
+      "name": "Messenger Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body=$json.body??$json;\nconst entry=body.entry?.[0]??{};\nconst messaging=entry.messaging?.[0]??{};\nconst msg=messaging.message??{};\nreturn [{json:{\n channel:\"facebook_messenger\",\n channel_user_id:messaging.sender?.id??null,\n page_id:entry.id??messaging.recipient?.id??null,\n message_id:msg.mid??null,\n text:msg.text??\"\",\n timestamp:messaging.timestamp??Date.now(),\n raw_event:body,\n source_trust:\"untrusted\"\n}}];"
+      },
+      "id": "normalize-messenger-event",
+      "name": "Normalize Messenger Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nif(!x.message_id) throw new Error(\"Missing Messenger message_id\");\nreturn [{json:{...x,idempotency_key:`${x.channel}:${x.message_id}`}}];"
+      },
+      "id": "idempotency-key",
+      "name": "Idempotency Key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "WF-01",
+          "mode": "id"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "security-gate",
+      "name": "Security Gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        780,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"received\":true,\"message_id\":$json.message_id}"
+      },
+      "id": "webhook-ack",
+      "name": "Webhook ACK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Messenger Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Messenger Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Messenger Event": {
+      "main": [
+        [
+          {
+            "node": "Idempotency Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Idempotency Key": {
+      "main": [
+        [
+          {
+            "node": "Security Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security Gate": {
+      "main": [
+        [
+          {
+            "node": "Webhook ACK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf00",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

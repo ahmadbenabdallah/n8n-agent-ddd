@@ -1,0 +1,24 @@
+version: "2026.09.10"
+name: CommercePort
+
+operations:
+  - get_product
+  - search_products
+  - check_inventory
+  - get_cart
+  - add_item
+  - update_item
+  - remove_item
+  - calculate_price
+  - validate_coupon
+  - create_order
+  - get_order
+  - verify_mutation_result
+
+rules:
+  - provider_specific_api_paths stay inside adapters
+  - provider credentials stay inside infrastructure
+  - domain/application never accepts arbitrary provider endpoint
+  - final price comes from verified commerce state
+  - mutation requires durable idempotency
+  - unknown external outcome requires reconciliation

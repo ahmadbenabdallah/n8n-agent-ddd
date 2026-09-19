@@ -1,0 +1,47 @@
+version: "2026.09.10"
+
+principle:
+  "Postgres is the durable data-plane contract. Supabase is a supported platform profile, not a domain dependency."
+
+database:
+  logical_engine: postgresql
+  orm: drizzle
+  migrations: drizzle_kit_or_sql
+  vector_extension: pgvector
+  optional_platform_features:
+    - rls
+    - auth
+    - storage
+    - realtime
+    - edge_functions
+    - queues
+    - cron
+
+supported_profiles:
+  supabase_cloud:
+    database: postgresql
+    vector: pgvector
+    recommended: true
+  supabase_self_hosted:
+    database: postgresql
+    vector: pgvector
+    recommended: true
+  managed_postgres:
+    database: postgresql
+    vector: pgvector_if_enabled
+    examples:
+      - aws_rds
+      - neon
+      - crunchy_bridge
+      - cloud_sql
+  self_hosted_postgres:
+    database: postgresql
+    vector: pgvector_if_enabled
+
+rules:
+  - domain schemas use portable PostgreSQL SQL where practical
+  - Supabase-only features live behind platform adapters
+  - service_role is never a domain authorization mechanism
+  - RLS is enabled when the selected platform supports it and exposed access requires it
+  - migrations must be reproducible outside Supabase
+  - pgvector is the canonical vector capability for the default stack

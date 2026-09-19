@@ -1,0 +1,44 @@
+version: "2026.09.9"
+matrix:
+  - id: INT-001
+    target: supabase
+    check: migrations_apply_cleanly
+  - id: INT-002
+    target: supabase
+    check: security_tests_pass
+  - id: INT-003
+    target: woocommerce
+    check: read_product
+  - id: INT-004
+    target: woocommerce
+    check: create_order_idempotent
+  - id: INT-005
+    target: woocommerce
+    check: write_then_read_back_verify
+  - id: INT-006
+    target: meta
+    check: webhook_signature_accept_reject
+  - id: INT-007
+    target: meta
+    check: duplicate_event_is_deduplicated
+  - id: INT-008
+    target: llm
+    check: structured_output_schema_validation
+  - id: INT-009
+    target: n8n
+    check: all_21_workflows_import_and_validate
+  - id: INT-010
+    target: n8n
+    check: wf10_denies_unauthorized_execution
+  - id: INT-011
+    target: n8n
+    check: wf20_rejects_non_allowlisted_operation
+  - id: INT-012
+    target: n8n
+    check: wf16_renders_verified_facts_only
+  - id: INT-013
+    target: platform
+    check: unknown_external_outcome_reconciles_before_retry
+  - id: INT-014
+    target: platform
+    check: human_ownership_blocks_conflicting_automation

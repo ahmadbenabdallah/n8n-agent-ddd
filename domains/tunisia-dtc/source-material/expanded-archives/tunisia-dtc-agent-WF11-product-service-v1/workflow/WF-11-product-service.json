@@ -1,0 +1,477 @@
+{
+  "name": "WF-11 \u2014 Product Service",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1900,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const i=$json; const required=['message_id','conversation_id','text','intent','identity','security']; const missing=required.filter(k=>i[k]===undefined); return [{json:{...i,input_valid:missing.length===0,missing_fields:missing}}];"
+      },
+      "id": "2",
+      "name": "Validate Product Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.input_valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "Product Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{product_service_status:'blocked',route:'escalation',tools_allowed:false,reason:'invalid_product_input'}}];"
+      },
+      "id": "4",
+      "name": "Fail Closed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const allowed=['product_discovery','product_question','comparison','pricing','promotion','availability','cart_add','cart_update']; const intent=$json.intent; return [{json:{...$json,product_intent:allowed.includes(intent),intent_supported:allowed.includes(intent)}}];"
+      },
+      "id": "5",
+      "name": "Product Intent Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.product_intent}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "6",
+      "name": "Product Intent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1080,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'support',retrieval_required:false,tools_allowed:false,reason:'not_product_intent'}}];"
+      },
+      "id": "7",
+      "name": "Route Non-Product",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const t=String($json.text||'').normalize('NFKC').trim(); const q={query_text:t,product_id:$json.state?.selected_product_id||$json.selected_product_id||null,variant:$json.state?.selected_variant||null,requested_intent:$json.intent,language:$json.language||$json.state?.language||'tn',script:$json.script||$json.state?.script||'latin',top_k:Math.min(Number($json.top_k||8),12),filters:{active:true}}; return [{json:{...$json,retrieval_query:q}}];"
+      },
+      "id": "8",
+      "name": "Build Bounded Product Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -860,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const q=$json.retrieval_query; const forbidden=/(password|otp|cvv|api.?key|secret|token|system prompt|developer prompt)/i.test(q.query_text); return [{json:{...$json,retrieval_safe:!forbidden,query_contains_forbidden:forbidden}}];"
+      },
+      "id": "9",
+      "name": "Retrieval Security Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.retrieval_safe}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "10",
+      "name": "Retrieval Safe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'escalation',retrieval_required:false,tools_allowed:false,reason:'unsafe_retrieval_query'}}];"
+      },
+      "id": "11",
+      "name": "Block Unsafe Retrieval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result=$json.retrieval_result; const chunks=Array.isArray(result?.chunks)?result.chunks:[]; const safe=chunks.filter(c=>c&&c.document_id&&c.chunk_id&&typeof c.text==='string').slice(0,12).map(c=>({document_id:c.document_id,chunk_id:c.chunk_id,source_type:c.source_type||'kb',last_updated:c.last_updated||null,text:c.text.slice(0,4000),metadata:c.metadata||{}})); return [{json:{...$json,retrieved_chunks:safe,retrieval_count:safe.length,retrieval_available:safe.length>0}}];"
+      },
+      "id": "12",
+      "name": "Normalize Retrieval Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const chunks=$json.retrieved_chunks||[]; const instructionLike=chunks.some(c=>/(ignore (all|previous) instructions|system prompt|developer message|reveal secret|override policy)/i.test(c.text)); const verified=chunks.every(c=>c.source_type!=='customer_upload' && c.source_type!=='untrusted'); return [{json:{...$json,retrieval_poison_signal:instructionLike,retrieval_sources_trusted:verified}}];"
+      },
+      "id": "13",
+      "name": "KB Trust + Poison Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        60,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.retrieval_poison_signal}}",
+              "operation": "isFalse"
+            },
+            {
+              "value1": "={{$json.retrieval_sources_trusted}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "14",
+      "name": "Trusted Retrieval?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'escalation',retrieval_valid:false,tools_allowed:false,reason:'retrieval_trust_failure'}}];"
+      },
+      "id": "15",
+      "name": "Block Poisoned Retrieval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const chunks=$json.retrieved_chunks||[]; const facts=chunks.map(c=>({source:c.document_id,chunk:c.chunk_id,last_updated:c.last_updated,text:c.text,metadata:c.metadata})); const liveRequired=['pricing','promotion','availability'].includes($json.intent); return [{json:{...$json,verified_product_facts:facts,retrieval_valid:true,live_transactional_fact_required:liveRequired}}];"
+      },
+      "id": "16",
+      "name": "Build Product Fact Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.live_transactional_fact_required}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "17",
+      "name": "Live Fact Required?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,live_lookup_required:true,tools_allowed:true,reason:'live_price_stock_promotion_check_required'}}];"
+      },
+      "id": "18",
+      "name": "Request Live Product Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,live_lookup_required:false,tools_allowed:false,reason:null}}];"
+      },
+      "id": "19",
+      "name": "KB Facts Sufficient",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const facts=$json.verified_product_facts||[]; return [{json:{contract_version:'1.0.0',message_id:$json.message_id,conversation_id:$json.conversation_id,intent:$json.intent,retrieval_query:$json.retrieval_query,retrieval_valid:$json.retrieval_valid!==false,retrieval_count:facts.length,verified_product_facts:facts,live_lookup_required:$json.live_lookup_required||false,tools_allowed:$json.tools_allowed||false,execution_allowed:false,customer_text_is_untrusted:true,reason:$json.reason||null}}];"
+      },
+      "id": "20",
+      "name": "Build Product Service Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1220,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Product Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Product Input": {
+      "main": [
+        [
+          {
+            "node": "Product Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Product Intent Gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        {
+          "node": "Fail Closed",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "Product Intent?": {
+      "main": [
+        [
+          {
+            "node": "Build Bounded Product Query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        {
+          "node": "Route Non-Product",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "Build Bounded Product Query": {
+      "main": [
+        [
+          {
+            "node": "Retrieval Security Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieval Security Check": {
+      "main": [
+        [
+          {
+            "node": "Retrieval Safe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieval Safe?": {
+      "main": [
+        [
+          {
+            "node": "Normalize Retrieval Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        {
+          "node": "Block Unsafe Retrieval",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "Normalize Retrieval Result": {
+      "main": [
+        [
+          {
+            "node": "KB Trust + Poison Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trusted Retrieval?": {
+      "main": [
+        [
+          {
+            "node": "Build Product Fact Contract",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        {
+          "node": "Block Poisoned Retrieval",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "Build Product Fact Contract": {
+      "main": [
+        [
+          {
+            "node": "Live Fact Required?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Live Fact Required?": {
+      "main": [
+        [
+          {
+            "node": "Request Live Product Check",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "KB Facts Sufficient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Live Product Check": {
+      "main": [
+        [
+          {
+            "node": "Build Product Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KB Facts Sufficient": {
+      "main": [
+        [
+          {
+            "node": "Build Product Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf11-v1"
+}

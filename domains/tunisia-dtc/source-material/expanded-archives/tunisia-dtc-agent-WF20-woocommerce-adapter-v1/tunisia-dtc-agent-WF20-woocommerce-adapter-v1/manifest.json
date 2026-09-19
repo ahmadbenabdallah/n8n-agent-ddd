@@ -1,0 +1,30 @@
+{
+  "workflow": "WF-20",
+  "version": "1.0.0",
+  "target": {
+    "commerce": "WooCommerce",
+    "payment": "COD",
+    "shipping": "manual",
+    "n8n": "self-hosted",
+    "channel": "Messenger"
+  },
+  "files": [
+    "README.md",
+    "n8n/WF-20-woocommerce-commerce-adapter-v1.json",
+    "database/commerce-adapter.sql",
+    "tests/test-matrix.md",
+    "docs/04-failure-and-retry.md",
+    "docs/02-woocommerce-setup.md",
+    "docs/03-cod-order-contract.md",
+    "docs/05-production-gate.md",
+    "docs/01-integration-map.md",
+    "wordpress-plugin/dtc-agent-commerce-adapter.php"
+  ],
+  "important_limitation": "Cart is agent-side in v1; Woo REST API is used for products and orders. A dedicated Woo server-side cart endpoint is not enabled by default.",
+  "official_sources": [
+    "https://developer.woocommerce.com/docs/apis/",
+    "https://developer.woocommerce.com/docs/apis/rest-api/",
+    "https://developer.woocommerce.com/docs/apis/rest-api/v3/products",
+    "https://developer.woocommerce.com/docs/apis/rest-api/v3/orders"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "checkId",
+    "component",
+    "status",
+    "timestamp"
+  ],
+  "properties": {
+    "checkId": {
+      "type": "string"
+    },
+    "component": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "healthy",
+        "degraded",
+        "unhealthy",
+        "unknown"
+      ]
+    },
+    "latencyMs": {
+      "type": "number"
+    },
+    "releaseVersion": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    }
+  }
+}

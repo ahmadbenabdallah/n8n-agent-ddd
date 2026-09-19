@@ -1,0 +1,10 @@
+{
+  "release": "0.10.5",
+  "phase": 10,
+  "inventory_type": "repository_preflight",
+  "production_certification": "BLOCKED",
+  "workflow_json_count": 21,
+  "workflow_json_valid": true,
+  "external_staging_execution": false,
+  "reason": "External staging infrastructure and credentials are not available inside the repository build environment."
+}

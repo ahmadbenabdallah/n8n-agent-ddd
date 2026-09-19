@@ -1,0 +1,16 @@
+version: "2026.09.10"
+gates:
+  INT: staging integration tests
+  SEC: database/runtime security tests
+  E2E: complete customer-flow tests
+  IDEMP: concurrent mutation/idempotency tests
+  RECON: unknown-outcome reconciliation
+  RT: red-team suite
+  LOAD: load/performance test
+  DR: backup/restore test
+  BG: blue/green rollback test
+  DRIFT: workflow drift detection
+  ARCH: architecture approval
+  SECURITY: security approval
+
+all_required: true

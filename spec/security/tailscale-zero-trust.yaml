@@ -1,0 +1,39 @@
+version: "0.13.2"
+name: tailscale-zero-trust
+status: required
+principles:
+  - n8n_ui_is_private
+  - deny_by_default
+  - least_privilege
+  - public_webhooks_only_when_required
+  - outbound_external_services_are_allowlisted
+  - no_public_database
+  - no_public_n8n_editor_port
+access:
+  n8n_ui:
+    exposure: tailscale_only
+    port: 5678
+    public_ingress: false
+  ssh:
+    exposure: tailscale_only
+    public_ingress: false
+  postgres:
+    exposure: private_only
+    public_ingress: false
+  webhooks:
+    exposure: explicit_public_exception
+    ingress: reverse_proxy_or_provider
+external_services:
+  policy: explicit_allowlist
+  examples:
+    - WooCommerce
+    - Meta
+    - OpenAI
+    - Supabase
+    - payment_provider
+  rule: only_required_outbound_destinations_are_allowed
+operator_access:
+  identity: tailscale_identity
+  authorization: tailnet_grants
+  device_posture: optional
+  audit: required

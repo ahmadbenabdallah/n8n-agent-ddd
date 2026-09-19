@@ -1,0 +1,76 @@
+{
+  "name": "WF-14 \u2014 Checkout Service",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; return [{json:{...x,checkout_service:{authorized:false,execute:false,reason:\"CONNECT_CHECKOUT_PROVIDER\"}}}];"
+      },
+      "id": "validate-/-prepare",
+      "name": "Validate / Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,workflow_result:\"ok\"}}];"
+      },
+      "id": "return-contract",
+      "name": "Return Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        620,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate / Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate / Prepare": {
+      "main": [
+        [
+          {
+            "node": "Return Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf14",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

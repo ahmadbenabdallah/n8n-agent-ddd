@@ -1,0 +1,15 @@
+version: "0.13.2"
+name: tailscale-zero-trust
+status: implementation_foundation
+goal: private n8n operator access with explicit public webhook exceptions and deny-by-default egress policy
+requirements:
+  - tailscale_for_vps_operator_access
+  - n8n_editor_not_public
+  - postgres_not_public
+  - ssh_not_public_or_explicitly_controlled
+  - external_egress_allowlist
+  - public_webhook_exception_isolated
+non_goals:
+  - replacing n8n_authentication
+  - treating_tailscale_as_commerce_authorization
+  - claiming_live_vps_deployment

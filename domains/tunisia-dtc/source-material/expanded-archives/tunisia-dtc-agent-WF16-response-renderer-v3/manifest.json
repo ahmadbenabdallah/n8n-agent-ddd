@@ -1,0 +1,26 @@
+{
+  "name": "tunisia-dtc-agent-WF16-response-renderer-v3",
+  "version": "3.0.0",
+  "status": "integration-ready scaffold",
+  "purpose": "Final customer-facing renderer that exposes only verified facts",
+  "principle": "verified facts only",
+  "channels": [
+    "facebook",
+    "whatsapp",
+    "instagram",
+    "internal"
+  ],
+  "files": [
+    "contracts/wf16-renderer-output.schema.json",
+    "contracts/wf16-renderer-input.schema.json",
+    "n8n/WF-16-response-renderer-v3.json",
+    "tests/regression.md",
+    "docs/05-wiring.md",
+    "docs/04-outage.md",
+    "docs/03-sensitive-data.md",
+    "docs/06-production-gate.md",
+    "docs/01-rendering-boundary.md",
+    "docs/README.md",
+    "docs/02-language-script.md"
+  ]
+}

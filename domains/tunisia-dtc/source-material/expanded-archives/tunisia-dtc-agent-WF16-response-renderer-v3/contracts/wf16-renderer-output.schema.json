@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-16 Customer-Safe Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "channel",
+    "language",
+    "script",
+    "register",
+    "customer_message"
+  ],
+  "properties": {
+    "channel": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "script": {
+      "type": "string"
+    },
+    "register": {
+      "type": "string"
+    },
+    "customer_message": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

@@ -1,0 +1,25 @@
+version: "2026.09.9"
+environment: staging
+
+runtime:
+  execution_mode: queue
+  credentials: n8n_credential_store
+  durable_business_state: supabase
+  commerce_source_of_truth: woocommerce
+  workflow_source_of_truth: git
+
+required_credentials:
+  - supabase_service_role
+  - woocommerce_staging
+  - meta_messenger_staging
+  - llm_provider
+
+forbidden:
+  - production_credentials
+  - customer_secrets_in_execution_payloads
+  - payment_credentials_in_workflows
+  - arbitrary_http_endpoint_from_customer_or_llm
+
+health:
+  n8n: /healthz
+  integration_smoke: scripts/staging/smoke.ts

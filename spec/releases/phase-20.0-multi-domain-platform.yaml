@@ -1,0 +1,65 @@
+phase:
+  id: "20.0"
+  name: "Multi-Domain Platform / Ecosystem"
+  status: "foundation"
+  objective: "Generalize the platform from one concrete domain into reusable domain packs, adapters, channels, skills, policies, and deployment profiles."
+boundaries:
+  harness_is_control_plane: true
+  customer_runtime_remains_n8n_domain_runtime: true
+  n8n_native_dashboard_remains_operator_ui: true
+  domain_business_rules_remain_domain_owned: true
+  cross_domain_access_denied_by_default: true
+  capability_discovery_is_not_authorization: true
+  WF-10_remains_commerce_authorization_boundary_for_commerce_domains: true
+  no_production_certification_claimed: true
+architecture:
+  domain_pack:
+    required: [domain.yaml, business, entities, aggregates, value-objects, commands, events, policies, projections, workflows, knowledge, adapters, tests]
+  ports:
+    - ChannelPort
+    - CommercePort
+    - IdentityPort
+    - PaymentPort
+    - KnowledgePort
+    - ObservabilityPort
+  reusable_layers:
+    - platform
+    - contracts
+    - adapters
+    - skills
+    - policies
+    - deployment_profiles
+domains:
+  reference:
+    - tunisia-dtc
+  target_examples:
+    - umrah
+    - dental
+channels:
+  supported_patterns:
+    - messenger
+    - whatsapp
+    - telegram
+    - webchat
+commerce:
+  adapter_patterns:
+    - woocommerce
+    - shopify
+    - prestashop
+    - custom
+isolation:
+  stable_domain_id_required: true
+  n8n_project_scope: true
+  workflow_namespace_scope: true
+  postgres_scope: true
+  knowledge_namespace_scope: true
+  authorization_scope: true
+  audit_scope: true
+  cross_domain_calls_default: "deny"
+gates:
+  contract: "tests/platform/phase20-contract.sh"
+  live_multi_domain_execution: "NOT_EXECUTED"
+  live_cross_domain_isolation_test: "NOT_EXECUTED"
+truth:
+  no_1_0_claimed: true
+  no_live_production_execution_claimed: true

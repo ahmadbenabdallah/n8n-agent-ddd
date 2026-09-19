@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-17 Audit Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_type",
+    "conversation_id",
+    "channel"
+  ],
+  "properties": {
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 256
+    },
+    "event_type": {
+      "type": "string",
+      "maxLength": 150
+    },
+    "timestamp": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "conversation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "facebook",
+        "whatsapp",
+        "instagram",
+        "internal"
+      ]
+    },
+    "customer_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "intent": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "language": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "script": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_ids": {
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "action_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 256
+    },
+    "action_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    },
+    "authorization_result": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "security_flags": {
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "success": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "metadata": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  }
+}

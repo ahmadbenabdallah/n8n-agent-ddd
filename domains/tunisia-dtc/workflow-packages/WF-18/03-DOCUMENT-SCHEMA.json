@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KBDocumentV4",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "document_id",
+    "tenant_id",
+    "source_type",
+    "title",
+    "version",
+    "status",
+    "content_hash",
+    "language",
+    "script",
+    "owner"
+  ],
+  "properties": {
+    "document_id": {"type": "string"},
+    "tenant_id": {"type": "string"},
+    "source_type": {"type": "string"},
+    "title": {"type": "string"},
+    "version": {"type": "string"},
+    "status": {
+      "enum": ["DRAFT", "VALIDATING", "SECURITY_REVIEW", "APPROVED", "PUBLISHED", "DEPRECATED", "RETIRED"]
+    },
+    "content_hash": {"type": "string"},
+    "language": {"type": "string"},
+    "script": {"type": "string"},
+    "owner": {"type": "string"},
+    "effective_from": {"type": ["string", "null"], "format": "date-time"},
+    "effective_until": {"type": ["string", "null"], "format": "date-time"},
+    "sensitivity": {"type": "string"},
+    "tags": {"type": "array", "items": {"type": "string"}},
+    "metadata": {"type": "object"}
+  }
+}

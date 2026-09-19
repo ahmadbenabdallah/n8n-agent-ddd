@@ -1,0 +1,76 @@
+{
+  "name": "WF-04 \u2014 Intent Router",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json,t=String(x.text??\"\").toLowerCase(); let intent=\"off_topic\";\nif(/panier|cart/.test(t)&&/zid|add|ajout/.test(t)) intent=\"cart_add\";\nelse if(/gadech|\u0642\u062f\u0627\u0634|prix|price|souma/.test(t)) intent=\"pricing\";\nelse if(/promo|promotion|discount|remise/.test(t)) intent=\"promotion\";\nelse if(/livraison|delivery/.test(t)) intent=\"shipping\";\nelse if(/commande|order/.test(t)&&/status|win|\u0648\u064a\u0646|\u0641\u064a\u0646/.test(t)) intent=\"order_status\";\nelse if(/catalog|catalogue|chnowa|\u0634\u0646\u0648\u0629|what.*have/.test(t)) intent=\"product_discovery\";\nreturn [{json:{...x,intent:{name:intent,confidence:null,route:[\"pricing\",\"promotion\",\"shipping\",\"order_status\"].includes(intent)?\"support\":\"sales\"}}}];"
+      },
+      "id": "validate-/-prepare",
+      "name": "Validate / Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,workflow_result:\"ok\"}}];"
+      },
+      "id": "return-contract",
+      "name": "Return Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        620,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate / Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate / Prepare": {
+      "main": [
+        [
+          {
+            "node": "Return Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf04",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

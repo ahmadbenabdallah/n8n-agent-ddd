@@ -1,0 +1,9 @@
+version: "1.0"
+name: operator-runtime-binding
+rules:
+  - "Every deployed domain has exactly one logical operator binding."
+  - "The binding maps a domain_id to its n8n project and durable configuration namespace."
+  - "The binding is not a substitute for authorization. WF-10 remains authoritative for commerce mutations."
+  - "Operator roles control editing surfaces; they cannot promote a protected workflow to editable."
+  - "An n8n editor role cannot change platform-owned protected workflows through the supported extension surface."
+  - "Infrastructure secrets are never copied into ordinary business configuration."

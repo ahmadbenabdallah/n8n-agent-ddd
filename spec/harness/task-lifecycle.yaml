@@ -1,0 +1,35 @@
+version: "0.17.0"
+states:
+  - PLANNED
+  - ANALYZING
+  - SPEC_READY
+  - IMPLEMENTING
+  - TESTING
+  - SECURITY_REVIEW
+  - ARCHITECTURE_REVIEW
+  - READY_FOR_REVIEW
+  - APPROVED
+  - MERGED
+  - DEPLOYED
+  - VERIFIED
+  - OPERATE
+
+transitions:
+  PLANNED: [ANALYZING]
+  ANALYZING: [SPEC_READY]
+  SPEC_READY: [IMPLEMENTING]
+  IMPLEMENTING: [TESTING]
+  TESTING: [SECURITY_REVIEW]
+  SECURITY_REVIEW: [ARCHITECTURE_REVIEW]
+  ARCHITECTURE_REVIEW: [READY_FOR_REVIEW]
+  READY_FOR_REVIEW: [APPROVED]
+  APPROVED: [MERGED]
+  MERGED: [DEPLOYED]
+  DEPLOYED: [VERIFIED]
+  VERIFIED: [OPERATE]
+
+rules:
+  - "Invalid transitions are denied."
+  - "High-impact tasks require required reviews before APPROVED."
+  - "Deployment does not imply verification."
+  - "Verification does not imply operational success."

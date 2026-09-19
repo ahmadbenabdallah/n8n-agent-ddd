@@ -1,0 +1,99 @@
+phase: 11
+name: production-deployment
+status: implementation-foundation
+objective: >
+  Provide a reproducible, reversible, domain-isolated production deployment
+  path while keeping Phase 10 staging certification as a prerequisite for
+  production promotion.
+
+principles:
+  - compute_is_disposable_state_is_durable
+  - business_rules_are_versioned
+  - execution_is_idempotent
+  - deployments_are_reversible
+  - production_secrets_never_enter_git
+  - n8n_is_runtime_not_domain_state
+  - wf10_is_authorization_boundary
+  - wf20_is_privileged_commerce_boundary
+
+environments:
+  development:
+    mutable: true
+  staging:
+    required_for_certification: true
+    preserved_from_phase_10: true
+  production:
+    promotion_requires:
+      - phase_10_required_evidence
+      - architecture_approval
+      - security_approval
+      - rollback_plan
+      - smoke_test_plan
+
+deployment:
+  strategy: blue_green
+  health_check: required
+  smoke_test: required
+  traffic_switch: explicit
+  drain_timeout_seconds: 300
+  rollback: enabled
+
+database:
+  contract: postgres
+  migration_strategy: expand_migrate_contract
+  backups_required: true
+  restore_verification_required: true
+
+runtime:
+  orchestrator: n8n
+  state_store: postgres
+  queue: redis
+  reverse_proxy: required
+  tls: required
+
+secrets:
+  git_storage: forbidden
+  llm_context: forbidden
+  customer_output: forbidden
+  runtime_injection: required
+
+domain_isolation:
+  required: true
+  axes:
+    - domain_id
+    - n8n_project
+    - workflow_namespace
+    - credential_scope
+    - database_scope
+    - knowledge_namespace
+    - authorization_scope
+    - audit_scope
+
+promotion:
+  source_of_truth: git
+  path:
+    - validate
+    - build
+    - migrate_compatibility_check
+    - deploy_green
+    - health_check
+    - smoke_test
+    - approval
+    - traffic_switch
+    - drain_blue
+    - verify
+    - record_release
+
+rollback:
+  triggers:
+    - health_failure
+    - smoke_failure
+    - critical_runtime_error
+    - authorization_boundary_failure
+    - severe_regression
+  rule: >
+    Roll back application/runtime/workflow release where safe; never blindly
+    reverse an unknown external commerce mutation. Reconcile first.
+
+production_certification:
+  blocked_until_phase_10: true

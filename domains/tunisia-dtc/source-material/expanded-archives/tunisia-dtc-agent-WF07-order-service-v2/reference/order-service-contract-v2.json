@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "purpose": "Read-only customer order support backed by WooCommerce through WF-20.",
+  "input": {
+    "intent": "order_status",
+    "identity": {
+      "level": "order_verified|high_assurance",
+      "woocommerce_customer_id": "optional trusted ID",
+      "verified_email": "optional trusted verified email",
+      "verified_phone": "optional trusted verified phone"
+    },
+    "order_id": "optional WooCommerce numeric order ID"
+  },
+  "commerce_request": {
+    "operation": "get_order|get_customer_orders",
+    "resource": "order",
+    "lookup": "owner scope or order_id"
+  },
+  "output": {
+    "verified_source": "boolean",
+    "owner_match": "boolean",
+    "verified_order_data": "allowlisted object or null"
+  },
+  "authorization": [
+    "WF-07 requires order_verified/high_assurance plus a trusted owner scope.",
+    "WF-20 is an adapter only and does not grant authorization.",
+    "Order ID alone never proves ownership."
+  ],
+  "privacy": [
+    "Do not return full billing/shipping addresses, customer IP, user agent, payment tokens, transaction IDs, internal notes, raw meta_data, or other customers data.",
+    "Tracking URL is returned only when present in trusted WooCommerce data."
+  ],
+  "woo_truth": [
+    "WooCommerce order id/number/status/timestamps/items are transactional truth.",
+    "No customer message, screenshot, or LLM claim becomes order truth."
+  ],
+  "non_goals": [
+    "No order mutation.",
+    "No payment capture/refund/cancellation."
+  ]
+}

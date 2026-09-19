@@ -1,0 +1,223 @@
+{
+  "name": "WF-14 Checkout Service v3 \u2014 Live Validation Snapshot",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"operation\": \"checkout_start\", \"customer_id\": \"<uuid>\", \"channel\": \"facebook\", \"store_id\": \"default\", \"action_id\": \"<action_id>\"}"
+      },
+      "id": "14t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(!['checkout_start','checkout_confirm'].includes(x.operation))\n throw new Error('checkout_invalid_operation');\nif(typeof x.customer_id!=='string'||!x.customer_id.trim())\n throw new Error('checkout_missing_customer');\nif(!['facebook','whatsapp','instagram','internal'].includes(x.channel))\n throw new Error('checkout_invalid_channel');\nreturn [{json:{\n ...x,store_id:x.store_id||'default',\n action_id:x.action_id||`${x.customer_id}:${x.operation}:${Date.now()}`\n}}];\n"
+      },
+      "id": "14v",
+      "name": "Validate Checkout Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// WF-10 must be the real authorization boundary.\n// This node only asserts that the upstream caller supplied the required\n// authorization result; it does not grant permission.\nconst x=$json;\nif(x.authorization_result && x.authorization_result!=='allow')\n throw new Error('checkout_not_authorized');\nreturn [{json:{...x,authorization_asserted:true}}];\n"
+      },
+      "id": "14a",
+      "name": "Authorization Boundary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nreturn [{json:{\n operation:'checkout_validate',\n customer_id:x.customer_id,\n channel:x.channel,\n store_id:x.store_id,\n action_id:x.action_id,\n // WF-20 resolves protected cart session internally.\n cart_reference_resolution:'internal_wf20_only',\n require_live_product_validation:true,\n require_live_stock_validation:true,\n require_live_price_validation:true,\n require_live_coupon_validation:true,\n payment_method:'cod',\n create_order:false\n}}];\n"
+      },
+      "id": "14m",
+      "name": "Prepare WF-20 Checkout Validation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_WF20_WORKFLOW_ID"
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "14e",
+      "name": "Execute WF-20 Checkout Gateway",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst req=$('Prepare WF-20 Checkout Validation').first().json;\nconst r=$json;\nif(r.commerce_status==='unavailable'){\n return [{json:{\n  success:false,operation:'checkout_validate',customer_id:req.customer_id,\n  commerce_status:'unavailable',verified:false,checkout_snapshot:null,\n  error:{code:'COMMERCE_UNAVAILABLE',order_creation_allowed:false,\n    fallback:'preserve_purchase_intent_and_customer_details'}\n }}];\n}\nreturn [{json:{\n success:Boolean(r.success),\n operation:req.operation==='checkout_validate'?'checkout_start':req.operation,\n customer_id:req.customer_id,\n commerce_status:r.commerce_status||'available',\n verified:Boolean(r.verified && r.success),\n checkout_snapshot:r.checkout_snapshot||null,\n error:r.error||null\n}}];\n"
+      },
+      "id": "14n",
+      "name": "Normalize Checkout Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(x.success && !x.verified) throw new Error('checkout_success_without_verification');\nif(x.success && x.commerce_status!=='available')\n throw new Error('checkout_success_without_live_commerce');\nif(x.success && !x.checkout_snapshot)\n throw new Error('checkout_missing_snapshot');\n\nif(x.success){\n const s=x.checkout_snapshot;\n const required=['cart_reference','currency','items','subtotal','discount_total','shipping_total','total','payment_method','snapshot_id'];\n for(const k of required) if(s[k]===undefined || s[k]===null) throw new Error(`checkout_snapshot_missing_${k}`);\n if(s.payment_method!=='cod') throw new Error('checkout_unexpected_payment_method');\n if(s.order_created===true) throw new Error('checkout_must_not_create_order');\n}\nreturn [{json:x}];\n"
+      },
+      "id": "14g",
+      "name": "Verify Checkout Snapshot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nreturn [{json:{\n success:x.success,operation:x.operation,customer_id:x.customer_id,\n commerce_status:x.commerce_status,verified:x.verified,\n checkout_snapshot:x.checkout_snapshot,error:x.error\n}}];\n"
+      },
+      "id": "14o",
+      "name": "Return Verified Checkout Snapshot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Checkout Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Checkout Request": {
+      "main": [
+        [
+          {
+            "node": "Authorization Boundary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorization Boundary": {
+      "main": [
+        [
+          {
+            "node": "Prepare WF-20 Checkout Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare WF-20 Checkout Validation": {
+      "main": [
+        [
+          {
+            "node": "Execute WF-20 Checkout Gateway",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute WF-20 Checkout Gateway": {
+      "main": [
+        [
+          {
+            "node": "Normalize Checkout Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Checkout Result": {
+      "main": [
+        [
+          {
+            "node": "Verify Checkout Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Checkout Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Return Verified Checkout Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "REPLACE_ON_IMPORT",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "dtc-agent"
+    },
+    {
+      "name": "checkout"
+    },
+    {
+      "name": "woocommerce"
+    },
+    {
+      "name": "cod"
+    },
+    {
+      "name": "security"
+    }
+  ]
+}

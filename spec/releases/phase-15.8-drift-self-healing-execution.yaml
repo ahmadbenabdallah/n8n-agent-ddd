@@ -1,0 +1,79 @@
+phase:
+  id: "0.15.8"
+  name: "Drift + Self-Healing Execution"
+  status: "EVIDENCE_FOUNDATION"
+  purpose: "Execute and capture real staging workflow drift detection, reconciliation, bounded self-healing, verification, and audit."
+
+scope:
+  environment: "staging"
+  production_execution: false
+  autonomous_business_authorization: false
+  required_controls:
+    - "ALLOW_LIVE_DRIFT=YES"
+    - "SELF_HEAL_TARGET_ISOLATED=YES"
+    - "CONFIRM_SELF_HEAL=YES"
+
+control_loop:
+  - "OBSERVE"
+  - "CLASSIFY"
+  - "DECIDE"
+  - "ACT"
+  - "VERIFY"
+  - "AUDIT"
+  - "LEARN"
+
+exercise:
+  drift_cases:
+    - "workflow_definition_drift"
+    - "workflow_activation_state_drift"
+    - "runtime_configuration_drift"
+    - "database_schema_drift_detection"
+  self_healing_cases:
+    - "restart_disposable_worker"
+    - "bounded_transient_internal_retry"
+    - "clear_stale_runtime_lock"
+    - "reschedule_reconciliation"
+  forbidden_cases:
+    - "authorize_commerce"
+    - "change_price"
+    - "change_stock"
+    - "change_payment_status"
+    - "bypass_WF-10"
+    - "blind_retry_unknown_commerce_mutation"
+    - "rotate_or_export_secrets"
+
+evidence_gates:
+  DRIFT:
+    description: "Known injected staging drift is detected, classified, and reconciled against the canonical source of truth."
+    status: "NOT_EXECUTED"
+  SELF_HEAL:
+    description: "Only bounded operational remediation is performed and independently verified."
+    status: "NOT_EXECUTED"
+  SAFETY:
+    description: "Self-healing cannot cross the commerce authorization boundary or perform forbidden actions."
+    status: "NOT_EXECUTED"
+  AUDIT:
+    description: "Every remediation decision and resulting state change has an auditable record."
+    status: "NOT_EXECUTED"
+
+truth_model:
+  git: "engineering_source_of_truth"
+  postgres: "durable_domain_state"
+  commerce_provider: "commerce_truth"
+  n8n: "runtime_orchestration"
+  WF-10: "commerce_authorization_boundary"
+  WF-17: "audit_truth"
+  WF-19: "operational_monitoring_and_reconciliation"
+
+safety:
+  no_production_execution: true
+  human_ownership_blocks_conflicting_automation: true
+  observe_before_act: true
+  bounded_actions_only: true
+  verify_after_action: true
+  audit_state_changes: true
+  no_secrets_in_evidence: true
+
+pass_rule:
+  - "Do not mark DRIFT/SELF_HEAL/SAFETY/AUDIT successful without captured staging runtime evidence."
+  - "A local policy or contract test is not operational evidence."

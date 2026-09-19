@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-18 KB Ingestion Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation",
+    "source_id",
+    "source_type"
+  ],
+  "properties": {
+    "operation": {
+      "type": "string",
+      "enum": [
+        "ingest_document",
+        "reindex_source",
+        "disable_source"
+      ]
+    },
+    "source_id": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "source_type": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "source_uri": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2000
+    },
+    "language": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 20
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    },
+    "content": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ingestion_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 256
+    }
+  }
+}

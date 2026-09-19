@@ -1,0 +1,51 @@
+{
+  "version": "2026.09.19",
+  "canonical_root": ".agents/skills",
+  "external_providers": [
+    {
+      "id": "n8n-official",
+      "source": "https://github.com/n8n-io/skills",
+      "type": "upstream_skill_provider",
+      "status": "integration_reference",
+      "license_review_required": true,
+      "version_pin_required": true,
+      "attribution_required": true,
+      "capabilities": [
+        "workflow-lifecycle",
+        "workflow-building",
+        "workflow-debugging",
+        "workflow-testing",
+        "credentials-security",
+        "expressions",
+        "sub-workflows"
+      ]
+    },
+    {
+      "id": "supabase-official",
+      "source": "https://github.com/supabase/agent-skills",
+      "type": "upstream_skill_provider",
+      "status": "integration_reference",
+      "license_review_required": true,
+      "version_pin_required": true,
+      "attribution_required": true,
+      "capabilities": [
+        "postgres",
+        "migrations",
+        "rls",
+        "indexes",
+        "pgvector",
+        "restore",
+        "queues"
+      ]
+    }
+  ],
+  "local_namespaces": [
+    "core",
+    "domain",
+    "n8n",
+    "database",
+    "security",
+    "testing",
+    "deployment"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "package": "Tunisia DTC Agent System FINAL v4 \u2014 WF-08 Escalation Engine",
+  "version": "v4",
+  "workflow": "WF-08",
+  "status": "production-spec",
+  "files": [
+    "README.md",
+    "01-WF-08-ESCALATION-SPEC.md",
+    "02-WF-08-CASE-DATA-CONTRACT.md",
+    "03-WF-08-TAKEOVER-AND-RELEASE.md",
+    "04-WF-08-N8N-IMPLEMENTATION.md",
+    "05-WF-08-SECURITY-OWASP-TESTS.md",
+    "06-WF-08-E2E-FLOWS.md",
+    "07-WF-08-SUPABASE-SCHEMA.md",
+    "08-WF-08-PRODUCTION-CHECKLIST.md"
+  ],
+  "dependencies": [
+    "WF-03",
+    "WF-06",
+    "WF-10",
+    "WF-16",
+    "WF-17",
+    "WF-19"
+  ],
+  "invariants": [
+    "Escalation is a case and ownership lifecycle",
+    "Human takeover sets conversation_owner=HUMAN and automation_mode=PAUSED",
+    "WF-08 never grants commerce authorization",
+    "WF-10 remains the hard authorization boundary",
+    "Case lifecycle transitions are allowlisted",
+    "Ownership and lifecycle events are idempotent",
+    "Mandatory escalation fails closed when case infrastructure is unavailable"
+  ]
+}

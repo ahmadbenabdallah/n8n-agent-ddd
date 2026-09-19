@@ -1,0 +1,38 @@
+version: 1
+required_dimensions:
+  - domain_id
+  - environment
+  - release_version
+  - workflow_id
+  - execution_id
+  - correlation_id
+  - model_version
+  - prompt_version
+metrics:
+  runtime:
+    - workflow_execution_total
+    - workflow_execution_failure_total
+    - workflow_execution_latency
+    - queue_depth
+  llm:
+    - llm_request_total
+    - llm_token_input_total
+    - llm_token_output_total
+    - llm_cost_total
+    - llm_latency
+  commerce:
+    - commerce_call_total
+    - commerce_call_failure_total
+    - commerce_unknown_outcome_total
+    - commerce_reconciliation_total
+  security:
+    - authorization_denied_total
+    - policy_violation_total
+    - secret_exposure_attempt_total
+alerts:
+  - critical_authorization_failure
+  - repeated_external_unknown_outcome
+  - workflow_drift
+  - database_unavailable
+  - queue_stuck
+  - abnormal_llm_cost

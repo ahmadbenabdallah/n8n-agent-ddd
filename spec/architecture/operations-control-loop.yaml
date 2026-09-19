@@ -1,0 +1,26 @@
+version: 1
+loop:
+  - observe
+  - classify
+  - decide
+  - act
+  - verify
+  - audit
+  - learn
+decision_classes:
+  healthy:
+    action: none
+  transient:
+    action: bounded_retry
+  degraded:
+    action: alert_and_reconcile
+  critical:
+    action: freeze_and_escalate
+  unknown_external_outcome:
+    action: reconcile_before_retry
+rules:
+  - every_action_has_correlation_id
+  - every_state_change_is_audited
+  - self_healing_has_max_attempts
+  - self_healing_has_backoff
+  - operational_actions_cannot_grant_business_authorization

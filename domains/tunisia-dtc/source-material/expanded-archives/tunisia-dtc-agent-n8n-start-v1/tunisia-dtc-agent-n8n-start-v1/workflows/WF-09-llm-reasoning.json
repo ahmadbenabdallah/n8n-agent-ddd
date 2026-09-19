@@ -1,0 +1,76 @@
+{
+  "name": "WF-09 \u2014 LLM Reasoning",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; return [{json:{...x,llm_input:{canonical_message:{text:x.text,channel:x.channel},trusted_language:{language:x.language??\"auto\",script:x.script??\"auto\",register:x.register??\"auto\"},state:x.state??{},intent:x.intent??{},security:x.security??{},retrieved_facts:x.retrieved_facts??[],verified_transactions:x.verified_transactions??[],allowed_capabilities:x.allowed_capabilities??[],instruction:\"Return structured proposal only. Never execute actions or invent facts.\"}}}];"
+      },
+      "id": "validate-/-prepare",
+      "name": "Validate / Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,workflow_result:\"ok\"}}];"
+      },
+      "id": "return-contract",
+      "name": "Return Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        620,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate / Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate / Prepare": {
+      "main": [
+        [
+          {
+            "node": "Return Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf09",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

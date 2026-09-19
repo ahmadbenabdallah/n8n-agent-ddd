@@ -1,0 +1,25 @@
+phase: "0.20.3"
+title: "ReadMe Bi-Directional Documentation Repository"
+status: "foundation"
+purpose: "Separate public documentation from the engine repository and prepare a dedicated Git repository for ReadMe bi-directional Git Sync."
+principles:
+  - "Internal engineering documentation remains in the engine repository."
+  - "Public documentation has a dedicated repository."
+  - "ReadMe and the dedicated public-docs repository are bidirectionally synchronized after initial connection."
+  - "The engine repository does not expose internal docs through the public ReadMe repository."
+  - "Feature-driven documentation changes from the engine repository use a controlled bridge into the public-docs repository."
+  - "The initial ReadMe Git repository connection is performed against an empty GitHub repository."
+components:
+  engine_repo: "n8n-agent-ddd"
+  public_docs_repo: "n8n-agent-ddd-docs"
+  readme_sync: "ReadMe bi-directional Git Sync"
+validation:
+  - "public docs contain required title and summary frontmatter"
+  - "public docs follow ReadMe docs/_order.yaml navigation structure"
+  - "no internal docs path is copied into the public docs repository"
+  - "no secrets are present in public documentation"
+  - "main repository no longer treats rdme one-way publishing as the canonical sync mechanism"
+truth_status:
+  live_readme_connection: "NOT_EXECUTED"
+  github_repo_connection: "NOT_EXECUTED"
+  bidirectional_sync_evidence: "NOT_EXECUTED"

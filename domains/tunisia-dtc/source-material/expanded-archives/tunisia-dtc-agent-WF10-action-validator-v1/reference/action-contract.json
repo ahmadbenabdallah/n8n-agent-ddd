@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "fields": {
+    "message_id": "string",
+    "conversation_id": "string",
+    "action": "allowlisted action",
+    "parameters": "validated object",
+    "identity_level": "trusted identity level",
+    "required_identity_level": "minimum required level",
+    "idempotency_key": "string",
+    "risk_level": "low|medium|high",
+    "authorization": "allow",
+    "execution_allowed": true,
+    "execution_verified": false
+  },
+  "rule": "Authorized contract permits a downstream service to execute; it does not itself prove execution."
+}

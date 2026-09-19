@@ -1,0 +1,10 @@
+Add these package scripts if the repository package.json is being updated:
+
+"backup:create": "./scripts/backups/create-postgres-backup.sh",
+"backup:verify": "./scripts/backups/verify-postgres-backup.sh",
+"backup:restore": "./scripts/backups/restore-postgres-backup.sh",
+"backup:manifest": "./scripts/backups/create-runtime-manifest.sh",
+"test:phase14.4": "./tests/architecture/phase14.4-backup-restore.sh"
+
+This patch file is intentionally separate from package.json so the cumulative
+artifact does not overwrite an existing package configuration blindly.

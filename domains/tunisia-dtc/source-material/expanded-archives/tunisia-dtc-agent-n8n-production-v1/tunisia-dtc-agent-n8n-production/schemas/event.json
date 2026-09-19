@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Audit Event",
+  "type": "object",
+  "required": [
+    "event_type",
+    "conversation_id"
+  ],
+  "properties": {
+    "event_type": {
+      "type": "string"
+    },
+    "conversation_id": {
+      "type": "string"
+    },
+    "message_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    },
+    "created_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

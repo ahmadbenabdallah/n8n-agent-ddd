@@ -1,0 +1,127 @@
+version: "0.14.5"
+name: upgrade-migration-lifecycle
+status: foundation
+purpose: >
+  Define a reversible, version-aware lifecycle for upgrading n8n, migrating
+  PostgreSQL schemas, evolving domain contracts, and changing runtime artifacts.
+
+principles:
+  - expand_before_contract
+  - backward_compatible_reads_before_new_writes
+  - migrate_before_contract
+  - immutable_release_manifest
+  - backup_before_migration
+  - verify_before_traffic
+  - rollback_is_explicit
+  - unknown_external_outcomes_are_reconciled
+  - runtime_version_is_separate_from_business_policy_version
+
+version_dimensions:
+  platform_release: required
+  n8n_version: required
+  database_schema_version: required
+  domain_contract_version: required
+  business_policy_version: required
+  security_policy_version: required
+  llm_model_version: required
+  prompt_version: required
+  knowledge_base_version: required
+
+lifecycle:
+  - PRECHECK
+  - BACKUP
+  - EXPAND
+  - DEPLOY
+  - MIGRATE
+  - VERIFY
+  - SWITCH
+  - DRAIN
+  - CONTRACT
+  - AUDIT
+
+precheck:
+  required:
+    - clean_release_manifest
+    - compatible_database_version
+    - verified_backup
+    - migration_plan
+    - rollback_plan
+    - health_baseline
+    - dependency_compatibility
+    - secret_contract_validation
+
+expand_phase:
+  rule: >
+    Add new schema fields, tables, indexes, or compatibility paths before
+    removing or changing the old contract.
+  prohibited:
+    - destructive_schema_change_before_traffic_safety
+    - irreversible_data_transform_without_backup
+
+migration:
+  transaction_policy: migration_dependent
+  idempotent: required
+  lock_timeout: bounded
+  statement_timeout: bounded
+  evidence: required
+  rollback:
+    schema: forward_fix_preferred
+    application: previous_release_or_blue_green
+    data: restore_or_reconciliation_when_forward_fix_is_not_safe
+
+n8n_upgrade:
+  pinned_version: required
+  version_skew:
+    main_worker_runner: prohibited_unless_supported
+  workflow_compatibility: verify
+  credential_compatibility: verify
+  community_nodes: inventory_and_verify
+  audit_after_upgrade: recommended
+
+blue_green:
+  green:
+    - provision
+    - inject_secrets
+    - restore_or_migrate
+    - health_check
+    - workflow_inventory_check
+    - contract_check
+    - smoke_test
+  switch:
+    - stop_new_traffic_to_blue
+    - drain_blue
+    - switch_traffic_to_green
+  rollback:
+    allowed_before_contract_when_compatible: true
+    after_irreversible_contract: forward_fix_or_restore
+
+contract_phase:
+  only_after:
+    - green_verified
+    - migration_verified
+    - traffic_stable
+    - rollback_window_assessed
+  examples:
+    - remove_deprecated_column
+    - remove_old_event_version
+    - remove_legacy_adapter_path
+
+version_skew:
+  allowed:
+    - old_reader_new_schema_during_expand
+    - new_reader_old_data_during_migration
+  forbidden:
+    - incompatible_writer_reader_pair
+    - mixed_n8n_component_versions_without_support
+    - unversioned_workflow_contract
+
+database:
+  migration_tool: drizzle-kit
+  source_of_truth: Git
+  production_execution: release_gated
+  destructive_migrations: explicit_approval_required
+
+evidence:
+  live_upgrade: NOT_EXECUTED
+  live_rollback: NOT_EXECUTED
+  live_migration: NOT_EXECUTED

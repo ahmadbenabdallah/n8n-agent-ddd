@@ -1,0 +1,382 @@
+{
+  "name": "WF-12 — Cart Service",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x = $json;\nconst required = ['authorized_action','identity','cart_context'];\nconst missing = required.filter(k => x[k] === undefined || x[k] === null);\nconst a = x.authorized_action || {};\nconst allowed = ['cart_view','cart_add','cart_remove','cart_update','cart_clear'];\nconst action = a.action || x.intent;\nconst ok = !missing.length && allowed.includes(action);\nreturn [{json:{...x, _wf12_input_valid:ok, _wf12_missing:missing, _wf12_action:action}}];"
+      },
+      "id": "validate",
+      "name": "Validate Cart Service Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf12_input_valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if-valid",
+      "name": "Cart Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{status:'rejected',service:'cart',reason:'invalid_input',execution_allowed:false,errors:$json._wf12_missing || []}}];"
+      },
+      "id": "reject",
+      "name": "Reject Invalid Cart Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -580,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const a=$json.authorized_action||{};\nconst i=$json.identity||{};\nconst action=a.action||$json.intent;\nconst permitted=['channel_linked','order_verified','high_assurance'].includes(i.identity_level);\nconst contractOk=a.execution_allowed===true && a.action===action;\nreturn [{json:{...$json,_wf12_auth_ok:permitted&&contractOk,_wf12_action:action}}];"
+      },
+      "id": "auth",
+      "name": "Recheck Authorized Action Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -580,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf12_auth_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if-auth",
+      "name": "Authorization Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -360,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{status:'rejected',service:'cart',reason:'authorization_failed',execution_allowed:false}}];"
+      },
+      "id": "reject-auth",
+      "name": "Reject Unauthorized Cart Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c=$json.cart_context||{};\nconst a=$json.authorized_action||{};\nconst p=a.parameters||{};\nconst action=a.action||$json.intent;\nconst item=p.item||{};\nconst variant=p.variant||{};\nconst qty=Number(p.quantity ?? 1);\nconst validQty=Number.isInteger(qty)&&qty>0&&qty<=99;\nconst hasSku=typeof (item.sku||p.sku) === 'string' && (item.sku||p.sku).length>0;\nconst key=[a.idempotency_key||$json.message_id||'no-key',action,item.sku||p.sku||'',variant.id||variant.size||variant.name||'',qty].join('|');\nreturn [{json:{...$json,_wf12_params:{...p,quantity:qty},_wf12_parameter_ok:(action==='cart_view'||action==='cart_clear'||action==='cart_remove'||action==='cart_update'||(validQty&&hasSku)),_wf12_idempotency_key:key}}];"
+      },
+      "id": "params",
+      "name": "Validate Cart Parameters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf12_parameter_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if-params",
+      "name": "Parameters Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        120,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{status:'rejected',service:'cart',reason:'invalid_parameters',execution_allowed:false}}];"
+      },
+      "id": "reject-params",
+      "name": "Reject Invalid Cart Parameters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c=$json.cart_context||{};\nconst a=$json.authorized_action||{};\nconst action=a.action||$json.intent;\nconst p=$json._wf12_params||{};\nconst existing=c.cart||{};\nconst idem=c.idempotency_keys||{};\nconst already=Boolean(idem[$json._wf12_idempotency_key]);\nlet variantRequired=['cart_add','cart_update'].includes(action);\nlet variantOk=!variantRequired || Boolean((p.variant&&((p.variant.id)||(p.variant.size)||(p.variant.name))) || p.variant_id || p.size);\nlet cartOk=Boolean(c.cart_id || action==='cart_view' || action==='cart_add');\nlet stockOk=true;\nif(action==='cart_add'||action==='cart_update'){\n  const stock=(c.live_stock||{})[p.sku || (p.item||{}).sku || ''];\n  if(stock!==undefined) stockOk=Number(stock)>=Number(p.quantity||1);\n}\nreturn [{json:{...$json,_wf12_checks:{already,variant_ok:variantOk,cart_ok:cartOk,stock_ok:stockOk},_wf12_business_ok:!already&&variantOk&&cartOk&&stockOk}}];"
+      },
+      "id": "business",
+      "name": "Business Rules + Stock Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf12_business_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if-business",
+      "name": "Business Rules Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        600,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c=$json.cart_context||{};\nconst a=$json.authorized_action||{};\nconst action=a.action||$json.intent;\nconst p=$json._wf12_params||{};\nreturn [{json:{...$json,status:'ready_to_execute',service:'cart',operation:action,request:{cart_id:c.cart_id||null,sku:p.sku||(p.item||{}).sku||null,variant:p.variant||{id:p.variant_id||null,size:p.size||null},quantity:p.quantity||null},execution_allowed:true,idempotency_key:$json._wf12_idempotency_key,adapter:'COMMERCE_CART_ADAPTER'}}];"
+      },
+      "id": "build-request",
+      "name": "Build Commerce Cart Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst exec=x.commerce_result || x.adapter_result || null;\nif(!exec) return [{json:{...x,status:'awaiting_adapter',verification_status:'not_run',note:'Connect COMMERCE_CART_ADAPTER here; no success is asserted.'}}];\nconst verified=exec.verified===true && exec.owner_match===true;\nreturn [{json:{...x,status:verified?'completed':'failed',verification_status:verified?'verified':'failed',execution_allowed:verified,commerce_result:verified?exec:undefined}}];"
+      },
+      "id": "verify",
+      "name": "Post-Action Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nreturn [{json:{\n  service:'cart',\n  status:x.status||'failed',\n  action:x.operation||x._wf12_action||null,\n  execution_allowed:x.execution_allowed===true,\n  verification_status:x.verification_status||'not_run',\n  cart:x.commerce_result?.cart || null,\n  idempotency_key:x.idempotency_key||null\n}}];"
+      },
+      "id": "contract",
+      "name": "Build Cart Service Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        -80
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Cart Service Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Cart Service Input": {
+      "main": [
+        [
+          {
+            "node": "Cart Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cart Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Recheck Authorized Action Contract",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Cart Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck Authorized Action Contract": {
+      "main": [
+        [
+          {
+            "node": "Authorization Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorization Valid?": {
+      "main": [
+        [
+          {
+            "node": "Validate Cart Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Unauthorized Cart Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Cart Parameters": {
+      "main": [
+        [
+          {
+            "node": "Parameters Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parameters Valid?": {
+      "main": [
+        [
+          {
+            "node": "Business Rules + Stock Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Cart Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Business Rules + Stock Check": {
+      "main": [
+        [
+          {
+            "node": "Business Rules Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Business Rules Valid?": {
+      "main": [
+        [
+          {
+            "node": "Build Commerce Cart Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Cart Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Commerce Cart Request": {
+      "main": [
+        [
+          {
+            "node": "Post-Action Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post-Action Verification": {
+      "main": [
+        [
+          {
+            "node": "Build Cart Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf12-cart-service-v1"
+}

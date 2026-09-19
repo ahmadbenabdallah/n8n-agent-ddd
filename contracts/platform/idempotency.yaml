@@ -1,0 +1,12 @@
+version: "1"
+name: idempotency
+
+required_for:
+  - order_creation
+  - transaction_creation
+  - privileged_external_mutations
+
+rules:
+  - same_key_same_operation_must_not_duplicate_effect
+  - key_must_be_durable
+  - unknown_execution_must_reconcile_before_retry

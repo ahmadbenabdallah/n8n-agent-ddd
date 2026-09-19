@@ -1,0 +1,29 @@
+release:
+  version: "2026.09.0"
+
+runtime:
+  n8n: pinned
+  workflow_bundle: git_revision
+
+business:
+  policy: versioned
+
+security:
+  policy: versioned
+
+llm:
+  model: versioned
+  prompt_version: versioned
+
+knowledge_base:
+  version: versioned
+
+database:
+  schema_version: versioned
+
+deployment:
+  strategy: blue_green
+  health_check: required
+  smoke_test: required
+  rollback: enabled
+  drain_timeout_seconds: 300

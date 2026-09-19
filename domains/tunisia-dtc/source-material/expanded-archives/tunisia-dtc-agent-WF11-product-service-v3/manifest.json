@@ -1,0 +1,12 @@
+{
+  "name": "tunisia-dtc-agent-WF11-product-service-v3",
+  "version": "3.0.0",
+  "changes": [
+    "Consumes WF-20 v4 commerce source-of-truth state",
+    "WooCommerce-first routing",
+    "KB informational fallback when WooCommerce unavailable",
+    "No live commerce claims from KB",
+    "Regression matrix and wiring docs"
+  ],
+  "status": "implementation-ready; verify exact n8n/WF-20 fields and connect merchant KB retrieval"
+}

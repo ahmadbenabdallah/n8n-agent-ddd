@@ -1,0 +1,79 @@
+phase:
+  id: "0.16.0"
+  name: "Production Operationalization"
+  status: "EXECUTION_FOUNDATION"
+  purpose: "Turn the 0.15 evidence framework into a repeatable operator-controlled staging-to-production operational lifecycle."
+
+scope:
+  staging_required: true
+  production_execution: false
+  production_certification_required: true
+  operator_approval_required: true
+  provider_neutral: true
+
+objectives:
+  - "Provision or validate a real staging runtime."
+  - "Bind runtime configuration and persistent secrets safely."
+  - "Synchronize and verify the canonical 21 workflows."
+  - "Execute the Phase 15 evidence suites against the real runtime."
+  - "Collect immutable, sanitized evidence."
+  - "Build the final certification manifest from actual evidence."
+  - "Prepare production deployment without automatically switching production traffic."
+
+operational_lifecycle:
+  - "PREFLIGHT"
+  - "PROVISION"
+  - "CONFIGURE"
+  - "SYNC"
+  - "VERIFY"
+  - "EXECUTE_EVIDENCE"
+  - "CERTIFY"
+  - "APPROVE"
+  - "DEPLOY"
+  - "VERIFY_PRODUCTION"
+  - "OPERATE"
+
+runtime_truth:
+  git: "engineering_source_of_truth"
+  postgres: "durable_domain_state"
+  commerce_provider: "commerce_truth"
+  n8n: "runtime_orchestration"
+  WF-10: "commerce_authorization_boundary"
+  WF-17: "audit_truth"
+  WF-19: "operational_monitoring_and_reconciliation"
+
+production_rules:
+  - "Production deployment is blocked until 0.15 certification is genuinely CERTIFIED."
+  - "Production traffic switching requires explicit operator approval."
+  - "No production secrets are committed to Git."
+  - "No production secrets are written to evidence."
+  - "No production commerce mutation is performed by a certification script."
+  - "Unknown commerce outcomes require reconciliation."
+  - "Rollback capability must exist before production traffic switch."
+  - "Live runtime evidence is required; static contracts are insufficient."
+
+approval:
+  production_switch_requires_explicit_approval: true
+  required_roles:
+    - "operator"
+    - "release_owner"
+
+required_inputs:
+  - "runtime configuration"
+  - "secret injection mechanism"
+  - "provider adapter"
+  - "n8n version pin"
+  - "PostgreSQL connection"
+  - "n8n project binding"
+  - "21-workflow synchronization plan"
+  - "test channel adapter"
+  - "test commerce adapter"
+  - "operator approval identity"
+
+outputs:
+  - "staging runtime manifest"
+  - "runtime health evidence"
+  - "workflow synchronization ledger"
+  - "phase 15 evidence index"
+  - "production certification decision"
+  - "production deployment plan"

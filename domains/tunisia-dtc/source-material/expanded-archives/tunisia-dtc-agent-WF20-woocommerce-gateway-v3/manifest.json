@@ -1,0 +1,21 @@
+{
+  "workflow": "WF-20 WooCommerce Gateway",
+  "version": "3.0",
+  "role": "central commerce integration boundary",
+  "files": [
+    "n8n/WF-20-woocommerce-gateway-v3.json",
+    "database/wc-cart-token-map.sql",
+    "tests/test-matrix.md",
+    "docs/03-cart-token.md",
+    "docs/01-operation-contract.md",
+    "docs/07-normalization.md",
+    "docs/05-checkout.md",
+    "docs/10-wiring-matrix.md",
+    "docs/08-setup.md",
+    "docs/09-known-limitations.md",
+    "docs/06-security.md",
+    "docs/04-coupon.md",
+    "docs/README.md",
+    "docs/02-native-vs-http.md"
+  ]
+}

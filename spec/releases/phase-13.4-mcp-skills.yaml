@@ -1,0 +1,8 @@
+version: "0.13.4"
+name: mcp-skills-connection
+requirements:
+  - instance_level_mcp_enabled
+  - trusted_client_authentication
+  - official_n8n_skills_loaded
+  - workflow_access_explicit
+  - mcp_not_authorization

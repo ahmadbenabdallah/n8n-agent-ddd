@@ -1,0 +1,195 @@
+{
+  "name": "WF-17 Audit & Analytics v3 \u2014 Redacted Event Ledger",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"event_type\": \"order.created\", \"conversation_id\": \"<uuid>\", \"channel\": \"facebook\", \"customer_id\": \"<uuid>\", \"intent\": \"checkout_confirm\", \"action_id\": \"<stable-id>\", \"authorization_result\": \"allow\", \"success\": true, \"metadata\": {\"source\": \"wf15\", \"order_id\": \"123\", \"result_code\": \"verified\"}}"
+      },
+      "id": "17t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nconst required=['event_type','conversation_id','channel'];\nfor(const k of required) if(typeof x[k]!=='string'||!x[k].trim()) throw new Error(`audit_missing_${k}`);\nif(!['facebook','whatsapp','instagram','internal'].includes(x.channel))\n throw new Error('audit_invalid_channel');\nif(x.metadata && typeof x.metadata!=='object') throw new Error('audit_invalid_metadata');\nreturn [{json:{...x,event_id:x.event_id||`evt_${Date.now()}_${Math.random().toString(36).slice(2,10)}`,\ntimestamp:x.timestamp||new Date().toISOString()}}];\n"
+      },
+      "id": "17v",
+      "name": "Validate Audit Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=JSON.parse(JSON.stringify($json));\nconst forbidden=/api[_-]?key|access[_-]?token|refresh[_-]?token|authorization|password|passwd|otp|pin|cvv|card[_-]?number|pan|consumer[_-]?secret|client[_-]?secret|cart[_-]?token|nonce|webhook[_-]?secret/i;\n\nfunction scrub(v){\n  if(Array.isArray(v)) return v.map(scrub);\n  if(v && typeof v==='object'){\n    const o={};\n    for(const [k,val] of Object.entries(v)){\n      if(forbidden.test(k)) o[k]='[REDACTED]';\n      else o[k]=scrub(val);\n    }\n    return o;\n  }\n  if(typeof v==='string'){\n    // Defense-in-depth for common secret-like values embedded in strings.\n    if(forbidden.test(v) && v.length>80) return '[REDACTED]';\n    return v;\n  }\n  return v;\n}\nconst y=scrub(x);\n// Avoid unnecessary PII in general analytics. Keep customer_id as a\n// pseudonymous internal reference; do not store phone/address/name here.\nif(y.metadata){\n  for(const k of ['phone','phone_e164','address','address_text','email','name','display_name','full_name'])\n    if(k in y.metadata) delete y.metadata[k];\n}\nreturn [{json:{...y,redaction_applied:true}}];\n"
+      },
+      "id": "17r",
+      "name": "Redact Sensitive Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nconst t=x.event_type.toLowerCase();\nlet category='system';\nif(t.includes('security')||t.includes('injection')||t.includes('auth')) category='security';\nelse if(t.includes('order')||t.includes('transaction')||t.includes('checkout')) category='commerce';\nelse if(t.includes('cart')||t.includes('coupon')||t.includes('promotion')) category='commerce';\nelse if(t.includes('customer')||t.includes('identity')) category='identity';\nelse if(t.includes('kb')||t.includes('retrieval')) category='knowledge';\nelse if(t.includes('error')||t.includes('failure')||x.success===false) category='reliability';\nreturn [{json:{...x,event_category:category}}];\n"
+      },
+      "id": "17s",
+      "name": "Classify Audit Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nINSERT INTO public.agent_audit_events\n(event_id,event_type,event_category,timestamp,conversation_id,channel,customer_id,\nintent,language,script,source_ids,action_id,action_type,authorization_result,\nsecurity_flags,success,metadata,redaction_applied)\nVALUES($1,$2,$3,$4::timestamptz,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::jsonb,$18)\nON CONFLICT(event_id) DO NOTHING\nRETURNING event_id;\n",
+        "options": {
+          "queryReplacement": "={{ [$json.event_id,$json.event_type,$json.event_category,$json.timestamp,$json.conversation_id,$json.channel,$json.customer_id||null,$json.intent||null,$json.language||null,$json.script||null,JSON.stringify($json.source_ids||[]),$json.action_id||null,$json.action_type||null,$json.authorization_result||null,JSON.stringify($json.security_flags||[]),$json.success??null,JSON.stringify($json.metadata||{}),$json.redaction_applied===true] }}"
+        }
+      },
+      "id": "17p",
+      "name": "Persist Audit Event",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$('Classify Audit Event').first().json;\nreturn [{json:{\n event_id:x.event_id,event_type:x.event_type,event_category:x.event_category,\n success:x.success??null,authorization_result:x.authorization_result||null,\n action_type:x.action_type||null,channel:x.channel,intent:x.intent||null,\n security_flags:x.security_flags||[],timestamp:x.timestamp\n}}];\n"
+      },
+      "id": "17m",
+      "name": "Build Analytics Signal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nreturn [{json:{\n audit_recorded:true,event_id:x.event_id,\n event_category:x.event_category,success:x.success,\n analytics_signal:{\n  event_type:x.event_type,channel:x.channel,intent:x.intent,\n  action_type:x.action_type,security_flags:x.security_flags,timestamp:x.timestamp\n }\n}}];\n"
+      },
+      "id": "17o",
+      "name": "Return Audit Receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Audit Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Audit Event": {
+      "main": [
+        [
+          {
+            "node": "Redact Sensitive Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redact Sensitive Data": {
+      "main": [
+        [
+          {
+            "node": "Classify Audit Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Audit Event": {
+      "main": [
+        [
+          {
+            "node": "Persist Audit Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Audit Event": {
+      "main": [
+        [
+          {
+            "node": "Build Analytics Signal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Analytics Signal": {
+      "main": [
+        [
+          {
+            "node": "Return Audit Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "REPLACE_ON_IMPORT",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "dtc-agent"
+    },
+    {
+      "name": "audit"
+    },
+    {
+      "name": "analytics"
+    },
+    {
+      "name": "security"
+    },
+    {
+      "name": "supabase"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+version: "1"
+name: action-request
+
+fields:
+  action_id: required
+  action_type: required
+  actor: required
+  identity_assurance: required
+  target: required
+  requested_at: required
+  idempotency_key: required
+
+rules:
+  - client_input_is_untrusted
+  - price_must_not_be_client_authoritative
+  - privileged_action_requires_authorization
+  - external_mutation_requires_idempotency

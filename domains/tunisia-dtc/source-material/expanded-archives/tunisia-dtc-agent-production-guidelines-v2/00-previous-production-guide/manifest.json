@@ -1,0 +1,38 @@
+{
+  "package": "tunisia-dtc-agent-production-guide-v1",
+  "version": "1.0",
+  "files": [
+    "00-MASTER-IMPLEMENTATION-GUIDE.md",
+    "01-IMPLEMENTATION-ORDER-AND-SPEC-MATRIX.md",
+    "02-N8N-INTEGRATION-RUNBOOK.md",
+    "03-DATABASE-KB-COMMERCE-INTEGRATION.md",
+    "04-TESTING-AND-RED-TEAM-RUNBOOK.md",
+    "05-PRODUCTION-DEPLOYMENT-ROLLBACK-OPERATIONS.md",
+    "06-GAPS-AND-NOT-YET-PRODUCTION-READY.md",
+    "README.md"
+  ],
+  "architecture": "n8n orchestration; LLM proposal-only; deterministic authorization; commerce execution; post-action verification",
+  "workflows": [
+    "WF-00",
+    "WF-01",
+    "WF-02",
+    "WF-03",
+    "WF-04",
+    "WF-05",
+    "WF-06",
+    "WF-07",
+    "WF-08",
+    "WF-09",
+    "WF-10",
+    "WF-11",
+    "WF-12",
+    "WF-13",
+    "WF-14",
+    "WF-15",
+    "WF-16",
+    "WF-17",
+    "WF-18",
+    "WF-19"
+  ],
+  "status": "implementation/deployment guide; not a claim that external merchant integrations are already connected"
+}

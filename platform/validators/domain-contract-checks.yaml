@@ -1,0 +1,17 @@
+checks:
+  - id: STATE-001
+    rule: durable_state_owner_is_supabase
+  - id: AUTH-002
+    rule: only_WF-10_can_set_execution_allowed_true
+  - id: EXEC-001
+    rule: only_WF-20_can_execute_privileged_woocommerce_mutations
+  - id: IDEMP-001
+    rule: state_changing_external_operations_require_idempotency_key
+  - id: RECON-001
+    rule: unknown_external_outcome_requires_reconciliation
+  - id: SECRET-001
+    rule: runtime_secrets_are_not_domain_payloads
+  - id: AUDIT-001
+    rule: important_state_changes_have_audit_evidence
+  - id: HUMAN-001
+    rule: human_ownership_blocks_conflicting_automation

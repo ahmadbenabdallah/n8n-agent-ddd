@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Action",
+  "type": "object",
+  "required": [
+    "type",
+    "parameters"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "cart_view",
+        "cart_add",
+        "cart_remove",
+        "cart_update",
+        "cart_clear",
+        "checkout_start",
+        "checkout_confirm",
+        "order_status",
+        "human_request",
+        "escalate"
+      ]
+    },
+    "parameters": {
+      "type": "object"
+    },
+    "idempotency_key": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

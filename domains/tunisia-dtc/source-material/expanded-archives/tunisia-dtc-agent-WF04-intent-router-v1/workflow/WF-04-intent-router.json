@@ -1,0 +1,304 @@
+{
+  "name": "WF-04 \u2014 Intent Router",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const i=$json;\nconst required=['message_id','conversation_id','channel','text','identity','security','state'];\nconst missing=required.filter(k=>i[k]===undefined);\nreturn [{json:{...i,input_valid:missing.length===0,missing_fields:missing}}];"
+      },
+      "id": "2",
+      "name": "Validate Router Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.input_valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "Router Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{route:'clarification',intent:'clarification',reason:'missing_router_input',safe_to_reply:true,llm_allowed:false,tools_allowed:false}}];"
+      },
+      "id": "4",
+      "name": "Reject Invalid Router Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const s=String($json.text??'').normalize('NFKC').trim();\nconst lower=s.toLocaleLowerCase('fr-FR');\nconst arabic=/[\\u0600-\\u06ff]/.test(s);\nconst latin=/[A-Za-z]/.test(s);\nconst mixed=/[\\u0600-\\u06ff]/.test(s)&&/[A-Za-z]/.test(s);\nconst tounsiHints=['chnowa','chneya','nheb','n7eb','behi','brabi','hedhi','hedha','zid','na7i','faragh','panier','souma','b9adech','bgadech','mawjoud','mawjouda','taille','commande','nekammel'];\nconst frenchHints=['bonjour','salut','prix','combien','disponible','taille','panier','commande','livraison','retour','remboursement','paiement'];\nconst tokens=lower.split(/[^a-z0-9\u00c0-\u00ff7-9]+/).filter(Boolean);\nconst tnScore=tounsiHints.filter(x=>lower.includes(x)).length;\nconst frScore=frenchHints.filter(x=>lower.includes(x)).length;\nlet language=arabic?'ar':(tnScore>0?'tn':(frScore>0?'fr':'en'));\nif(tnScore>0 && frScore>0) language='tn';\nconst script=arabic?'arabic':(latin?'latin':'unknown');\nconst register=/\\b(bro|frere|haha|lol|stp|please|brabi)\\b/i.test(s)?'casual':'neutral';\nreturn [{json:{...$json,normalized_text:s,normalized_lower:lower,language,script,register,mixed_languages:mixed?['ar','latin']:[],tounsi_score:tnScore,french_score:frScore}}];"
+      },
+      "id": "5",
+      "name": "Normalize + Language Script",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const t=$json.normalized_lower;\nconst checks=[\n['security_suspicion',/(ignore|jib|a3tini|show).{0,80}(system|prompt|instruction|token|secret|password|api key)|bypass.{0,40}(security|validator|rule)|give me (the )?(system|developer) prompt/i],\n['payment_dispute',/(charge|charged|debit|fraud|unauthori|double).{0,50}(payment|paiement|carte)|litige|\u0627\u0639\u062a\u0631\u0627\u0636.*\u062f\u0641\u0639/],\n['human_request',/(human|agent|support humain|parler.*personne|\u0646\u062d\u0628.*\u0645\u0648\u0638\u0641)/i],\n['complaint',/(complain|complaint|r\u00e9clamation|reclamat|probl[e\u00e8]me|\u0645\u0634\u0643\u0644|\u063a\u0627\u0636\u0628)/i],\n['return_exchange',/(return|exchange|\u00e9change|retour|rembourse|remboursement|\u0628\u062f\u0644|\u062a\u0631\u062c\u064a\u0639)/i],\n['order_status',/(where|win|ou|status|statut|suivi|track|commande).{0,40}(order|commande)|\u0641\u064a\u0646.*commande|\u0648\u064a\u0646.*commande/i],\n['checkout_confirm',/(confirm|confirme|confirmer|\u0623\u0643\u062f|\u0627\u0643\u0651\u062f).{0,30}(commande|order|checkout)|\u0646\u0623\u0643\u062f.*\u0637\u0644\u0628/i],\n['checkout_start',/(checkout|passer.*commande|finaliser|nekammel.*checkout|\u0646\u0643\u0645\u0651\u0644.*\u0627\u0644\u0637\u0644\u0628)/i],\n['cart_clear',/(clear|empty|vider|faragh|faraghli|\u0641\u0631\u0651\u063a).{0,30}(cart|panier|\u0627\u0644\u0633\u0644\u0629)|\u0641\u0631\u063a.*\u0627\u0644\u0633\u0644\u0629/i],\n['cart_remove',/(remove|delete|na7i|enl[e\u00e8]ve|supprime|\u0646\u062d\u064a|\u0627\u062d\u0630\u0641).{0,30}(cart|panier|item|produit|\u0627\u0644\u0633\u0644\u0629)/i],\n['cart_update',/(change|update|badal|baddel|modifier|\u0628\u062f\u0651\u0644|\u063a\u064a\u0631).{0,40}(size|taille|qty|quant|variant|\u0644\u0648\u0646|couleur|taille|\u0627\u0644\u0645\u0642\u0627\u0633)/i],\n['cart_view',/(show|view|see|warini|affiche|voir).{0,30}(cart|panier|\u0627\u0644\u0633\u0644\u0629)|\u0634\u0646\u0648\u0629.*\u0641\u064a.*\u0627\u0644\u0633\u0644\u0629/i],\n['cart_add',/(add|ajoute|zid|zidh|\u062d\u0637|\u0632\u064a\u062f).{0,60}(cart|panier|\u0627\u0644\u0633\u0644\u0629)|zidhali.*panier|\u062d\u0637.*\u0627\u0644\u0633\u0644\u0629/i],\n['promotion',/(promo|promotion|discount|r\u00e9duction|offer|\u0639\u0631\u0636|\u062a\u062e\u0641\u064a\u0636|code promo)/i],\n['pricing',/(price|prix|combien|bgadech|b9adech|souma|\u062b\u0645\u0646|\u0633\u0639\u0631|\u0642\u062f\u0627\u0634)/i],\n['availability',/(available|disponible|mawjoud|mawjouda|stock|taille).{0,50}(size|taille|42|43|44|produit|article)|\u0645\u062a\u0648\u0641\u0631|\u0645\u0648\u062c\u0648\u062f/i],\n['shipping',/(shipping|livraison|delivery|\u0648\u0635\u0644|\u062a\u0648\u0635\u064a\u0644|d[e\u00e9]lai)/i],\n['payment',/(payment|paiement|cash|carte|\u0627\u0644\u062f\u0641\u0639|\u062e\u0644\u0627\u0635)/i],\n['comparison',/(compare|comparison|versus|vs|better|diff[e\u00e9]rent|\u0628\u064a\u0646.*\u0648|\u0634\u0646\u0648.*\u062e\u064a\u0631)/i],\n['product_question',/(what|how|material|mati[e\u00e8]re|care|entretien|\u0643\u064a\u0641\u0627\u0634|\u0634\u0646\u064a\u0629|\u0634\u0646\u0648.*\u0645\u0627\u062f\u0629)/i],\n['product_discovery',/(new|nouveau|\u062c\u062f\u064a\u062f|jdid|catalog|catalogue|products|produits|\u0634\u0646\u0648\u0629.*\u0639\u0646\u062f\u0643\u0645|chnowa.*dnkom|nheb.*produit|\u0646\u062d\u0628.*\u0645\u0646\u062a\u062c)/i],\n['off_topic',/(weather|football|politics|recipe|\u0628\u0631\u0634\u0627.*\u062d\u0627\u062c\u0627\u062a)/i]\n];\nlet matches=[];\nfor (const [intent,re] of checks) if(re.test(t)) matches.push(intent);\nconst priority=['security_suspicion','payment_dispute','human_request','complaint','return_exchange','order_status','checkout_confirm','checkout_start','cart_clear','cart_remove','cart_update','cart_view','cart_add','promotion','pricing','availability','shipping','payment','comparison','product_question','product_discovery','off_topic'];\nlet intent=priority.find(x=>matches.includes(x))||'clarification';\nlet confidence=intent==='clarification'?0.2:(matches.length===1?0.92:0.78);\nreturn [{json:{...$json,candidate_intent:intent,candidate_matches:matches,confidence}}];"
+      },
+      "id": "6",
+      "name": "Deterministic Intent Rules",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -360,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const t=$json.normalized_lower;\nconst cartSignals=/(panier|cart|\u0627\u0644\u0633\u0644\u0629)/i.test(t);\nconst explicitSize=/\\b(taille|size|taille)\\s*(42|43|44|45|46|xs|s|m|l|xl|xxl)\\b/i.test(t);\nlet override=$json.candidate_intent;\nif (/(zidh|zid|add|ajoute|\u062d\u0637|\u0632\u064a\u062f)/i.test(t)&&cartSignals) override='cart_add';\nif (/(na7i|remove|delete|supprime|enl[e\u00e8]ve|\u0646\u062d\u064a|\u0627\u062d\u0630\u0641)/i.test(t)&&cartSignals) override='cart_remove';\nif (/(badal|baddel|change|update|modifier|\u0628\u062f\u0651\u0644|\u063a\u064a\u0631)/i.test(t)&&explicitSize) override='cart_update';\nif (/(faragh|vider|clear|empty|\u0641\u0631\u0651\u063a)/i.test(t)&&cartSignals) override='cart_clear';\nif (/(warini|show|view|voir|affiche)/i.test(t)&&cartSignals) override='cart_view';\nif (/nekammel.*checkout|finaliser|passer.*commande|checkout/i.test(t)) override='checkout_start';\nif (/(confirm|confirme|confirmer|\u0623\u0643\u062f)/i.test(t)&&/(commande|order|checkout)/i.test(t)) override='checkout_confirm';\nconst clarification=override==='clarification'||$json.confidence<0.65;\nreturn [{json:{...$json,intent:clarification?'clarification':override,needs_clarification:clarification,confidence:clarification?0.2:$json.confidence}}];"
+      },
+      "id": "7",
+      "name": "Cart + Checkout Overrides",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.needs_clarification}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "8",
+      "name": "Clarification Required?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        120,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'clarification',llm_allowed:true,tools_allowed:false,safe_to_reply:true,reason:'ambiguous_intent'}}];"
+      },
+      "id": "9",
+      "name": "Build Clarification Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const high=['security_suspicion','payment_dispute','human_request','complaint'];\nconst support=['shipping','payment','order_status','return_exchange'];\nconst sales=['product_discovery','product_question','comparison','pricing','promotion','availability','cart_view','cart_add','cart_remove','cart_update','cart_clear','checkout_start','checkout_confirm'];\nlet route=high.includes($json.intent)?'escalation':support.includes($json.intent)?'support':sales.includes($json.intent)?'sales':'off_topic';\nreturn [{json:{...$json,route,llm_allowed:true,tools_allowed:route!=='off_topic'&&route!=='escalation',safe_to_reply:true,priority:high.includes($json.intent)?'high':'normal'}}];"
+      },
+      "id": "10",
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{\nmessage_id:$json.message_id,conversation_id:$json.conversation_id,\nintent:$json.intent,confidence:$json.confidence,\nlanguage:$json.language,script:$json.script,register:$json.register,\nmixed_languages:$json.mixed_languages,\nroute:$json.route,needs_clarification:$json.needs_clarification,\ncandidate_matches:$json.candidate_matches||[],\npriority:$json.priority||'normal',\nllm_allowed:$json.llm_allowed,tools_allowed:$json.tools_allowed,\nsafe_to_reply:$json.safe_to_reply\n}}];"
+      },
+      "id": "11",
+      "name": "Build Intent Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{route:'off_topic',intent:'off_topic',confidence:0.99,llm_allowed:true,tools_allowed:false,safe_to_reply:true,reason:'invalid_or_unroutable_input'}}];"
+      },
+      "id": "12",
+      "name": "Safe Unroutable Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Router Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Router Input": {
+      "main": [
+        [
+          {
+            "node": "Router Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Normalize + Language Script",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Router Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize + Language Script": {
+      "main": [
+        [
+          {
+            "node": "Deterministic Intent Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deterministic Intent Rules": {
+      "main": [
+        [
+          {
+            "node": "Cart + Checkout Overrides",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cart + Checkout Overrides": {
+      "main": [
+        [
+          {
+            "node": "Clarification Required?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clarification Required?": {
+      "main": [
+        [
+          {
+            "node": "Build Clarification Route",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route by Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Intent": {
+      "main": [
+        [
+          {
+            "node": "Build Intent Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Clarification Route": {
+      "main": [
+        [
+          {
+            "node": "Build Intent Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reject Invalid Router Input": {
+      "main": [
+        [
+          {
+            "node": "Safe Unroutable Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf04-v1"
+}

@@ -1,0 +1,12 @@
+topology:
+  chief: {children: [pm, architect, security, developers, qa, reviewer]}
+  pm: {responsibilities: [requirements, acceptance_criteria, task_decomposition]}
+  architect: {responsibilities: [architecture, contracts, migration_impact]}
+  security: {responsibilities: [threat_model, security_review, red_team_requirements]}
+  developers: {responsibilities: [implementation, unit_tests]}
+  qa: {responsibilities: [integration_tests, evidence, regression]}
+  reviewer: {responsibilities: [cross_agent_review, release_readiness]}
+rules:
+  agents_do_not_override_WF-10: true
+  agents_do_not_receive_production_secrets_by_default: true
+  agents_do_not_directly_mutate_production: true

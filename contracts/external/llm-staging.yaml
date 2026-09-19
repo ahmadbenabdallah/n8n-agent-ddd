@@ -1,0 +1,21 @@
+version: "2026.09.9"
+provider: openai-compatible
+environment: staging
+
+rules:
+  - structured_output_required
+  - schema_validation_required
+  - untrusted_customer_content_is_data_not_instruction
+  - no_credentials_in_prompt
+  - no_authorization_decision_from_model
+  - no_final_price_from_model
+  - no_direct_external_side_effects
+
+output:
+  type: proposal
+  required_fields:
+    - intent
+    - confidence
+    - proposed_action
+    - arguments
+    - rationale

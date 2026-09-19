@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "response",
+    "language",
+    "intent",
+    "sales_stage",
+    "actions",
+    "sources",
+    "requires_human",
+    "claims_grounded"
+  ],
+  "properties": {
+    "response": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "intent": {
+      "type": "string"
+    },
+    "sales_stage": {
+      "type": "string"
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "parameters"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requires_human": {
+      "type": "boolean"
+    },
+    "escalation_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "claims_grounded": {
+      "type": "boolean"
+    }
+  }
+}

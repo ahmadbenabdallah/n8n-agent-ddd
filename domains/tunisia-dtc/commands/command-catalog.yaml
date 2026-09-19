@@ -1,0 +1,18 @@
+commands:
+  - ResolveCustomerIdentity
+  - UpdateConversationState
+  - RouteIntent
+  - ProposeAction
+  - AuthorizeAction
+  - GetProduct
+  - UpdateCart
+  - ApplyPromotion
+  - PrepareCheckout
+  - CreateOrder
+  - CreateTransaction
+  - VerifyOrder
+  - VerifyTransaction
+  - EscalateConversation
+  - RenderResponse
+  - IngestKnowledge
+  - ReconcileExecution

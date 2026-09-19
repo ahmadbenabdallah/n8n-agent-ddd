@@ -1,0 +1,8 @@
+{
+  "package": "tunisia-dtc-agent-WF17-audit-analytics-v4",
+  "version": "v4.0.0",
+  "workflow": "WF-17",
+  "name": "Audit & Analytics",
+  "principle": "record and analyze what happened; never authorize or execute",
+  "files": 21
+}

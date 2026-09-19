@@ -1,0 +1,392 @@
+{
+  "name": "WF-18 — KB Ingestion",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1900,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const files=Array.isArray(x.documents)?x.documents:[]; return [{json:{...x,_wf18_input_ok:files.length>0,_wf18_count:files.length}}];"
+      },
+      "id": "v",
+      "name": "Validate KB Ingestion Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf18_input_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "iv",
+      "name": "Documents Present?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{service:'kb_ingestion',status:'rejected',reason:'no_documents',ingestion_allowed:false}];"
+      },
+      "id": "r",
+      "name": "Reject Empty Ingestion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const docs=$json.documents||[]; const out=docs.map((d,i)=>{const path=String(d.path||d.filename||`document-${i}`); const text=String(d.content||''); const sha=(()=>{let h=0;for(let j=0;j<text.length;j++)h=((h<<5)-h+text.charCodeAt(j))|0;return String(h>>>0)})(); return {path,filename:d.filename||path,content:text,sha256:sha,source:d.source||'kb',size:text.length};}); return [{json:{...$json,_wf18_docs:out}}];"
+      },
+      "id": "normalize",
+      "name": "Normalize Documents",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const docs=$json._wf18_docs||[]; const frontmatter=/^---\\s*\\n([\\s\\S]*?)\\n---\\s*\\n([\\s\\S]*)$/; const required=['id','type','last_updated']; const parsed=docs.map(d=>{const m=d.content.match(frontmatter); const meta={}; if(m){for(const line of m[1].split('\\n')){const q=line.match(/^([A-Za-z0-9_]+):\\s*(.*)$/);if(q)meta[q[1]]=q[2].replace(/^['\\\"]|['\\\"]$/g,'');}} const body=m?m[2]:d.content; const missing=required.filter(k=>!meta[k]); return {...d,metadata:meta,body,missing};}); return [{json:{...$json,_wf18_parsed:parsed,_wf18_metadata_ok:parsed.every(d=>d.missing.length===0)}}];"
+      },
+      "id": "fm",
+      "name": "Parse and Validate Frontmatter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf18_metadata_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "ifm",
+      "name": "Metadata Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{service:'kb_ingestion',status:'rejected',reason:'invalid_frontmatter',ingestion_allowed:false}];"
+      },
+      "id": "rf",
+      "name": "Reject Invalid KB Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -700,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const docs=$json._wf18_parsed||[]; const injection=/(ignore (all|previous|above)|system prompt|developer message|reveal secrets|api key|password|execute tool|call tool|override policy|bypass security)/i; const checked=docs.map(d=>({...d,poisoning_signals:[...(d.body.matchAll(new RegExp(injection.source,'gi')))].map(m=>m[0])})); const safe=checked.every(d=>d.poisoning_signals.length===0); return [{json:{...$json,_wf18_checked:checked,_wf18_poisoning_safe:safe}}];"
+      },
+      "id": "scan",
+      "name": "KB Poisoning and Injection Scan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf18_poisoning_safe}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "ips",
+      "name": "KB Security Check Passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{service:'kb_ingestion',status:'quarantined',reason:'poisoning_or_injection_signal',ingestion_allowed:false}];"
+      },
+      "id": "rq",
+      "name": "Quarantine Suspicious KB",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const docs=$json._wf18_checked||[]; const chunks=[]; for(const d of docs){const max=900,overlap=120; for(let i=0,start=0;start<d.body.length;i++,start+=max-overlap){const text=d.body.slice(start,start+max).trim(); if(!text)break; chunks.push({document_id:d.metadata.id,chunk_id:`${d.metadata.id}:${i}`,text,source_path:d.path,language:d.metadata.language||null,type:d.metadata.type,category:d.metadata.category||null,last_updated:d.metadata.last_updated,document_hash:d.sha256});}} return [{json:{...$json,_wf18_chunks:chunks}}];"
+      },
+      "id": "chunk",
+      "name": "Chunk KB Documents",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const chunks=$json._wf18_chunks||[]; const model=process.env.KB_EMBEDDING_MODEL||'text-embedding-3-small'; return [{json:{...$json,_wf18_embedding_job:{model,dimensions:1536,chunks:chunks.map(c=>({...c,embedding:null}))}}}];"
+      },
+      "id": "embed",
+      "name": "Prepare Embedding Job",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const embeddings=x.embedding_result?.embeddings||x.embeddings||null; const job=x._wf18_embedding_job; if(!embeddings) return [{json:{...x,status:'awaiting_embedding_adapter',ingestion_allowed:false}}]; if(embeddings.length!==job.chunks.length) return [{json:{...x,status:'failed',reason:'embedding_count_mismatch',ingestion_allowed:false}}]; const rows=job.chunks.map((c,i)=>({...c,embedding:embeddings[i]})); return [{json:{...x,_wf18_rows:rows,status:'embedding_ready'}}];"
+      },
+      "id": "ea",
+      "name": "Receive Embeddings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        140,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json,docs=x._wf18_checked||[],rows=x._wf18_rows||[]; const persisted=x.kb_persistence?.persisted===true; return [{json:{...x,_wf18_persist_payload:{documents:docs.map(d=>({id:d.metadata.id,type:d.metadata.type,category:d.metadata.category||null,last_updated:d.metadata.last_updated,source_path:d.path,document_hash:d.sha256})),chunks:rows.map(r=>({document_id:r.document_id,chunk_id:r.chunk_id,text:r.text,embedding:r.embedding,metadata:{source_path:r.source_path,language:r.language,type:r.type,category:r.category,last_updated:r.last_updated,document_hash:r.document_hash}}))},status:persisted?'persisted':'ready_for_persistence',ingestion_allowed:true}}];"
+      },
+      "id": "payload",
+      "name": "Build Supabase Vector Upsert Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; return [{json:{service:'kb_ingestion',status:x.status||'failed',ingestion_allowed:x.ingestion_allowed===true,document_count:(x._wf18_checked||[]).length,chunk_count:(x._wf18_rows||[]).length,embedding_model:x._wf18_embedding_job?.model||null,persistence_payload:x._wf18_persist_payload||null}}];"
+      },
+      "id": "out",
+      "name": "Build KB Ingestion Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        580,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate KB Ingestion Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate KB Ingestion Input": {
+      "main": [
+        [
+          {
+            "node": "Documents Present?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Documents Present?": {
+      "main": [
+        [
+          {
+            "node": "Normalize Documents",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Empty Ingestion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Documents": {
+      "main": [
+        [
+          {
+            "node": "Parse and Validate Frontmatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse and Validate Frontmatter": {
+      "main": [
+        [
+          {
+            "node": "Metadata Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metadata Valid?": {
+      "main": [
+        [
+          {
+            "node": "KB Poisoning and Injection Scan",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid KB Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KB Poisoning and Injection Scan": {
+      "main": [
+        [
+          {
+            "node": "KB Security Check Passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KB Security Check Passed?": {
+      "main": [
+        [
+          {
+            "node": "Chunk KB Documents",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Quarantine Suspicious KB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk KB Documents": {
+      "main": [
+        [
+          {
+            "node": "Prepare Embedding Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Embedding Job": {
+      "main": [
+        [
+          {
+            "node": "Receive Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Build Supabase Vector Upsert Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Supabase Vector Upsert Payload": {
+      "main": [
+        [
+          {
+            "node": "Build KB Ingestion Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf18-kb-ingestion-v1"
+}

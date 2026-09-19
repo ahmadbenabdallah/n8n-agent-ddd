@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "supported_actions": [
+    "checkout_start",
+    "checkout_confirm"
+  ],
+  "input": {
+    "authorized_action": {
+      "action": "checkout_start",
+      "execution_allowed": true,
+      "idempotency_key": "checkout-msg-1"
+    },
+    "identity": {
+      "identity_level": "order_verified"
+    },
+    "cart_context": {
+      "cart_id": "cart-1",
+      "cart": {
+        "id": "cart-1",
+        "version": 7,
+        "lines": [
+          {
+            "sku": "SKU-1",
+            "variant": {
+              "size": "42"
+            },
+            "quantity": 1
+          }
+        ],
+        "subtotal": 189,
+        "currency": "TND"
+      }
+    },
+    "params": {
+      "shipping_address": {
+        "first_name": "X",
+        "last_name": "Y",
+        "phone": "...",
+        "address": "...",
+        "city": "Tunis",
+        "postal_code": "1000"
+      },
+      "payment_method": "cod"
+    }
+  },
+  "live_validation": {
+    "verified": true,
+    "price_current": true,
+    "stock_current": true,
+    "promotion_current": true
+  },
+  "adapter_response": {
+    "verified": true,
+    "owner_match": true,
+    "cart_version_match": true,
+    "price_verified": true,
+    "checkout_id": "chk-1",
+    "status": "ready"
+  },
+  "success_rule": "Only a verified adapter result may produce a completed checkout status. Order/payment success remains the responsibility of WF-15/commerce."
+}

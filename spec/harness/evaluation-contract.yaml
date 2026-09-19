@@ -1,0 +1,10 @@
+evaluation:
+  loop: [OBSERVE, MEASURE, COMPARE, IDENTIFY_GAP, PROPOSE_CHANGE, REVIEW, TEST, ADOPT_OR_REJECT]
+  evidence_required: true
+  regression_gate_required: true
+  security_gate_required: true
+  self_improvement:
+    may_change_prompts: true
+    may_change_skills: true
+    may_change_policies_without_review: false
+    may_change_authorization_without_review: false

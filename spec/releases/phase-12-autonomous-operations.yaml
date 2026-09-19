@@ -1,0 +1,56 @@
+phase: 12
+name: autonomous-operations
+status: implementation-foundation
+objective: >
+  Operate the deployed agent runtime continuously with health monitoring,
+  reconciliation, drift detection, controlled self-healing, cost/model
+  observability, incident handling, and safe rollback triggers.
+
+principles:
+  - observe_before_act
+  - never_self_authorize_commerce
+  - never_blind_retry_unknown_external_outcomes
+  - self_healing_must_be_bounded
+  - human_ownership_blocks_conflicting_automation
+  - audit_every_state_change
+  - operational_automation_is_not_business_authorization
+
+control_loops:
+  health:
+    checks: [n8n, postgres, redis, adapters, workflows, queues]
+  reconciliation:
+    states: [unknown_execution, pending_transaction, stale_order, stale_cart]
+  drift:
+    targets: [workflow_definition, release_manifest, policy_version, skill_registry]
+  cost:
+    metrics: [llm_tokens, llm_cost, workflow_execution_count, provider_calls]
+  model:
+    metrics: [model_version, prompt_version, failure_rate, latency]
+  incident:
+    actions: [alert, freeze_automation, escalate, rollback_candidate]
+
+self_healing:
+  allowed:
+    - restart_disposable_worker
+    - retry_transient_internal_operation
+    - clear_stale_runtime_lock
+    - reschedule_reconciliation
+  forbidden:
+    - authorize_commerce
+    - change_price
+    - change_stock
+    - change_payment_status
+    - bypass_wf10
+    - retry_unknown_commerce_mutation_without_reconciliation
+    - rotate_or_export_secrets
+
+rollback:
+  automatic_candidate_only:
+    - repeated_health_failure
+    - critical_runtime_regression
+    - workflow_integrity_failure
+  production_traffic_switch:
+    approval_required: true
+
+phase10:
+  external_staging_evidence_required_for_production_certification: true

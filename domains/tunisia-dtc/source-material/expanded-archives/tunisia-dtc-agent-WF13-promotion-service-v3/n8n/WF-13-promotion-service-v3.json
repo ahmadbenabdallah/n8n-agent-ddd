@@ -1,0 +1,224 @@
+{
+  "name": "WF-13 Promotion Service v3 \u2014 Live WooCommerce Validation",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"operation\": \"coupon_validate\", \"customer_id\": \"<uuid>\", \"channel\": \"facebook\", \"store_id\": \"default\", \"coupon_code\": \"WELCOME10\", \"action_id\": \"<action_id>\"}"
+      },
+      "id": "13t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(!['coupon_validate','coupon_preview','promotion_info'].includes(x.operation))\n  throw new Error('promotion_invalid_operation');\nif(typeof x.customer_id!=='string'||!x.customer_id.trim())\n  throw new Error('promotion_missing_customer');\nif(!['facebook','whatsapp','instagram','internal'].includes(x.channel))\n  throw new Error('promotion_invalid_channel');\nif(['coupon_validate','coupon_preview'].includes(x.operation)){\n  if(typeof x.coupon_code!=='string'||!x.coupon_code.trim()||x.coupon_code.length>100)\n    throw new Error('promotion_invalid_coupon_code');\n}\nreturn [{json:{\n  ...x,\n  store_id:x.store_id||'default',\n  coupon_code:x.coupon_code?.trim()||null,\n  action_id:x.action_id||`${x.customer_id}:${x.operation}:${x.coupon_code||''}`\n}}];\n"
+      },
+      "id": "13v",
+      "name": "Validate Promotion Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, status, phone_e164, preferred_language, last_channel FROM public.customers WHERE id=$1 LIMIT 1;",
+        "options": {
+          "queryReplacement": "={{ [$json.customer_id] }}"
+        }
+      },
+      "id": "13a",
+      "name": "Load Customer Context",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst req=$('Validate Promotion Request').first().json;\nconst c=$input.first()?.json||{};\nreturn [{json:{\n  operation:req.operation,\n  customer_id:req.customer_id,\n  channel:req.channel,\n  store_id:req.store_id,\n  coupon_code:req.coupon_code,\n  action_id:req.action_id,\n  customer_status:c.status||null,\n  // WF-20 must evaluate the coupon against the current live cart where applicable.\n  evaluation_mode:req.operation==='promotion_info'?'informational':'transactional_live_cart'\n}}];\n"
+      },
+      "id": "13m",
+      "name": "Prepare WF-20 Promotion Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_WF20_WORKFLOW_ID"
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "13e",
+      "name": "Execute WF-20 Promotion Gateway",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst req=$('Prepare WF-20 Promotion Request').first().json;\nconst r=$json;\nif(r.commerce_status==='unavailable'){\n  return [{json:{\n    success:false,operation:req.operation,customer_id:req.customer_id,\n    commerce_status:'unavailable',verified:false,\n    promotion:null,\n    error:{\n      code:'COMMERCE_UNAVAILABLE',\n      transactional_action_blocked:req.operation!=='promotion_info',\n      fallback:req.operation==='promotion_info'\n        ?'kb_informational_only'\n        :'preserve_purchase_intent_and_retry_when_live'\n    }\n  }}];\n}\nreturn [{json:{\n  success:Boolean(r.success),\n  operation:req.operation,\n  customer_id:req.customer_id,\n  commerce_status:r.commerce_status||'available',\n  verified:Boolean(r.verified && r.success),\n  promotion:r.promotion||null,\n  error:r.error||null\n}}];\n"
+      },
+      "id": "13n",
+      "name": "Normalize Promotion Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(x.success && !x.verified) throw new Error('promotion_success_without_verification');\nif(x.success && x.commerce_status!=='available')\n  throw new Error('promotion_success_without_live_commerce');\nif(x.operation!=='promotion_info' && x.success && !x.promotion)\n  throw new Error('promotion_missing_verified_result');\nreturn [{json:x}];\n"
+      },
+      "id": "13g",
+      "name": "Verify Promotion Semantics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nreturn [{json:{\n  success:x.success,operation:x.operation,customer_id:x.customer_id,\n  commerce_status:x.commerce_status,verified:x.verified,\n  promotion:x.promotion,error:x.error\n}}];\n"
+      },
+      "id": "13o",
+      "name": "Return Verified Promotion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Promotion Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Promotion Request": {
+      "main": [
+        [
+          {
+            "node": "Load Customer Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Customer Context": {
+      "main": [
+        [
+          {
+            "node": "Prepare WF-20 Promotion Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare WF-20 Promotion Request": {
+      "main": [
+        [
+          {
+            "node": "Execute WF-20 Promotion Gateway",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute WF-20 Promotion Gateway": {
+      "main": [
+        [
+          {
+            "node": "Normalize Promotion Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Promotion Result": {
+      "main": [
+        [
+          {
+            "node": "Verify Promotion Semantics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Promotion Semantics": {
+      "main": [
+        [
+          {
+            "node": "Return Verified Promotion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "REPLACE_ON_IMPORT",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "dtc-agent"
+    },
+    {
+      "name": "promotion"
+    },
+    {
+      "name": "woocommerce"
+    },
+    {
+      "name": "security"
+    }
+  ]
+}

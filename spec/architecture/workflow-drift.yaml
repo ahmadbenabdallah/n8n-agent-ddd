@@ -1,0 +1,12 @@
+version: 1
+source_of_truth: git
+compare:
+  - workflow_id
+  - workflow_version
+  - normalized_workflow_hash
+  - credential_reference_names
+  - activation_state
+policy:
+  unexpected_drift: alert
+  critical_drift: freeze_promotion
+  production_drift: never_auto_overwrite_without_review

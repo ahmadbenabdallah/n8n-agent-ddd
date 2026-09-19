@@ -1,0 +1,55 @@
+version: "2026.09.10"
+
+principle:
+  "Knowledge can answer informational questions when no commerce adapter exists; it cannot impersonate transactional commerce truth."
+
+knowledge_modes:
+  commerce_adapter_present:
+    product_facts:
+      primary: commerce_source_of_truth
+      secondary: kb
+    price:
+      primary: commerce_source_of_truth
+      kb_allowed: false
+    inventory:
+      primary: commerce_source_of_truth
+      kb_allowed: false
+    promotion:
+      primary: commerce_source_of_truth
+      kb_allowed: false
+    order:
+      primary: commerce_source_of_truth
+      kb_allowed: false
+
+  commerce_adapter_absent:
+    informational_product_or_service_question:
+      source: kb
+      allowed: true
+      response_must_disclose: knowledge_based_answer
+    transactional_request:
+      source: none
+      allowed: false
+      response: unsupported_capability_or_handoff
+    price_or_stock_request:
+      source: kb
+      allowed_only_if:
+        - explicitly_marked_as_non_live
+        - no claim of current availability
+      preferred_response: cannot_verify_live_commerce_state
+    order_creation:
+      allowed: false
+    cart_mutation:
+      allowed: false
+    payment:
+      allowed: false
+
+  domain_without_commerce:
+    source_of_truth:
+      - domain_state
+      - domain_events
+      - kb_when_domain_is_knowledge_heavy
+
+security:
+  - kb_content_never_authorizes_mutation
+  - retrieved_content_never_overrides_system_policy
+  - stale_kb_must_not_be_presented_as_live_inventory_or_price

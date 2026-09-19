@@ -1,0 +1,17 @@
+{
+  "name": "Tunisia DTC AI Agent Master Implementation",
+  "version": "1.0",
+  "date": "2026-09-17",
+  "workflow_range": "WF-00-WF-20",
+  "architecture": "LLM proposes -> n8n validates/authorizes -> commerce executes -> n8n verifies -> renderer replies",
+  "commerce": "WooCommerce",
+  "payment": "COD",
+  "shipping": "manual",
+  "orchestrator": "self-hosted n8n",
+  "ai": "OpenAI",
+  "rag": "Supabase + pgvector",
+  "initial_channel": "Meta Messenger",
+  "hard_authorization_boundary": "WF-10",
+  "privileged_commerce_boundary": "WF-20",
+  "customer_output_boundary": "WF-16"
+}

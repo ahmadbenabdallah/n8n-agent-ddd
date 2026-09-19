@@ -1,0 +1,572 @@
+{
+  "name": "WF-10 \u2014 Action Validator",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1900,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const i=$json; const required=['message_id','conversation_id','llm_proposal','identity','security','state']; const missing=required.filter(k=>i[k]===undefined); return [{json:{...i,input_valid:missing.length===0,missing_fields:missing}}];"
+      },
+      "id": "2",
+      "name": "Validate Action Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.input_valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "Action Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{authorization:'deny',execution_allowed:false,reason:'invalid_action_input',safe_to_reply:false}}];"
+      },
+      "id": "4",
+      "name": "Fail Closed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p=$json.llm_proposal||{}; const a=p.action_proposal||{}; const allowed=['none','cart_add','cart_remove','cart_update','cart_clear','checkout_start','checkout_confirm']; const action=typeof a.action==='string'?a.action:'none'; return [{json:{...$json,action,action_parameters:a.parameters&&typeof a.parameters==='object'?a.parameters:{},action_allowlisted:allowed.includes(action)}}];"
+      },
+      "id": "5",
+      "name": "Action Allowlist",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.action_allowlisted}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "6",
+      "name": "Action Allowlisted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1080,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,authorization:'deny',execution_allowed:false,reason:'action_not_allowlisted'}}];"
+      },
+      "id": "7",
+      "name": "Deny Unknown Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const id=$json.identity||{}; const level=id.level||'anonymous'; const rules={none:['anonymous','channel_linked','order_verified','high_assurance'],cart_add:['channel_linked','order_verified','high_assurance'],cart_remove:['channel_linked','order_verified','high_assurance'],cart_update:['channel_linked','order_verified','high_assurance'],cart_clear:['channel_linked','order_verified','high_assurance'],checkout_start:['channel_linked','order_verified','high_assurance'],checkout_confirm:['order_verified','high_assurance']}; const permitted=(rules[$json.action]||[]).includes(level); return [{json:{...$json,identity_level:level,identity_permitted:permitted,required_identity_level:($json.action==='checkout_confirm'?'order_verified':'channel_linked')}}];"
+      },
+      "id": "8",
+      "name": "Identity Permission Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -860,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.identity_permitted}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "9",
+      "name": "Identity Permitted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,authorization:'deny',execution_allowed:false,reason:'insufficient_identity'}}];"
+      },
+      "id": "10",
+      "name": "Deny Insufficient Identity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p=$json.action_parameters||{}; const errors=[]; if(['cart_add','cart_remove','cart_update'].includes($json.action)&&!($json.state?.selected_product_id||p.product_id)) errors.push('product_id_required'); if($json.action==='cart_update' && !p.variant && !p.quantity) errors.push('update_parameter_required'); if($json.action==='cart_add' && p.quantity!==undefined && (!Number.isInteger(p.quantity)||p.quantity<1||p.quantity>20)) errors.push('invalid_quantity'); if(p.url && typeof p.url==='string' && !/^https:\\/\\//i.test(p.url)) errors.push('invalid_url'); return [{json:{...$json,parameter_valid:errors.length===0,parameter_errors:errors}}];"
+      },
+      "id": "11",
+      "name": "Validate Action Parameters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.parameter_valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "12",
+      "name": "Parameters Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,authorization:'deny',execution_allowed:false,reason:'invalid_action_parameters'}}];"
+      },
+      "id": "13",
+      "name": "Deny Invalid Parameters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stage=$json.state?.stage||'NEW'; const a=$json.action; const blocked=(a==='checkout_confirm'&&!['CHECKOUT_READY','PRODUCT_SELECTED','CART_BUILDING'].includes(stage)) || (a==='checkout_start'&&!['CART_BUILDING','PRODUCT_SELECTED','CONSIDERING'].includes(stage)); return [{json:{...$json,business_rules_pass:!blocked,business_rule_error:blocked?'invalid_stage_for_action':null}}];"
+      },
+      "id": "14",
+      "name": "Business Rule Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.business_rules_pass}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "15",
+      "name": "Business Rules Pass?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,authorization:'deny',execution_allowed:false,reason:$json.business_rule_error||'business_rule_failed'}}];"
+      },
+      "id": "16",
+      "name": "Deny Business Rule",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const action=$json.action; const key=[$json.conversation_id,$json.message_id,action,JSON.stringify($json.action_parameters||{})].join(':'); const prior=$json.idempotency_record; const duplicate=prior?.status==='executed'&&prior?.key===key; return [{json:{...$json,idempotency_key:key,duplicate_execution:duplicate}}];"
+      },
+      "id": "17",
+      "name": "Idempotency Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.duplicate_execution}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "18",
+      "name": "Duplicate Execution?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,authorization:'deny_duplicate',execution_allowed:false,reason:'idempotent_duplicate',existing_execution:$json.idempotency_record}}];"
+      },
+      "id": "19",
+      "name": "Deny Duplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const highRisk=['checkout_confirm']; const security=$json.security||{}; const risk=$json.action==='checkout_confirm'?'high':($json.action==='cart_clear'?'medium':'low'); const securityBlocked=security.security_decision==='block'||security.security_decision==='escalate'; return [{json:{...$json,risk_level:risk,risk_pass:!securityBlocked,security_blocked:securityBlocked,validator_decision:securityBlocked?'deny':'allow'}}];"
+      },
+      "id": "20",
+      "name": "Risk + Security Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.risk_pass}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "21",
+      "name": "Risk Gate Pass?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,authorization:'deny',execution_allowed:false,reason:'security_risk_block'}}];"
+      },
+      "id": "22",
+      "name": "Deny Risk",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{contract_version:'1.0.0',message_id:$json.message_id,conversation_id:$json.conversation_id,action:$json.action,parameters:$json.action_parameters,identity_level:$json.identity_level,required_identity_level:$json.required_identity_level,idempotency_key:$json.idempotency_key,risk_level:$json.risk_level,authorization:'allow',execution_allowed:true,execution_verified:false,reason:null}}];"
+      },
+      "id": "23",
+      "name": "Build Authorized Action Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Action Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Action Input": {
+      "main": [
+        [
+          {
+            "node": "Action Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Action Allowlist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail Closed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action Allowlist": {
+      "main": [
+        [
+          {
+            "node": "Action Allowlisted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action Allowlisted?": {
+      "main": [
+        [
+          {
+            "node": "Identity Permission Gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Deny Unknown Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identity Permission Gate": {
+      "main": [
+        [
+          {
+            "node": "Identity Permitted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identity Permitted?": {
+      "main": [
+        [
+          {
+            "node": "Validate Action Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Deny Insufficient Identity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Action Parameters": {
+      "main": [
+        [
+          {
+            "node": "Parameters Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parameters Valid?": {
+      "main": [
+        [
+          {
+            "node": "Business Rule Gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Deny Invalid Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Business Rule Gate": {
+      "main": [
+        [
+          {
+            "node": "Business Rules Pass?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Business Rules Pass?": {
+      "main": [
+        [
+          {
+            "node": "Idempotency Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Deny Business Rule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Idempotency Check": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Execution?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Execution?": {
+      "main": [
+        [
+          {
+            "node": "Risk + Security Gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Deny Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Risk + Security Gate": {
+      "main": [
+        [
+          {
+            "node": "Risk Gate Pass?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Risk Gate Pass?": {
+      "main": [
+        [
+          {
+            "node": "Build Authorized Action Contract",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Deny Risk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf10-v1"
+}

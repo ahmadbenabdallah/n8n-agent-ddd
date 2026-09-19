@@ -1,0 +1,102 @@
+version: "0.14.4"
+name: backup-restore-persistence
+status: scaffold
+purpose: >
+  Define durable backup, restore, persistence, and disaster-recovery contracts
+  for the n8n-agent-ddd runtime.
+
+principles:
+  - compute_is_disposable
+  - state_is_durable
+  - secrets_are_injected_not_committed
+  - restore_is_verified_before_traffic
+  - unknown_external_outcomes_are_reconciled_not_replayed
+
+durable_state:
+  postgres:
+    required: true
+    includes:
+      - domain_state
+      - application_state
+      - authorization_state
+      - audit_events
+      - idempotency_keys
+      - knowledge_base
+      - runtime_configuration
+      - n8n_database_state
+  n8n_persistent_data:
+    required: true
+    purpose: >
+      Preserve runtime-local data that is not intentionally represented in
+      PostgreSQL. The exact contents are provider/version dependent.
+  secrets:
+    backup_policy: never_plaintext_in_repository
+    required_for_restore:
+      - n8n_encryption_key
+      - database_credentials
+      - external_provider_credentials
+      - deployment_secrets
+
+backup_profiles:
+  local:
+    target: local_filesystem
+    encryption: operator_controlled
+  production:
+    target: object_storage_or_provider_backup
+    encryption: required
+    retention: provider_defined
+    offsite_copy: recommended
+
+backup_requirements:
+  postgres:
+    format: logical_or_provider_native
+    consistency: transactionally_consistent
+    verify_after_create: required
+  n8n_persistent_data:
+    consistency: application_stopped_or_provider_snapshot
+    verify_after_create: required
+  metadata:
+    required:
+      - release_version
+      - runtime_version
+      - database_schema_version
+      - backup_timestamp
+      - environment
+      - backup_id
+
+restore_order:
+  - provision_runtime
+  - inject_required_secrets
+  - restore_postgres
+  - restore_n8n_persistent_data
+  - start_runtime
+  - readiness_check
+  - verify_project_binding
+  - verify_workflow_inventory
+  - verify_contracts
+  - run_reconciliation
+  - run_smoke_tests
+  - permit_traffic
+
+restore_safety:
+  - never_replay_unknown_commerce_mutation
+  - reconcile_external_outcomes_before_retry
+  - never_restore_production_secrets_from_git
+  - preserve_n8n_encryption_key_across_restore
+  - audit_restore_operation
+  - block_traffic_until_verification
+
+recovery_targets:
+  rpo: operator_defined
+  rto: operator_defined
+
+evidence:
+  required_before_production_certification:
+    - backup_created
+    - backup_verified
+    - restore_completed
+    - restore_integrity_verified
+    - application_readiness_verified
+    - workflow_inventory_verified
+    - reconciliation_verified
+  live_execution_status: NOT_EXECUTED

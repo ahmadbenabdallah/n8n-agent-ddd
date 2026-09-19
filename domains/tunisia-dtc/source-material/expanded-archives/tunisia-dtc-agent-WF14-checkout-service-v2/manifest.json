@@ -1,0 +1,16 @@
+{
+  "workflow": "WF-14 Checkout Service",
+  "version": "2.0",
+  "source_of_truth": "WooCommerce",
+  "files": [
+    "n8n/WF-14-checkout-service-v2.json",
+    "tests/test-matrix.md",
+    "docs/06-wiring.md",
+    "docs/04-security.md",
+    "docs/02-final-validation.md",
+    "docs/01-contract.md",
+    "docs/05-wf20-requirements.md",
+    "docs/03-toctou.md",
+    "docs/README.md"
+  ]
+}

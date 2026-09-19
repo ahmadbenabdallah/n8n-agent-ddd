@@ -1,0 +1,16 @@
+installer:
+  command: "harness install"
+  idempotent: true
+  inputs:
+    - repository
+    - environment
+    - provider_profile
+  outputs:
+    - local_runtime_dependencies
+    - harness_configuration
+    - installation_manifest
+  forbidden:
+    - production_secret_exfiltration
+    - direct_production_ssh
+    - bypass_security_gates
+    - bypass_WF-10

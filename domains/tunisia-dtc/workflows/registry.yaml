@@ -1,0 +1,139 @@
+domain: tunisia-dtc
+version: 2026.09.1
+workflows:
+- id: WF-00
+  name: Inbound Gateway
+  context: entry
+  depends_on:
+  - WF-01
+- id: WF-01
+  name: Security Gate
+  context: security
+  depends_on:
+  - WF-02
+- id: WF-02
+  name: Customer Identity
+  context: identity
+  depends_on:
+  - WF-03
+- id: WF-03
+  name: Conversation State
+  context: state
+  depends_on:
+  - WF-04
+- id: WF-04
+  name: Intent Router
+  context: routing
+  depends_on:
+  - WF-05
+  - WF-06
+  - WF-07
+  - WF-08
+  - WF-09
+- id: WF-05
+  name: Sales Engine
+  context: sales
+  depends_on:
+  - WF-09
+  - WF-10
+  - WF-11
+  - WF-12
+  - WF-13
+  - WF-14
+- id: WF-06
+  name: Support Engine
+  context: support
+  depends_on:
+  - WF-07
+  - WF-08
+  - WF-09
+  - WF-18
+- id: WF-07
+  name: Order Service
+  context: orders
+  depends_on:
+  - WF-02
+  - WF-08
+  - WF-15
+  - WF-20
+- id: WF-08
+  name: Escalation Engine
+  context: escalation
+  depends_on:
+  - WF-03
+- id: WF-09
+  name: LLM Reasoning
+  context: reasoning
+  depends_on:
+  - WF-10
+  - WF-16
+- id: WF-10
+  name: Action Authorization
+  context: authorization
+  depends_on:
+  - WF-20
+  - WF-16
+  - WF-17
+- id: WF-11
+  name: Product Service
+  context: commerce
+  depends_on:
+  - WF-05
+  - WF-12
+  - WF-14
+- id: WF-12
+  name: Cart Service
+  context: commerce
+  depends_on:
+  - WF-10
+  - WF-11
+  - WF-20
+- id: WF-13
+  name: Promotion Service
+  context: commerce
+  depends_on:
+  - WF-10
+  - WF-14
+- id: WF-14
+  name: Checkout Service
+  context: commerce
+  depends_on:
+  - WF-10
+  - WF-11
+  - WF-12
+  - WF-13
+  - WF-15
+- id: WF-15
+  name: Transaction/Payment
+  context: payment
+  depends_on:
+  - WF-10
+  - WF-17
+  - WF-19
+- id: WF-16
+  name: Response Renderer
+  context: presentation
+  depends_on:
+  - WF-17
+- id: WF-17
+  name: Audit & Analytics
+  context: audit
+  depends_on:
+  - WF-19
+- id: WF-18
+  name: Knowledge Base Ingestion
+  context: knowledge
+  depends_on:
+  - WF-06
+  - WF-09
+- id: WF-19
+  name: Maintenance & Monitoring
+  context: operations
+  depends_on:
+  - WF-15
+  - WF-17
+  - WF-20
+- id: WF-20
+  name: WooCommerce Gateway
+  context: execution
+  depends_on: []

@@ -1,0 +1,48 @@
+version: "2026.09.10"
+
+scope: "tunisia-dtc"
+
+knowledge:
+  purpose: "Answer knowledge/information questions from the versioned KB."
+  source: "postgres_pgvector"
+  may_answer:
+    - product_information
+    - service_information
+    - documented_faq
+    - policies
+    - educational_information
+
+commerce:
+  adapter: "required_for_live_transaction"
+  live_source_of_truth: "configured_commerce_adapter"
+
+when_live_commerce_is_not_connected:
+  knowledge_questions:
+    action: "answer_from_kb"
+  transactional_intent:
+    examples:
+      - add_to_cart
+      - buy
+      - checkout
+      - create_order
+      - live_inventory
+      - live_price
+      - live_promotion
+      - cancel_order
+      - return_order
+      - refund
+      - modify_existing_order
+    action: "assisted_commerce"
+    sequence:
+      - collect_only_required_customer_and_order_details
+      - create_escalation
+      - assign_human_owner
+      - stop_conflicting_automation
+    never:
+      - fabricate_transaction
+      - mutate_domain_as_if_purchase_was_completed
+      - claim_live_price_or_inventory_from_kb
+      - use_kb_as_transactional_commerce_backend
+
+principle:
+  "KB answers; commerce adapter transacts; human escalation preserves revenue when live commerce is unavailable."

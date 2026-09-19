@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DTC Agent Output",
+  "type": "object",
+  "required": [
+    "response",
+    "language",
+    "intent",
+    "sales_stage",
+    "actions",
+    "sources",
+    "requires_human",
+    "claims_grounded"
+  ],
+  "properties": {
+    "response": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "intent": {
+      "type": "string"
+    },
+    "sales_stage": {
+      "type": "string"
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requires_human": {
+      "type": "boolean"
+    },
+    "escalation_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "claims_grounded": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

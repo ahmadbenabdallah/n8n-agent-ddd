@@ -1,0 +1,29 @@
+version: "1.0"
+end_user_surfaces:
+  business_configuration:
+    storage: postgres
+    examples:
+      - business.name
+      - business.currency
+      - business.cod_enabled
+      - business.support_hours
+      - business.max_discount_percent
+      - features.human_handoff_enabled
+  workflow_customization:
+    storage: n8n
+    editable: true
+    protected: [WF-01, WF-10, WF-15, WF-20]
+  secrets:
+    storage: n8n_credentials_or_external_secrets
+    raw_env_exposure: false
+  infrastructure:
+    storage: deployment_environment
+    raw_env_editing: false
+mcp:
+  role: operator_and_developer_control_interface
+  business_authorization: false
+  workflow_editing: "subject_to_n8n_user_permissions_and_platform_policy"
+upgrade:
+  preserve_customer_config: true
+  preserve_customer_extensions: true
+  replace_platform_core: true

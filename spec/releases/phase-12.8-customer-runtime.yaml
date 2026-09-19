@@ -1,0 +1,35 @@
+version: "0.12.8"
+name: customer-runtime-configuration-and-extension-layer
+status: implemented_static_foundation
+objectives:
+  - "Expose safe durable business configuration after deployment."
+  - "Allow customer-owned n8n extensions without allowing replacement of security/commerce core."
+  - "Preserve customer configuration and extensions across platform upgrades."
+  - "Keep infrastructure secrets outside the ordinary customer configuration surface."
+components:
+  configuration:
+    - platform/configuration/types.ts
+    - platform/configuration/validation.ts
+    - platform/configuration/resolver.ts
+  extensions:
+    - platform/extensions/types.ts
+    - platform/extensions/registry.ts
+    - platform/extensions/lifecycle.ts
+  customization:
+    - platform/customization/policy.ts
+  persistence:
+    - platform/state/db/migrations/0002_customer_runtime_configuration.sql
+invariants:
+  - "Customer configuration cannot change WF-10 authorization semantics."
+  - "Customer extensions cannot replace WF-01, WF-10, WF-15, or WF-20."
+  - "Raw infrastructure secrets are never exposed as customer configuration."
+  - "Configuration changes are versioned and auditable."
+  - "Compatible customer extensions survive core upgrades."
+  - "MCP does not equal commerce authorization."
+validation:
+  static: "tests/architecture/phase12-8-customer-runtime.sh"
+not_claimed:
+  - "Live n8n MCP connection"
+  - "Live customer UI"
+  - "Production database migration"
+  - "Production upgrade/rollback execution"

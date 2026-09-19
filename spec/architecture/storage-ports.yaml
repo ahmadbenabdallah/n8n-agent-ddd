@@ -1,0 +1,39 @@
+version: "2026.09.10"
+
+ports:
+  relational_store:
+    operations:
+      - transaction
+      - query
+      - command
+      - migration_metadata
+
+  vector_store:
+    operations:
+      - upsert_embedding
+      - similarity_search
+      - delete_embedding
+      - hybrid_search
+    default_implementation: postgres_pgvector
+
+  object_store:
+    operations:
+      - put
+      - get
+      - delete
+    default_implementation: platform_or_s3_compatible
+
+  realtime:
+    optional: true
+
+  auth:
+    optional: true
+
+  queue:
+    optional: true
+
+dependency_rule:
+  domain:
+    depends_on: domain_ports_only
+  infrastructure:
+    implements: ports

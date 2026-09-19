@@ -1,0 +1,376 @@
+{
+  "name": "WF-08 \u2014 Escalation Engine",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const i=$json;\nconst required=['message_id','conversation_id','text','intent','identity','security','state'];\nconst missing=required.filter(k=>i[k]===undefined);\nreturn [{json:{...i,input_valid:missing.length===0,missing_fields:missing}}];"
+      },
+      "id": "2",
+      "name": "Validate Escalation Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.input_valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "Escalation Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{route:'human_escalation',escalation_required:true,tools_allowed:false,execution_allowed:false,llm_allowed:false,safe_to_reply:false,reason:'invalid_escalation_input'}}];"
+      },
+      "id": "4",
+      "name": "Fail Closed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const intent=$json.intent;\nconst securityFlag=$json.security?.security_decision==='block'||$json.security?.security_decision==='escalate'||intent==='security_suspicion';\nconst reasons={\ncomplaint:'customer_complaint',\npayment_dispute:'payment_dispute',\nhuman_request:'human_requested_handoff',\nsafety:'safety_issue',\nsecurity_suspicion:'security_issue',\n};\nconst reason=securityFlag?'security_issue':(reasons[intent]||$json.reason||'manual_escalation');\nreturn [{json:{...$json,escalation_reason:reason,security_priority:securityFlag}}];"
+      },
+      "id": "5",
+      "name": "Determine Escalation Reason",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const t=String($json.text||'').toLocaleLowerCase();\nconst severityRules=[\n['critical',/(immediate danger|life threatening|medical emergency|fire|explosion|weapon|self.?harm|threat.*violence|hack.*account|account.*takeover)/i],\n['high',/(fraud|unauthori[sz]ed payment|chargeback|legal|lawyer|police|court|stolen|data leak|privacy breach|security incident)/i],\n['medium',/(angry|complaint|refund dispute|damaged|defective|human agent|manager)/i]\n];\nlet severity='medium';\nfor(const [s,re] of severityRules){if(re.test(t)){severity=s;break;}}\nif($json.security_priority) severity='high';\nreturn [{json:{...$json,severity}}];"
+      },
+      "id": "6",
+      "name": "Severity Classifier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -860,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const state=$json.state||{};\nconst count=Number(state.escalation_count||0);\nconst open=state.escalation_status==='OPEN';\nreturn [{json:{...$json,previous_escalations:count,existing_escalation_open:open,repeat_escalation:open||count>0}}];"
+      },
+      "id": "7",
+      "name": "Check Existing Escalation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const i=$json.identity||{};\nconst identityLevel=i.level||'anonymous';\nconst fields={\nchannel_user_id:i.channel_user_id||null,\ncustomer_id:i.customer_id||null,\nidentity_level:identityLevel\n};\nreturn [{json:{...$json,identity_summary:fields}}];"
+      },
+      "id": "8",
+      "name": "Build Minimal Identity Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -380,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const context={\nmessage_id:$json.message_id,\nconversation_id:$json.conversation_id,\nintent:$json.intent,\nreason:$json.escalation_reason,\nseverity:$json.severity,\nidentity:$json.identity_summary,\ncurrent_stage:$json.state?.stage||'UNKNOWN',\nselected_product_id:$json.state?.selected_product_id||null,\ncart_id:$json.state?.cart_id||null,\nrepeat_escalation:$json.repeat_escalation\n};\nconst disallowedKeys=['password','otp','cvv','cvc','card_number','api_key','token','system_prompt','developer_prompt'];\nfor(const k of disallowedKeys) delete context[k];\nreturn [{json:{...$json,escalation_context:context}}];"
+      },
+      "id": "9",
+      "name": "Build Escalation Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -140,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const severity=$json.severity;\nconst action=severity==='critical'?'immediate_human':severity==='high'?'priority_human':'human_queue';\nconst sla=severity==='critical'?'immediate':severity==='high'?'priority':'standard';\nreturn [{json:{...$json,handoff_mode:action,handoff_priority:severity,handoff_sla:sla}}];"
+      },
+      "id": "10",
+      "name": "Set Handoff Priority",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.existing_escalation_open}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "11",
+      "name": "Existing Escalation Open?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        340,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,handoff_action:'append_to_existing_case',create_new_case:false,reason:'existing_escalation_open'}}];"
+      },
+      "id": "12",
+      "name": "Append Existing Case",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        580,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,handoff_action:'create_human_case',create_new_case:true}}];"
+      },
+      "id": "13",
+      "name": "Create New Case Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        580,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const responsePolicy=$json.severity==='critical'\n?'Acknowledge briefly, state that a human specialist is being engaged, and do not provide speculative instructions.'\n:$json.severity==='high'\n?'Acknowledge the issue, avoid unsupported conclusions, and state that a specialist will review it.'\n:'Acknowledge the request and explain that the conversation is being handed to a human specialist.';\nreturn [{json:{...$json,customer_response_policy:responsePolicy,tools_allowed:false,execution_allowed:false,llm_allowed:true}}];"
+      },
+      "id": "14",
+      "name": "Build Customer Response Policy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{\ncontract_version:'1.0.0',\nmessage_id:$json.message_id,\nconversation_id:$json.conversation_id,\nroute:'human_escalation',\nescalation_required:true,\nreason:$json.escalation_reason,\nseverity:$json.severity,\nsecurity_priority:$json.security_priority||false,\nhandoff_mode:$json.handoff_mode,\nhandoff_priority:$json.handoff_priority,\nhandoff_sla:$json.handoff_sla,\nhandoff_action:$json.handoff_action,\ncreate_new_case:$json.create_new_case,\nexisting_escalation_open:$json.existing_escalation_open,\nescalation_context:$json.escalation_context,\ncustomer_response_policy:$json.customer_response_policy,\ntools_allowed:false,\nexecution_allowed:false,\nsafe_to_reply:true,\nllm_allowed:true\n}}];"
+      },
+      "id": "15",
+      "name": "Build Escalation Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Escalation Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Escalation Input": {
+      "main": [
+        [
+          {
+            "node": "Escalation Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalation Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Determine Escalation Reason",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail Closed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Escalation Reason": {
+      "main": [
+        [
+          {
+            "node": "Severity Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Severity Classifier": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Escalation": {
+      "main": [
+        [
+          {
+            "node": "Build Minimal Identity Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Minimal Identity Summary": {
+      "main": [
+        [
+          {
+            "node": "Build Escalation Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Escalation Context": {
+      "main": [
+        [
+          {
+            "node": "Set Handoff Priority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Handoff Priority": {
+      "main": [
+        [
+          {
+            "node": "Existing Escalation Open?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing Escalation Open?": {
+      "main": [
+        [
+          {
+            "node": "Append Existing Case",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create New Case Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Existing Case": {
+      "main": [
+        [
+          {
+            "node": "Build Customer Response Policy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create New Case Plan": {
+      "main": [
+        [
+          {
+            "node": "Build Customer Response Policy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Customer Response Policy": {
+      "main": [
+        [
+          {
+            "node": "Build Escalation Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf08-v1"
+}

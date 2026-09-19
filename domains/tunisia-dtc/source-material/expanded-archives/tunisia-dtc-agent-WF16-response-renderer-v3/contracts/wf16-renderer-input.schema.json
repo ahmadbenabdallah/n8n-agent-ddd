@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-16 Renderer Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "channel",
+    "language",
+    "script",
+    "verified_result"
+  ],
+  "properties": {
+    "channel": {
+      "type": "string",
+      "enum": [
+        "facebook",
+        "whatsapp",
+        "instagram",
+        "internal"
+      ]
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "tn",
+        "fr",
+        "ar",
+        "en"
+      ]
+    },
+    "script": {
+      "type": "string",
+      "enum": [
+        "latin",
+        "arabic"
+      ]
+    },
+    "register": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "intent": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    },
+    "verified_result": {
+      "type": "object",
+      "required": [
+        "success",
+        "verified"
+      ]
+    }
+  }
+}

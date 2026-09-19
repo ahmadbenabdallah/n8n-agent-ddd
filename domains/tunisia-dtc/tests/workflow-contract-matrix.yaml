@@ -1,0 +1,161 @@
+matrix:
+- workflow: WF-00
+  reads:
+  - durable_state
+  - verified_context
+  writes: []
+  authorization_required: false
+  audit_required: false
+- workflow: WF-01
+  reads:
+  - durable_state
+  - verified_context
+  writes: []
+  authorization_required: false
+  audit_required: false
+- workflow: WF-02
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: false
+  audit_required: false
+- workflow: WF-03
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: false
+  audit_required: false
+- workflow: WF-04
+  reads:
+  - durable_state
+  - verified_context
+  writes: []
+  authorization_required: false
+  audit_required: false
+- workflow: WF-05
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: false
+  audit_required: false
+- workflow: WF-06
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: false
+  audit_required: false
+- workflow: WF-07
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: false
+  audit_required: false
+- workflow: WF-08
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: false
+  audit_required: false
+- workflow: WF-09
+  reads:
+  - durable_state
+  - verified_context
+  writes: []
+  authorization_required: false
+  audit_required: false
+- workflow: WF-10
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: false
+  audit_required: true
+- workflow: WF-11
+  reads:
+  - durable_state
+  - verified_context
+  writes: []
+  authorization_required: false
+  audit_required: false
+- workflow: WF-12
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: true
+  audit_required: true
+- workflow: WF-13
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: false
+  audit_required: false
+- workflow: WF-14
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: true
+  audit_required: true
+- workflow: WF-15
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: true
+  audit_required: true
+- workflow: WF-16
+  reads:
+  - durable_state
+  - verified_context
+  writes: []
+  authorization_required: false
+  audit_required: false
+- workflow: WF-17
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: false
+  audit_required: false
+- workflow: WF-18
+  reads:
+  - durable_state
+  - verified_context
+  writes: []
+  authorization_required: false
+  audit_required: false
+- workflow: WF-19
+  reads:
+  - durable_state
+  - verified_context
+  writes: []
+  authorization_required: false
+  audit_required: false
+- workflow: WF-20
+  reads:
+  - durable_state
+  - verified_context
+  writes:
+  - domain_state
+  authorization_required: true
+  audit_required: true

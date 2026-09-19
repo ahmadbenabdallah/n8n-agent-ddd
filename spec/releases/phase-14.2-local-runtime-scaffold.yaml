@@ -1,0 +1,9 @@
+version: "0.14.2"
+name: local-runtime-scaffold
+status: scaffold
+goal: provide deterministic local n8n+PostgreSQL runtime with persistent volumes and localhost-only editor exposure
+not_claimed:
+  - live_docker_execution
+  - live_n8n_initialization
+  - live_mcp_connection
+  - live_workflow_sync

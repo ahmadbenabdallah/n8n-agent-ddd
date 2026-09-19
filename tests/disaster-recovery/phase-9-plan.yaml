@@ -1,0 +1,21 @@
+version: "2026.09.9"
+tests:
+  - id: DR-001
+    name: database_restore
+    action: restore_staging_backup_to_isolated_project
+    pass: migrations_and_security_tests_pass_after_restore
+
+  - id: DR-002
+    name: unknown_order_outcome
+    action: force_timeout_after_create_order
+    pass: reconciliation_finds_single_external_order_and_closes_execution
+
+  - id: DR-003
+    name: blue_green_rollback
+    action: deploy_green_then_fail_smoke_test
+    pass: traffic_remains_on_blue_and_green_is_drained
+
+  - id: DR-004
+    name: workflow_drift
+    action: mutate_live_workflow_outside_git
+    pass: drift_is_detected_and_alerted

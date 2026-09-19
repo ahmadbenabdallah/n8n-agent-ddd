@@ -1,0 +1,89 @@
+phase:
+  id: "0.17.0"
+  name: "Harness Control Plane"
+  status: "ARCHITECTURE_AND_EXECUTION_FOUNDATION"
+  purpose: "Productize the developer/AI-agent control plane for planning, validation, review, deployment and operation of the n8n Agent DDD platform."
+
+boundary:
+  harness_role: "developer_and_ai_agent_control_plane"
+  customer_runtime: "n8n_domain_runtime"
+  harness_is_not_customer_runtime: true
+  harness_is_not_workflow_editor: true
+  n8n_native_dashboard_remains_operator_ui: true
+
+architecture:
+  interfaces:
+    - "CLI"
+    - "Skills"
+    - "MCP"
+    - "Git"
+    - "CI"
+  lifecycle:
+    - "DISCOVER"
+    - "DEFINE"
+    - "DOMAIN"
+    - "SPECIFY"
+    - "ARCHITECT"
+    - "DESIGN"
+    - "DECOMPOSE"
+    - "PLAN"
+    - "IMPLEMENT"
+    - "TEST"
+    - "SECURITY"
+    - "REVIEW"
+    - "INTEGRATE"
+    - "DEPLOY"
+    - "VERIFY"
+    - "OPERATE"
+    - "LEARN"
+
+control_plane:
+  chief_agent:
+    role: "orchestrator"
+  advisors:
+    - "PM"
+    - "Architect"
+    - "Security"
+    - "QA"
+    - "Reviewer"
+  workers:
+    - "Developer"
+  state:
+    source_of_truth: "Git_and_durable_harness_state"
+  worktrees:
+    isolated_by_task: true
+  approvals:
+    required_for_high_impact_changes: true
+
+capability_model:
+  skills: "procedural_knowledge"
+  tools: "executable_capabilities"
+  plugins: "packaged_capability_extensions"
+  agents: "reasoning_and_orchestration"
+  policies: "access_constraints"
+  mcp: "structured_control_interface"
+  capability_discovery_is_not_authorization: true
+
+safety:
+  harness_cannot_bypass_WF-10: true
+  harness_cannot_directly_authorize_commerce: true
+  production_deployment_requires_gate_and_approval: true
+  secrets_excluded_from_agent_context_by_default: true
+  high_impact_actions_require_review: true
+  audit_required_for_state_changes: true
+
+current_scope:
+  - "CLI command contracts"
+  - "task lifecycle/state"
+  - "advisor decision contract"
+  - "gate orchestration"
+  - "worktree isolation contract"
+  - "MCP capability boundary"
+  - "release/deployment handoff"
+  - "operator approval boundary"
+
+out_of_scope:
+  - "custom workflow editor"
+  - "customer-facing chat runtime"
+  - "direct commerce mutation by harness"
+  - "replacing n8n UI"

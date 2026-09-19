@@ -1,0 +1,19 @@
+{
+  "release": "0.10.0",
+  "decision": "BLOCKED",
+  "reason": "No real staging evidence has been supplied/executed in this build environment.",
+  "gates": {
+    "INT": "MISSING",
+    "SEC": "MISSING",
+    "E2E": "MISSING",
+    "IDEMP": "MISSING",
+    "RECON": "MISSING",
+    "RT": "MISSING",
+    "LOAD": "MISSING",
+    "DR": "MISSING",
+    "BG": "MISSING",
+    "DRIFT": "MISSING",
+    "ARCH": "MISSING",
+    "SECURITY": "MISSING"
+  }
+}

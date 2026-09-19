@@ -1,0 +1,30 @@
+{
+  "name": "tunisia-dtc-agent-WF13-promotion-service-v3",
+  "version": "3.0.0",
+  "status": "integration-ready scaffold",
+  "operations": [
+    "coupon_validate",
+    "coupon_preview",
+    "promotion_info"
+  ],
+  "source_of_truth": {
+    "transactional": "woocommerce",
+    "informational": "approved_kb"
+  },
+  "authorization": "WF-10",
+  "commerce_boundary": "WF-20",
+  "files": [
+    "contracts/wf13-promotion-output.schema.json",
+    "contracts/wf13-promotion-input.schema.json",
+    "n8n/WF-13-promotion-service-v3.json",
+    "database/README.md",
+    "tests/regression.md",
+    "docs/05-wiring.md",
+    "docs/06-production-gate.md",
+    "docs/04-security.md",
+    "docs/02-coupon-policy.md",
+    "docs/03-outage-and-fallback.md",
+    "docs/01-architecture.md",
+    "docs/README.md"
+  ]
+}

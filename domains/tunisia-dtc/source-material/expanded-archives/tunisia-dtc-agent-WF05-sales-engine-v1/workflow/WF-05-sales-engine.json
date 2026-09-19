@@ -1,0 +1,331 @@
+{
+  "name": "WF-05 \u2014 Sales Engine",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const i=$json;\nconst required=['message_id','conversation_id','text','intent','identity','state'];\nconst missing=required.filter(k=>i[k]===undefined);\nreturn [{json:{...i,input_valid:missing.length===0,missing_fields:missing}}];"
+      },
+      "id": "2",
+      "name": "Validate Sales Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.input_valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "Sales Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{route:'escalation',reason:'invalid_sales_input',safe_to_reply:false,tools_allowed:false,llm_allowed:false}}];"
+      },
+      "id": "4",
+      "name": "Fail Closed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const s=$json.state||{};\nconst allowed=['NEW','BROWSING','DISCOVERY','PRODUCT_INTEREST','CONSIDERING','OBJECTION_HANDLING','PRODUCT_SELECTED','CART_BUILDING','CHECKOUT_READY','PURCHASED','POST_PURCHASE','CLOSED','WAITING_FOR_CUSTOMER','HUMAN_ESCALATION'];\nconst stage=allowed.includes(s.stage)?s.stage:'NEW';\nconst intent=$json.intent;\nconst salesIntents=['product_discovery','product_question','comparison','pricing','promotion','availability','cart_view','cart_add','cart_remove','cart_update','cart_clear','checkout_start','checkout_confirm'];\nreturn [{json:{...$json,sales_stage:stage,is_sales_intent:salesIntents.includes(intent),sales_intents:salesIntents}}];"
+      },
+      "id": "5",
+      "name": "Load Sales Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.is_sales_intent}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "6",
+      "name": "Sales Intent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'support',reason:'non_sales_intent',tools_allowed:false}}];"
+      },
+      "id": "7",
+      "name": "Route Non-Sales",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const t=String($json.text||'').normalize('NFKC').trim();\nconst lower=t.toLocaleLowerCase();\nconst extract={\n  size:(lower.match(/(?:taille|size)\\s*(?:=|:)?\\s*(xs|s|m|l|xl|xxl|\\d{2})/i)||[])[1]||null,\n  quantity:(lower.match(/(?:x|qty|quantit[e\u00e9]|quantite)\\s*(\\d+)/i)||[])[1]?Number((lower.match(/(?:x|qty|quantit[e\u00e9]|quantite)\\s*(\\d+)/i)||[])[1]):null\n};\nconst hasProductRef=Boolean($json.state?.selected_product_id||$json.selected_product_id||/\\b(ce|cette|hedha|hedhi|this|that|produit|article|model)\\b/i.test(lower));\nreturn [{json:{...$json,customer_text:t,extracted:extract,has_product_reference:hasProductRef}}];"
+      },
+      "id": "8",
+      "name": "Extract Sales Signals",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const intent=$json.intent;\nconst stage=$json.sales_stage;\nlet next=stage;\nlet action='answer';\nlet needs_clarification=false;\nlet reason='';\n\nif(intent==='product_discovery'){next=['NEW','BROWSING'].includes(stage)?'DISCOVERY':'PRODUCT_INTEREST';}\nelse if(['product_question','comparison','pricing','promotion','availability'].includes(intent)){next='CONSIDERING';}\nelse if(intent==='cart_view'){next='CART_BUILDING'; action='cart_view';}\nelse if(intent==='cart_add'){next='CART_BUILDING'; action='cart_add';}\nelse if(intent==='cart_remove'){next='CART_BUILDING'; action='cart_remove';}\nelse if(intent==='cart_update'){next='CART_BUILDING'; action='cart_update';}\nelse if(intent==='cart_clear'){next='CART_BUILDING'; action='cart_clear';}\nelse if(intent==='checkout_start'){next='CHECKOUT_READY'; action='checkout_start';}\nelse if(intent==='checkout_confirm'){next='CHECKOUT_READY'; action='checkout_confirm';}\n\nif(['cart_add','cart_remove','cart_update'].includes(intent) && !$json.has_product_reference && !$json.state?.cart_id){\n  needs_clarification=true;\n  reason='missing_product_or_cart_context';\n}\nreturn [{json:{...$json,next_sales_stage:next,proposed_sales_action:action,needs_clarification,reason}}];"
+      },
+      "id": "9",
+      "name": "Sales State Machine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.needs_clarification}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "10",
+      "name": "Clarification Needed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'clarification',tools_allowed:false,llm_allowed:true,reason:$json.reason||'missing_sales_context'}}];"
+      },
+      "id": "11",
+      "name": "Build Sales Clarification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const intent=$json.intent;\nconst requiresTool=['availability','pricing','promotion','cart_view','cart_add','cart_remove','cart_update','cart_clear','checkout_start','checkout_confirm'].includes(intent);\nconst discovery=['product_discovery','product_question','comparison'].includes(intent);\nreturn [{json:{...$json,\n  route:'sales',\n  llm_allowed:true,\n  tools_allowed:requiresTool,\n  retrieval_required:discovery||requiresTool,\n  execution_allowed:false,\n  action_proposal_allowed:['cart_add','cart_remove','cart_update','cart_clear','checkout_start','checkout_confirm'].includes(intent)\n}}];"
+      },
+      "id": "12",
+      "name": "Build Sales Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{\n  message_id:$json.message_id,\n  conversation_id:$json.conversation_id,\n  intent:$json.intent,\n  current_stage:$json.sales_stage,\n  next_stage:$json.next_sales_stage,\n  proposed_action:$json.proposed_sales_action,\n  route:$json.route,\n  language:$json.language||$json.state?.language||null,\n  script:$json.script||$json.state?.script||null,\n  register:$json.register||$json.state?.register||null,\n  retrieval_required:$json.retrieval_required??false,\n  tools_allowed:$json.tools_allowed??false,\n  action_proposal_allowed:$json.action_proposal_allowed??false,\n  execution_allowed:false,\n  needs_clarification:$json.needs_clarification??false,\n  reason:$json.reason||null\n}}];"
+      },
+      "id": "13",
+      "name": "Build Sales Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        -20
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Sales Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Sales Input": {
+      "main": [
+        [
+          {
+            "node": "Sales Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sales Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Load Sales Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail Closed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Sales Context": {
+      "main": [
+        [
+          {
+            "node": "Sales Intent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sales Intent?": {
+      "main": [
+        [
+          {
+            "node": "Extract Sales Signals",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route Non-Sales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Sales Signals": {
+      "main": [
+        [
+          {
+            "node": "Sales State Machine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sales State Machine": {
+      "main": [
+        [
+          {
+            "node": "Clarification Needed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clarification Needed?": {
+      "main": [
+        [
+          {
+            "node": "Build Sales Clarification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Sales Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Sales Plan": {
+      "main": [
+        [
+          {
+            "node": "Build Sales Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Sales Clarification": {
+      "main": [
+        [
+          {
+            "node": "Build Sales Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf05-v1"
+}

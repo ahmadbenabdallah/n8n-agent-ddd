@@ -1,0 +1,164 @@
+{
+  "name": "WF-16 Response Renderer v3 \u2014 Verified Facts Only",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"channel\": \"facebook\", \"language\": \"tn\", \"script\": \"latin\", \"register\": \"casual\", \"customer_message\": \"Ok nheb nkamel\", \"intent\": \"checkout_confirm\", \"verified_result\": {\"success\": true, \"verified\": true, \"order\": {\"id\": 123, \"status\": \"processing\", \"payment_method\": \"cod\", \"payment_status\": \"not_paid\", \"total\": \"149.900\", \"currency\": \"TND\"}}}"
+      },
+      "id": "16t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(!['facebook','whatsapp','instagram','internal'].includes(x.channel))\n throw new Error('renderer_invalid_channel');\nif(!x.verified_result || x.verified_result.verified!==true)\n throw new Error('renderer_requires_verified_result');\nif(x.verified_result.success!==true)\n throw new Error('renderer_cannot_render_success_from_failed_result');\nconst lang=x.language||'tn', script=x.script||'latin';\nif(!['tn','fr','ar','en'].includes(lang)) throw new Error('renderer_invalid_language');\nif(!['latin','arabic'].includes(script)) throw new Error('renderer_invalid_script');\nreturn [{json:{...x,language:lang,script,register:x.register||'casual'}}];\n"
+      },
+      "id": "16v",
+      "name": "Validate Render Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json, r=x.verified_result;\nconst o=r.order||r.checkout_snapshot||r.cart||r.promotion||null;\n\n// Renderer receives verified facts only. Reject obvious unsafe fields if they\n// accidentally enter the renderer contract.\nconst forbidden=['api_key','authorization','access_token','password','otp','cvv',\n  'card_number','pan','cart_token','nonce','consumer_secret','client_secret'];\nconst raw=JSON.stringify(r).toLowerCase();\nfor(const k of forbidden) if(raw.includes(k)) throw new Error(`renderer_forbidden_field_${k}`);\n\nif(o?.payment_method==='cod' && o?.payment_status==='paid')\n  throw new Error('renderer_cod_paid_conflict');\n\nreturn [{json:{...x,renderable_fact_set:r}}];\n"
+      },
+      "id": "16s",
+      "name": "Safety Assertions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json, r=x.renderable_fact_set;\nconst o=r.order||r.checkout_snapshot||null;\nlet msg='';\n\nif(o && o.payment_method==='cod' && o.id!==undefined){\n  msg=`Commande confirm\u00e9e #${o.id}. Paiement \u00e0 la livraison (COD).`;\n  if(o.total!==null && o.total!==undefined)\n    msg += ` Total: ${o.total} ${o.currency||'TND'}.`;\n} else if(o && r.operation==='checkout_validate'){\n  msg=`Le panier est pr\u00eat \u00e0 \u00eatre confirm\u00e9. Total v\u00e9rifi\u00e9: ${o.total} ${o.currency||'TND'}. Paiement: ${o.payment_method||'COD'}.`;\n} else if(r.promotion){\n  msg=r.promotion.customer_message || 'La promotion a \u00e9t\u00e9 v\u00e9rifi\u00e9e.';\n} else if(r.cart){\n  msg='Panier mis \u00e0 jour.';\n} else {\n  msg='Votre demande a \u00e9t\u00e9 v\u00e9rifi\u00e9e.';\n}\n\n// This default is intentionally conservative. Language/script adaptation must\n// happen through a controlled renderer/template layer before production.\n// Do not ask the LLM to freely rewrite verified transactional facts.\nreturn [{json:{\n  channel:x.channel,language:x.language,script:x.script,register:x.register,\n  customer_message:msg,\n  source:'verified_transactional_result',\n  facts:r\n}}];\n"
+      },
+      "id": "16r",
+      "name": "Render Customer-Safe Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(x.script==='latin'){\n  // Arabic Unicode block check. Latin/Tunisian Arabizi responses must not\n  // silently switch to Arabic script.\n  if(/[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF]/.test(x.customer_message))\n    throw new Error('renderer_script_violation_latin');\n}\nreturn [{json:x}];\n"
+      },
+      "id": "16l",
+      "name": "Language Script Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(typeof x.customer_message!=='string'||!x.customer_message.trim())\n throw new Error('renderer_empty_message');\n\n// Never expose internal structured result wholesale to the channel.\nconst publicFields={channel:x.channel,language:x.language,script:x.script,\nregister:x.register,customer_message:x.customer_message};\nreturn [{json:publicFields}];\n"
+      },
+      "id": "16f",
+      "name": "Final Output Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Render Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Render Input": {
+      "main": [
+        [
+          {
+            "node": "Safety Assertions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Safety Assertions": {
+      "main": [
+        [
+          {
+            "node": "Render Customer-Safe Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Customer-Safe Message": {
+      "main": [
+        [
+          {
+            "node": "Language Script Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Language Script Guard": {
+      "main": [
+        [
+          {
+            "node": "Final Output Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "REPLACE_ON_IMPORT",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "dtc-agent"
+    },
+    {
+      "name": "renderer"
+    },
+    {
+      "name": "security"
+    },
+    {
+      "name": "messenger"
+    }
+  ]
+}

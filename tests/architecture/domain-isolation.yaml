@@ -1,0 +1,22 @@
+version: "2026.09.10"
+tests:
+  - id: DOMAIN-ISO-001
+    rule: every_domain_has_stable_domain_id
+  - id: DOMAIN-ISO-002
+    rule: every_domain_maps_to_one_n8n_project_per_environment
+  - id: DOMAIN-ISO-003
+    rule: workflow_names_are_domain_namespaced
+  - id: DOMAIN-ISO-004
+    rule: credentials_are_not_shared_across_domains_by_default
+  - id: DOMAIN-ISO-005
+    rule: kb_retrieval_is_domain_scoped
+  - id: DOMAIN-ISO-006
+    rule: postgres_state_is_domain_scoped
+  - id: DOMAIN-ISO-007
+    rule: cross_domain_workflow_calls_are_denied_by_default
+  - id: DOMAIN-ISO-008
+    rule: global_n8n_variables_and_tags_are_not_security_boundaries
+  - id: DOMAIN-ISO-009
+    rule: production_n8n_is_protected_from_direct_editing
+  - id: DOMAIN-ISO-010
+    rule: domain_promotion_is_git_and_ci_controlled

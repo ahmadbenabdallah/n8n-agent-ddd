@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-17 Audit Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "audit_recorded",
+    "event_id",
+    "event_category"
+  ],
+  "properties": {
+    "audit_recorded": {
+      "type": "boolean"
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "event_category": {
+      "type": "string"
+    },
+    "success": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "analytics_signal": {
+      "type": "object"
+    }
+  }
+}

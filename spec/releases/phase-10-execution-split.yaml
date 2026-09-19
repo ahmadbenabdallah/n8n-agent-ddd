@@ -1,0 +1,26 @@
+phase: 10
+execution_model:
+  local: deterministic repository/runtime validation without external credentials
+  staging: real environment evidence against configured staging services
+  production_certification: requires required fresh staging evidence and approvals
+local_gates:
+  - workflow_artifacts
+  - contracts
+  - architecture_invariants
+  - domain_manifests
+  - agent_skill_structure
+  - phase10_execution_contract
+staging_gates:
+  - INT
+  - SEC
+  - E2E
+  - IDEMP
+  - RECON
+  - RT
+  - LOAD
+  - DR
+  - BG
+  - DRIFT
+  - ARCH
+  - SECURITY
+status: local-executable-staging-preserved

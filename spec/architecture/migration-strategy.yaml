@@ -1,0 +1,36 @@
+version: "2026.09.10"
+
+schema_strategy:
+  canonical:
+    - drizzle_schema
+    - sql_migrations
+  supabase_specific:
+    - rls
+    - policies
+    - functions
+    - extensions
+  rule:
+    "Provider-specific database features must be isolated and documented."
+
+migration:
+  compatibility:
+    - expand
+    - migrate
+    - contract
+  required_checks:
+    - schema_diff
+    - migration_replay
+    - rollback_or_forward_fix
+    - rls_security_tests
+    - pgvector_index_validation
+
+portability:
+  target: standard_postgresql
+  optional_extensions:
+    - vector
+  provider_profile_must_declare:
+    - connection_mode
+    - extensions
+    - rls_support
+    - backup_strategy
+    - pooling_strategy

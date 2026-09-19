@@ -1,0 +1,59 @@
+version: "2026.09.10"
+
+recommended_topology:
+  development:
+    n8n_instances: one_per_environment
+    projects: one_per_domain
+  staging:
+    n8n_instances: one_per_environment
+    projects: one_per_domain
+  production:
+    n8n_instances: one_per_environment
+    projects: one_per_domain
+
+project:
+  name_pattern: "domain-{domain_id}"
+  owns:
+    - workflows
+    - credentials
+    - project_variables_when_supported
+    - data_tables_when_used
+    - domain_runtime_configuration
+  must_not_own:
+    - canonical_domain_spec
+    - production_secrets_in_git
+    - global_business_rules
+
+global_n8n_resources:
+  tags: "treat as non-isolated/global"
+  variables: "treat as non-isolated/global where applicable"
+  policy: "do not use global resources as a domain security boundary"
+
+workflow_rules:
+  naming:
+    pattern: "{domain_id}__WF-{number}__{name}"
+  metadata:
+    required:
+      - domain_id
+      - workflow_id
+      - workflow_version
+      - environment
+  cross_domain_calls:
+    default: denied
+    allow_only:
+      - explicit_contract
+      - explicit_adapter
+      - explicit authorization
+      - audit_event
+
+strong_isolation:
+  use_separate_n8n_instance_when:
+    - independent_customer_requires_hard_tenant_boundary
+    - regulatory_or_contractual_isolation_requires_it
+    - domain has materially different security administration
+    - resource/noisy-neighbor isolation is required
+
+source_control:
+  canonical_source: git
+  n8n_role: runtime/deployment_target
+  promotion: PR_and_ci_then_n8n_pull

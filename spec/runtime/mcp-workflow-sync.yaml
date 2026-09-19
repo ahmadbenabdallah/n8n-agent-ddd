@@ -1,0 +1,41 @@
+version: "0.12.8"
+name: mcp-workflow-synchronization
+purpose: "Define the agent-driven desired-state synchronization protocol for the 21 canonical n8n workflows."
+
+authority:
+  desired_state: Git
+  execution_runtime: n8n
+  agent_interface: n8n_instance_mcp
+  authorization_boundary: WF-10
+
+protocol:
+  - "Load using-n8n-skills-official before any n8n action."
+  - "Load n8n-workflow-lifecycle-official for workflow lifecycle operations."
+  - "Discover existing workflows with search_workflows before creating/updating."
+  - "Resolve project/folder IDs instead of guessing them."
+  - "Build/update using supported MCP workflow tools."
+  - "Validate before publish."
+  - "After every create/update, call get_workflow_details and verify connections."
+  - "Record skillsUsed on create/update operations."
+  - "Do not expose secrets in workflow text fields."
+  - "Never activate a workflow merely because it was synchronized."
+  - "Activation is environment policy and release-gated."
+
+workflow_identity:
+  canonical_key: "domain_id + workflow_key"
+  examples:
+    - "tunisia-dtc/WF-00"
+    - "tunisia-dtc/WF-01"
+    - "tunisia-dtc/WF-20"
+
+sync_states:
+  - MISSING
+  - PRESENT_MATCH
+  - PRESENT_DRIFTED
+  - INVALID
+  - BLOCKED
+
+safety:
+  - "MCP is not commerce authorization."
+  - "Workflow synchronization cannot change business authorization rules."
+  - "Production synchronization requires a signed release."

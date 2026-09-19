@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Intent",
+  "type": "object",
+  "required": [
+    "name",
+    "route"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "enum": [
+        "product_discovery",
+        "product_question",
+        "comparison",
+        "pricing",
+        "promotion",
+        "availability",
+        "shipping",
+        "payment",
+        "cart_view",
+        "cart_add",
+        "cart_remove",
+        "cart_update",
+        "cart_clear",
+        "checkout_start",
+        "checkout_confirm",
+        "order_status",
+        "return_exchange",
+        "complaint",
+        "payment_dispute",
+        "human_request",
+        "safety",
+        "security_suspicion",
+        "off_topic"
+      ]
+    },
+    "confidence": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "route": {
+      "type": "string",
+      "enum": [
+        "sales",
+        "support",
+        "security",
+        "human"
+      ]
+    }
+  }
+}

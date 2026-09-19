@@ -1,0 +1,13 @@
+version: 1
+rollback_model:
+  application: supported
+  workflow_release: supported
+  configuration: supported
+  database: compatibility_first
+  external_mutation: reconcile_before_retry_or_compensation
+rules:
+  - do_not_rollback_unknown_commerce_execution
+  - preserve_audit_evidence
+  - preserve_idempotency_keys
+  - preserve_reconciliation_records
+  - stop_conflicting_automation_on_incident

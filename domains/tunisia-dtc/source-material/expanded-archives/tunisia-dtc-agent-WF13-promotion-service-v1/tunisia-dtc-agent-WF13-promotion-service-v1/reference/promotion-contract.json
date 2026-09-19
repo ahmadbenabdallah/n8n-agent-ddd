@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "supported_actions": [
+    "promotion",
+    "pricing",
+    "cart_add",
+    "checkout_start",
+    "checkout_confirm"
+  ],
+  "input": {
+    "authorized_action": {
+      "action": "promotion",
+      "execution_allowed": false,
+      "parameters": {
+        "promo_code": "CODE"
+      }
+    },
+    "identity": {
+      "identity_level": "channel_linked"
+    },
+    "promotion_context": {
+      "cart": {
+        "subtotal": 189,
+        "currency": "TND",
+        "lines": []
+      },
+      "customer": {
+        "customer_ref": "internal-ref"
+      },
+      "promotions": []
+    }
+  },
+  "eligibility_checks": [
+    "active_window",
+    "minimum_order_value",
+    "customer_eligibility",
+    "usage_limit",
+    "product_or_category_eligibility",
+    "currency",
+    "stacking"
+  ],
+  "transactional_rule": "A static promotion result is insufficient for cart/checkout use; a verified live promotion result is required.",
+  "execution_rule": "WF-13 never executes commerce mutations and never returns execution_allowed=true.",
+  "source_of_truth": "live promotion/commerce service"
+}

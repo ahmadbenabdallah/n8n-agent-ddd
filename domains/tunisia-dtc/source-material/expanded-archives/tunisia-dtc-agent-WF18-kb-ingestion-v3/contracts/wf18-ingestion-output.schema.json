@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-18 KB Ingestion Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "accepted",
+    "status",
+    "source_id"
+  ],
+  "properties": {
+    "accepted": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ingestion_id": {
+      "type": "string"
+    },
+    "chunk_count": {
+      "type": "integer"
+    },
+    "source_role": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "security_flags": {
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "dynamic_truth_warnings": {
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  }
+}

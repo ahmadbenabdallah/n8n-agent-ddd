@@ -1,0 +1,12 @@
+version: "1"
+name: definition-of-ready
+
+required:
+  - requirements_explicit
+  - acceptance_criteria
+  - domain_impact_identified
+  - contracts_identified
+  - security_impact_assessed
+  - test_strategy_defined
+  - migration_impact_known
+  - rollback_strategy_defined_when_required

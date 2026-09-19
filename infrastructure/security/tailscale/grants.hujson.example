@@ -1,0 +1,15 @@
+{
+  // Example only. Replace identities and tags with the deployment's real tailnet policy.
+  "groups": {
+    "group:n8n-operators": [
+      "operator@example.com"
+    ]
+  },
+  "grants": [
+    {
+      "src": ["group:n8n-operators"],
+      "dst": ["tag:n8n-runtime"],
+      "ip": ["tcp:5678"]
+    }
+  ]
+}

@@ -1,0 +1,221 @@
+{
+  "name": "WF-03 Conversation & Context State v4 \u2014 Persistent Context",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"customer_id\": \"<uuid>\", \"conversation_id\": \"<uuid>\", \"turn_id\": \"<id>\", \"message\": \"Nheb Nike Air Max 95 taille 42\", \"commerce_status\": \"unavailable\", \"source_of_truth\": \"kb_only\", \"proposed\": null}"
+      },
+      "id": "03t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nfor(const k of ['customer_id','conversation_id','turn_id','message'])\n if(typeof x[k]!=='string'||!x[k].trim()) throw new Error(`context_missing_${k}`);\nif(x.message.length>10000) throw new Error('context_message_too_long');\nreturn [{json:x}];\n"
+      },
+      "id": "03v",
+      "name": "Validate Context Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nSELECT c.id conversation_id,c.customer_id,c.channel,c.turn_count,c.automated_turn_count,\nc.escalation_status,cc.* FROM public.conversations c\nJOIN public.conversation_context cc ON cc.conversation_id=c.id\nWHERE c.id=$1 AND c.customer_id=$2 LIMIT 1;\n",
+        "options": {
+          "queryReplacement": "={{ [$json.conversation_id, $json.customer_id] }}"
+        }
+      },
+      "id": "03l",
+      "name": "Load Canonical Context",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst inp=$('Validate Context Input').first().json, rows=$input.all().map(i=>i.json), s=rows[0]||{};\nreturn [{json:{...s,conversation_id:inp.conversation_id,customer_id:inp.customer_id,turn_id:inp.turn_id,current_message:inp.message,proposed:inp.proposed||null,commerce_status:inp.commerce_status||s.commerce_status||'unknown',source_of_truth:inp.source_of_truth||s.source_of_truth||'kb_only',context_loaded:Boolean(rows.length)}}];\n"
+      },
+      "id": "03m",
+      "name": "Merge Incoming + Persisted State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json, p=x.proposed||{}, current=x.sales_stage||'NEW';\nconst next={NEW:['BROWSING','DISCOVERY'],BROWSING:['DISCOVERY','PRODUCT_INTEREST'],DISCOVERY:['PRODUCT_INTEREST','CONSIDERING'],PRODUCT_INTEREST:['CONSIDERING','PRODUCT_SELECTED'],CONSIDERING:['PRODUCT_SELECTED','CART_BUILDING'],PRODUCT_SELECTED:['CART_BUILDING','CHECKOUT_READY'],CART_BUILDING:['CHECKOUT_READY'],CHECKOUT_READY:[]};\nconst requested=p.sales_stage;\nconst stage=requested&&(requested===current||(next[current]||[]).includes(requested))?requested:current;\nreturn [{json:{...x,next_state:{language:p.language??x.language??null,script:p.script??x.script??null,register:p.register??x.register??null,intent:p.intent??x.intent??null,sub_intent:p.sub_intent??x.sub_intent??null,sales_stage:stage,selected_products:Array.isArray(p.selected_products)?p.selected_products:(x.selected_products||[]),purchase_intent:p.purchase_intent&&typeof p.purchase_intent==='object'?p.purchase_intent:(x.purchase_intent||{}),next_required_fields:Array.isArray(p.next_required_fields)?p.next_required_fields:(x.next_required_fields||[])}}}];\n"
+      },
+      "id": "03b",
+      "name": "Build Allowlisted State Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nUPDATE public.conversation_context SET language=$3,script=$4,register=$5,intent=$6,sub_intent=$7,\nsales_stage=$8,selected_products=$9::jsonb,purchase_intent=$10::jsonb,next_required_fields=$11::jsonb,\ncommerce_status=$12,source_of_truth=$13,last_message_hash=encode(digest($14,'sha256'),'hex'),\nlast_customer_message=$14,version=version+1,last_updated=now()\nWHERE conversation_id=$1 AND EXISTS(SELECT 1 FROM public.conversations c WHERE c.id=$1 AND c.customer_id=$2)\nRETURNING *;\n",
+        "options": {
+          "queryReplacement": "={{ [$json.conversation_id,$json.customer_id,$json.next_state.language,$json.next_state.script,$json.next_state.register,$json.next_state.intent,$json.next_state.sub_intent,$json.next_state.sales_stage,JSON.stringify($json.next_state.selected_products||[]),JSON.stringify($json.next_state.purchase_intent||{}),JSON.stringify($json.next_state.next_required_fields||[]),$json.commerce_status,$json.source_of_truth,$json.current_message] }}"
+        }
+      },
+      "id": "03p",
+      "name": "Persist Context Idempotently",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT public.update_customer_profile($1,$2,$3,$4,$5,$6,$7,$8,$9);",
+        "options": {
+          "queryReplacement": "={{ [$json.customer_id,$json.next_state.purchase_intent?.customer_details?.name||null,$json.next_state.purchase_intent?.customer_details?.phone_e164||null,$json.next_state.purchase_intent?.customer_details?.address_text||null,$json.next_state.purchase_intent?.customer_details?.city||null,$json.next_state.purchase_intent?.customer_details?.postal_code||null,$json.next_state.language||null,$json.next_state.script||null,$json.next_state.register||null] }}"
+        }
+      },
+      "id": "03c",
+      "name": "Persist Explicit Customer Details",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$('Build Allowlisted State Update').first().json;\nreturn [{json:{customer_id:x.customer_id,conversation_id:x.conversation_id,turn_id:x.turn_id,context_loaded:x.context_loaded,persisted:true,language:x.next_state.language,script:x.next_state.script,register:x.next_state.register,intent:x.next_state.intent,sub_intent:x.next_state.sub_intent,sales_stage:x.next_state.sales_stage,identity_level:Number(x.identity_level||0),selected_products:x.next_state.selected_products,purchase_intent:x.next_state.purchase_intent,customer_details:x.next_state.purchase_intent?.customer_details||{},next_required_fields:x.next_state.next_required_fields,commerce_status:x.commerce_status,source_of_truth:x.source_of_truth}}];\n"
+      },
+      "id": "03o",
+      "name": "Return Verified Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Context Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Context Input": {
+      "main": [
+        [
+          {
+            "node": "Load Canonical Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Canonical Context": {
+      "main": [
+        [
+          {
+            "node": "Merge Incoming + Persisted State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Incoming + Persisted State": {
+      "main": [
+        [
+          {
+            "node": "Build Allowlisted State Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Allowlisted State Update": {
+      "main": [
+        [
+          {
+            "node": "Persist Context Idempotently",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Context Idempotently": {
+      "main": [
+        [
+          {
+            "node": "Persist Explicit Customer Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Explicit Customer Details": {
+      "main": [
+        [
+          {
+            "node": "Return Verified Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "REPLACE_ON_IMPORT",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "dtc-agent"
+    },
+    {
+      "name": "conversation-state"
+    },
+    {
+      "name": "supabase"
+    }
+  ]
+}

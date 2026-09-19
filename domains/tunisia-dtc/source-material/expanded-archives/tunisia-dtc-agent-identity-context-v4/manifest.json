@@ -1,0 +1,30 @@
+{
+  "name": "tunisia-dtc-agent-identity-context-v4",
+  "version": "4.0.0",
+  "status": "integration-ready implementation scaffold",
+  "components": [
+    "WF-02 persistent identity",
+    "WF-03 persistent conversation/context",
+    "Supabase schema"
+  ],
+  "source_of_truth": {
+    "identity_context": "Supabase",
+    "stable_information": "KB",
+    "live_transactions": "WooCommerce"
+  },
+  "files": [
+    "contracts/wf03-context-input.schema.json",
+    "contracts/wf02-identity-input.schema.json",
+    "n8n/WF-03-conversation-context-v4.json",
+    "n8n/WF-02-identity-v4.json",
+    "database/001_identity_context.sql",
+    "tests/sql-smoke.sql",
+    "tests/regression.md",
+    "docs/04-security.md",
+    "docs/02-wiring-runbook.md",
+    "docs/03-sales-during-commerce-outage.md",
+    "docs/01-architecture.md",
+    "docs/05-production-gate.md",
+    "docs/README.md"
+  ]
+}

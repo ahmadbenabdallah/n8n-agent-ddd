@@ -1,0 +1,13 @@
+phase:
+  id: 7
+  name: Durable State and n8n Execution Foundation
+  version: "2026.09.1"
+  status: foundation-complete
+  outputs:
+    - supabase_domain_migration
+    - durable_state_model
+    - contract_validation_checks
+    - critical_n8n_workflow_skeletons
+  next:
+    phase: 8
+    focus: executable_21_workflows_with_integrations_and_tests

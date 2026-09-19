@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "input": {
+    "authorized_action": {
+      "action": "checkout_confirm",
+      "execution_allowed": true,
+      "idempotency_key": "checkout-msg-123"
+    },
+    "identity": {
+      "identity_level": "order_verified"
+    },
+    "checkout_context": {
+      "checkout": {
+        "checkout_id": "chk-1",
+        "cart_id": "cart-1",
+        "cart_version": 8,
+        "total": 189,
+        "currency": "TND"
+      }
+    },
+    "transaction_context": {
+      "live_revalidation": {
+        "verified": true,
+        "cart_version_match": true,
+        "price_verified": true,
+        "stock_verified": true,
+        "promotion_verified": true
+      },
+      "payment": {
+        "method": "cod"
+      }
+    }
+  },
+  "adapter_request": {
+    "operation": "create_transaction",
+    "checkout_id": "string",
+    "cart_id": "string",
+    "cart_version": "string|integer",
+    "total": "number",
+    "currency": "string",
+    "payment_method": "opaque identifier",
+    "idempotency_key": "string"
+  },
+  "adapter_response": {
+    "verified": "boolean",
+    "owner_match": "boolean",
+    "amount_verified": "boolean",
+    "currency_verified": "boolean",
+    "status": "created|authorized|captured",
+    "transaction_id": "string",
+    "order_id": "string|null"
+  },
+  "success_rule": "Only a verified adapter result may be reported as completed."
+}

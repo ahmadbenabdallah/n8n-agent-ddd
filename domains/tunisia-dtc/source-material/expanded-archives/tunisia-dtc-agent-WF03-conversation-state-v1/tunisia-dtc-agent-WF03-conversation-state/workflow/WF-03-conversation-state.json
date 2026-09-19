@@ -1,0 +1,392 @@
+{
+  "name": "WF-03 — Conversation State",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 2,
+      "position": [
+        -1500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst required=[\"conversation_id\",\"channel\",\"channel_user_id\",\"message_id\"];\nconst missing=required.filter(k=>x[k]===undefined||x[k]===null||x[k]===\"\");\nif(missing.length) return [{json:{...x,state_result:{status:\"reject\",reason:\"missing_state_identity_fields\",missing}}}];\nreturn [{json:{...x,state_input:{valid:true}}}];"
+      },
+      "id": "validate-state-input",
+      "name": "Validate State Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.state_input?.valid === true }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "state-input-valid?",
+      "name": "State Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,state_result:{status:\"reject\",reason:\"invalid_state_input\"}}}];"
+      },
+      "id": "reject-state-input",
+      "name": "Reject State Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nreturn [{json:{...x,state_key:{\n conversation_id:String(x.conversation_id),\n channel:String(x.channel),\n channel_user_id:String(x.channel_user_id),\n message_id:String(x.message_id)\n}}}];"
+      },
+      "id": "prepare-state-key",
+      "name": "Prepare State Key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\n/*\nReplace this node in production with Supabase/Redis lookup.\nExpected loaded state shape is:\n{stage,intent,selected_product,selected_variant,cart_id,turn_count,\n language,script,register,escalation,updated_at}\n*/\nconst loaded=x.persisted_state??null;\nconst defaultState={\n stage:\"NEW\",\n intent:null,\n selected_product:null,\n selected_variant:null,\n cart_id:null,\n turn_count:0,\n language:x.language??null,\n script:x.script??null,\n register:x.register??null,\n escalation:{required:false,status:null,reason:null},\n last_message_id:null\n};\nreturn [{json:{...x,state_before:loaded??defaultState,state_store_status:loaded?\"loaded\":\"default_initialized\"}}];"
+      },
+      "id": "load-conversation-state",
+      "name": "Load Conversation State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -540,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst s={...(x.state_before??{})};\nconst turn=Number(s.turn_count??0)+1;\nreturn [{json:{...x,state_working:{...s,turn_count:turn,last_message_id:x.message_id}}}];"
+      },
+      "id": "increment-turn-count",
+      "name": "Increment Turn Count",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -260,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ Number($json.state_working?.turn_count ?? 0) > 15 }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "turn-limit-check",
+      "name": "Turn Limit Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -20,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nreturn [{json:{...x,state_working:{...x.state_working,stage:\"HUMAN_ESCALATION\",escalation:{required:true,status:\"required\",reason:\"turn_limit\"}}}}];"
+      },
+      "id": "conversation-limit-reached",
+      "name": "Conversation Limit Reached",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst s={...(x.state_working??{})};\nif(x.intent?.name) s.intent=x.intent.name;\nif(x.language) s.language=x.language;\nif(x.script) s.script=x.script;\nif(x.register) s.register=x.register;\nif(x.selected_product!==undefined) s.selected_product=x.selected_product;\nif(x.selected_variant!==undefined) s.selected_variant=x.selected_variant;\nif(x.cart_id!==undefined) s.cart_id=x.cart_id;\nif(x.escalation?.required!==undefined) s.escalation=x.escalation;\nreturn [{json:{...x,state_working:s}}];"
+      },
+      "id": "update-state-from-context",
+      "name": "Update State From Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json,s={...(x.state_working??{})},intent=x.intent?.name;\nconst allowed={\n NEW:[\"BROWSING\",\"DISCOVERY\",\"WAITING_FOR_CUSTOMER\",\"HUMAN_ESCALATION\"],\n BROWSING:[\"DISCOVERY\",\"PRODUCT_INTEREST\",\"WAITING_FOR_CUSTOMER\",\"HUMAN_ESCALATION\"],\n DISCOVERY:[\"PRODUCT_INTEREST\",\"CONSIDERING\",\"WAITING_FOR_CUSTOMER\",\"HUMAN_ESCALATION\"],\n PRODUCT_INTEREST:[\"CONSIDERING\",\"PRODUCT_SELECTED\",\"WAITING_FOR_CUSTOMER\",\"HUMAN_ESCALATION\"],\n CONSIDERING:[\"PRODUCT_SELECTED\",\"OBJECTION_HANDLING\",\"WAITING_FOR_CUSTOMER\",\"HUMAN_ESCALATION\"],\n OBJECTION_HANDLING:[\"CONSIDERING\",\"PRODUCT_SELECTED\",\"WAITING_FOR_CUSTOMER\",\"HUMAN_ESCALATION\"],\n PRODUCT_SELECTED:[\"CART_BUILDING\",\"CONSIDERING\",\"WAITING_FOR_CUSTOMER\",\"HUMAN_ESCALATION\"],\n CART_BUILDING:[\"CHECKOUT_READY\",\"PRODUCT_SELECTED\",\"WAITING_FOR_CUSTOMER\",\"HUMAN_ESCALATION\"],\n CHECKOUT_READY:[\"PURCHASED\",\"CART_BUILDING\",\"HUMAN_ESCALATION\"],\n PURCHASED:[\"POST_PURCHASE\",\"HUMAN_ESCALATION\"],\n POST_PURCHASE:[\"CLOSED\",\"HUMAN_ESCALATION\"],\n WAITING_FOR_CUSTOMER:[\"BROWSING\",\"DISCOVERY\",\"PRODUCT_INTEREST\",\"CONSIDERING\",\"PRODUCT_SELECTED\",\"CART_BUILDING\",\"CHECKOUT_READY\",\"HUMAN_ESCALATION\"],\n HUMAN_ESCALATION:[\"CLOSED\"],\n CLOSED:[]\n};\nlet target=s.stage;\nif(intent===\"product_discovery\") target=s.stage===\"NEW\"?\"DISCOVERY\":\"BROWSING\";\nif(intent===\"product_question\"||intent===\"comparison\"||intent===\"pricing\"||intent===\"availability\") target=\"CONSIDERING\";\nif([\"cart_add\",\"cart_update\",\"cart_remove\",\"cart_view\"].includes(intent)) target=\"CART_BUILDING\";\nif([\"checkout_start\",\"checkout_confirm\"].includes(intent)) target=\"CHECKOUT_READY\";\nif(intent===\"human_request\"||intent===\"complaint\"||intent===\"payment_dispute\"||intent===\"safety\") target=\"HUMAN_ESCALATION\";\nif(intent===\"order_status\"||intent===\"return_exchange\") target=\"POST_PURCHASE\";\nconst current=s.stage??\"NEW\";\nconst permitted=(allowed[current]??[]).includes(target)||target===current;\nconst finalStage=permitted?target:current;\nreturn [{json:{...x,state_transition:{from:current,requested:target,applied:finalStage,permitted}}}];"
+      },
+      "id": "stage-transition-rules",
+      "name": "Stage Transition Rules",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nreturn [{json:{...x,state_after:{...(x.state_working??{}),stage:x.state_transition?.applied??x.state_working?.stage}}}];"
+      },
+      "id": "apply-state-transition",
+      "name": "Apply State Transition",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nreturn [{json:{...x,persistence:{\n conversation_id:x.conversation_id,\n channel:x.channel,\n channel_user_id:x.channel_user_id,\n state:x.state_after,\n updated_at:new Date().toISOString()\n}}}];"
+      },
+      "id": "build-persistence-payload",
+      "name": "Build Persistence Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\n/*\nProduction: replace with Supabase upsert into `conversations`.\nThis starter does not pretend to persist data without your credentials.\n*/\nreturn [{json:{...x,state_persistence:{\n status:\"ready_to_connect\",\n operation:\"upsert\",\n table:\"conversations\",\n payload:x.persistence\n}}}];"
+      },
+      "id": "persist-state",
+      "name": "Persist State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nreturn [{json:{...x,state_contract:{\n conversation_id:x.conversation_id,\n stage:x.state_after?.stage??\"NEW\",\n intent:x.state_after?.intent??null,\n selected_product:x.state_after?.selected_product??null,\n selected_variant:x.state_after?.selected_variant??null,\n cart_id:x.state_after?.cart_id??null,\n turn_count:x.state_after?.turn_count??0,\n language:x.state_after?.language??null,\n script:x.state_after?.script??null,\n register:x.state_after?.register??null,\n escalation:x.state_after?.escalation??{required:false},\n persisted:x.state_persistence?.status===\"persisted\"\n}}}];"
+      },
+      "id": "build-state-contract",
+      "name": "Build State Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        260
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate State Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate State Input": {
+      "main": [
+        [
+          {
+            "node": "State Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "State Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Prepare State Key",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject State Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare State Key": {
+      "main": [
+        [
+          {
+            "node": "Load Conversation State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Conversation State": {
+      "main": [
+        [
+          {
+            "node": "Increment Turn Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment Turn Count": {
+      "main": [
+        [
+          {
+            "node": "Turn Limit Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Turn Limit Check": {
+      "main": [
+        [
+          {
+            "node": "Conversation Limit Reached",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update State From Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Limit Reached": {
+      "main": [
+        [
+          {
+            "node": "Build Persistence Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update State From Context": {
+      "main": [
+        [
+          {
+            "node": "Stage Transition Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stage Transition Rules": {
+      "main": [
+        [
+          {
+            "node": "Apply State Transition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply State Transition": {
+      "main": [
+        [
+          {
+            "node": "Build Persistence Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Persistence Payload": {
+      "main": [
+        [
+          {
+            "node": "Persist State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist State": {
+      "main": [
+        [
+          {
+            "node": "Build State Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reject State Input": {
+      "main": [
+        [
+          {
+            "node": "Build State Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf03-state-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

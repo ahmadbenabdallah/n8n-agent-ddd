@@ -1,0 +1,12 @@
+version: "0.12.5"
+name: n8n-control-plane
+interfaces:
+  developer_ai: "Harness -> Skills -> MCP -> n8n"
+  deterministic_release: "Git -> CI -> signed release -> deployment"
+  application: "Channels -> n8n -> domain/data/commerce"
+rules:
+  - "Use n8n Skills/MCP for supported agent-facing n8n operations."
+  - "MCP is not commerce authorization."
+  - "Deterministic release validation does not depend on an LLM."
+  - "Git remains canonical for versioned source."
+  - "n8n remains runtime state and is subject to drift detection."

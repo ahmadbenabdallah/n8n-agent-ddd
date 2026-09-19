@@ -1,0 +1,22 @@
+version: "0.13.2"
+name: external-egress-policy
+default: deny
+allowlist:
+  - name: configured_commerce_provider
+    purpose: commerce_api
+    required: true
+  - name: configured_llm_provider
+    purpose: llm
+    required: true
+  - name: configured_channel_provider
+    purpose: messaging
+    required: false
+  - name: configured_database_provider
+    purpose: database
+    required: true
+rules:
+  - destination_must_be_declared
+  - credentials_must_be_secret_managed
+  - no_arbitrary_url_from_llm
+  - no_customer_content_as_network_policy
+  - outbound_access_does_not_grant_inbound_access

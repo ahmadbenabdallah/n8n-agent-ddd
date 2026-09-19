@@ -1,0 +1,96 @@
+{
+  "name": "WF-16 \u2014 Response Renderer",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "if($json.unverified_claims===true)throw new Error('unverified_claims');return items;"
+      },
+      "id": "facts",
+      "name": "Verified Facts Only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,language_policy:'tn-latin-casual-fr'}}];"
+      },
+      "id": "language",
+      "name": "Language Policy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;"
+      },
+      "id": "result",
+      "name": "Emit Customer Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Verified Facts Only": {
+      "main": [
+        [
+          {
+            "node": "Language Policy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Language Policy": {
+      "main": [
+        [
+          {
+            "node": "Emit Customer Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "n8n-agent-ddd": {
+      "workflow_id": "WF-16",
+      "version": "1.0.0",
+      "phase": 8,
+      "implementation_status": "contract-executable-foundation",
+      "credentials": "externalized_to_n8n_runtime",
+      "phase_9": "staging-validation-target"
+    }
+  },
+  "tags": [
+    {
+      "name": "n8n-agent-ddd"
+    },
+    {
+      "name": "phase-8"
+    },
+    {
+      "name": "WF-16"
+    },
+    {
+      "name": "phase-9"
+    }
+  ]
+}

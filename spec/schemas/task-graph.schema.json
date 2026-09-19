@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://n8n-agent-ddd.dev/schemas/task-graph.schema.json",
+  "title": "n8n-agent-ddd Task Graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "root_task", "tasks"],
+  "properties": {
+    "version": {"type":"string"},
+    "root_task": {"type":"string"},
+    "tasks": {"type":"array","items":{"$ref":"task.schema.json"}}
+  }
+}

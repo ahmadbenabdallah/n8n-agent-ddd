@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "n8n-agent-ddd Skill",
+  "type": "object",
+  "required": ["name", "description"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+:[a-z0-9_-]+$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10
+    },
+    "upstream": {
+      "type": "object",
+      "required": ["project", "license", "version_or_commit"],
+      "properties": {
+        "project": {"type": "string"},
+        "license": {"type": "string"},
+        "version_or_commit": {"type": "string"},
+        "adapted": {"type": "boolean"}
+      }
+    }
+  }
+}

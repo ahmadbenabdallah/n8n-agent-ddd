@@ -1,0 +1,31 @@
+{
+  "system": "Tunisia DTC Agent System FINAL v4",
+  "workflow": "WF-11",
+  "name": "Product Service",
+  "version": "v1",
+  "status": "production-spec",
+  "files": [
+    "README.md",
+    "01-WF-11-PRODUCT-SERVICE-SPEC.md",
+    "02-WF-11-WOOCOMMERCE-CONTRACT.md",
+    "03-WF-11-PRODUCT-FACTS-AND-FRESHNESS.md",
+    "04-WF-11-VARIATION-RESOLUTION.md",
+    "05-WF-11-DISCOVERY-SEARCH-COMPARISON.md",
+    "06-WF-11-WF10-AUTHORIZATION.md",
+    "07-WF-11-IDENTITY-AND-PRIVACY.md",
+    "08-WF-11-LLM-CONTRACT.md",
+    "09-WF-11-N8N-IMPLEMENTATION.md",
+    "10-WF-11-SECURITY-OWASP-TESTS.md",
+    "11-WF-11-E2E-FLOWS.md",
+    "12-WF-11-ERROR-CONTRACT.md",
+    "13-WF-11-PRODUCTION-CHECKLIST.md",
+    "14-WF-11-DEPENDENCY-MATRIX.md",
+    "15-WF-11-ACCEPTANCE-MATRIX.md"
+  ],
+  "boundaries": {
+    "authorization": "WF-10",
+    "commerce": "WF-20",
+    "rendering": "WF-16",
+    "reasoning": "WF-09"
+  }
+}

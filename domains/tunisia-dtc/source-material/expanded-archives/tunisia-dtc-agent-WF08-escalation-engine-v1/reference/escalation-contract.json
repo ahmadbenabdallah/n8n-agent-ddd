@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "route": "human_escalation",
+  "fields": {
+    "message_id": "string",
+    "conversation_id": "string",
+    "escalation_required": "boolean",
+    "reason": "customer_complaint|payment_dispute|human_requested_handoff|safety_issue|security_issue|manual_escalation",
+    "severity": "critical|high|medium",
+    "security_priority": "boolean",
+    "handoff_mode": "immediate_human|priority_human|human_queue",
+    "handoff_priority": "critical|high|medium",
+    "handoff_sla": "immediate|priority|standard",
+    "handoff_action": "append_to_existing_case|create_human_case",
+    "create_new_case": "boolean",
+    "escalation_context": "minimal structured object",
+    "customer_response_policy": "string",
+    "tools_allowed": false,
+    "execution_allowed": false
+  },
+  "forbidden_in_context": [
+    "password",
+    "otp",
+    "cvv",
+    "cvc",
+    "card_number",
+    "api_key",
+    "token",
+    "system_prompt",
+    "developer_prompt"
+  ]
+}

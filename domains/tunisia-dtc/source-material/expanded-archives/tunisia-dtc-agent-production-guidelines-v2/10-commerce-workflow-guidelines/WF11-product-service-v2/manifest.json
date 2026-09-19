@@ -1,0 +1,14 @@
+{
+  "workflow": "WF-11 Product Service",
+  "version": "2.0",
+  "source_of_truth": "WooCommerce",
+  "files": [
+    "n8n/WF-11-product-service-v2.json",
+    "docs/README.md",
+    "docs/01-contract.md",
+    "docs/02-security-and-data-boundary.md",
+    "docs/03-woocommerce-mapping.md",
+    "docs/04-wiring.md",
+    "tests/test-matrix.md"
+  ]
+}

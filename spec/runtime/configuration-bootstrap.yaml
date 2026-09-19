@@ -1,0 +1,22 @@
+version: "0.14.3"
+name: runtime-configuration-bootstrap
+principles:
+  - secrets_are_never_generated_into_git
+  - configuration_is_classified
+  - local_defaults_are_non_production
+  - runtime_secrets_are_injected
+  - business_configuration_is_persistent_application_state
+classes:
+  public_runtime:
+    examples: [N8N_HOST, N8N_PROTOCOL, WEBHOOK_URL]
+  secret:
+    examples: [N8N_ENCRYPTION_KEY, DB_POSTGRESDB_PASSWORD, N8N_API_KEY]
+  application:
+    examples: [currency, cod_enabled, support_hours]
+  provider:
+    examples: [provider_name, database_profile]
+sources:
+  local: .env.local
+  vps: provider_secret_store
+  managed_provider: provider_environment_and_secret_store
+application_state: postgresql

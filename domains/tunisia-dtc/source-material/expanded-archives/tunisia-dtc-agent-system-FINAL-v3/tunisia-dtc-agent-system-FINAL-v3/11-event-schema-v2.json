@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tunisia DTC Agent Event v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "timestamp",
+    "conversation_id",
+    "channel"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "conversation_id": {
+      "type": "string"
+    },
+    "channel": {
+      "enum": [
+        "whatsapp",
+        "instagram",
+        "facebook",
+        "internal"
+      ]
+    },
+    "customer_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "intent": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "language": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "action_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "action_type": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "authorization_result": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "security_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "success": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "correlation_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "error_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false
+    }
+  }
+}

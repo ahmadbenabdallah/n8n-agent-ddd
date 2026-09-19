@@ -1,0 +1,33 @@
+{
+  "system": "Tunisia DTC Agent System FINAL v4",
+  "workflow": "WF-12",
+  "name": "Cart Service",
+  "version": "v1",
+  "status": "production-spec",
+  "files": [
+    "README.md",
+    "01-WF-12-CART-SERVICE-SPEC.md",
+    "02-WF-12-CART-STATE-MODEL.md",
+    "03-WF-12-ACTION-CONTRACTS.md",
+    "04-WF-12-WF10-AUTHORIZATION.md",
+    "05-WF-12-PRODUCT-VARIATION-INTEGRATION.md",
+    "06-WF-12-COMMERCE-CONTRACT.md",
+    "07-WF-12-IDEMPOTENCY-AND-RACE-CONTROL.md",
+    "08-WF-12-VERIFICATION.md",
+    "09-WF-12-ERROR-CONTRACT.md",
+    "10-WF-12-HUMAN-OWNERSHIP.md",
+    "11-WF-12-N8N-IMPLEMENTATION.md",
+    "12-WF-12-SECURITY-OWASP-TESTS.md",
+    "13-WF-12-E2E-FLOWS.md",
+    "14-WF-12-PRODUCTION-CHECKLIST.md",
+    "15-WF-12-DEPENDENCY-MATRIX.md",
+    "16-WF-12-ACCEPTANCE-MATRIX.md",
+    "17-WF-12-SUPABASE-CONTRACT.md"
+  ],
+  "boundaries": {
+    "authorization": "WF-10",
+    "commerce": "WF-20",
+    "product": "WF-11",
+    "state": "WF-03"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "package": "tunisia-dtc-agent-full-implementation-guide",
+  "version": "v5",
+  "base_architecture": "v4",
+  "primary_channel": "Meta Messenger",
+  "commerce": "WooCommerce",
+  "payment": "Cash on Delivery",
+  "orchestration": "self-hosted n8n",
+  "knowledge": "Supabase + pgvector",
+  "ai": "OpenAI",
+  "workflow_range": "WF-00 through WF-20",
+  "document_count": 23,
+  "core_invariant": "LLM proposes -> n8n validates -> WF-10 authorizes -> WF-20 executes -> WooCommerce verifies -> WF-16 renders -> WF-17 audits -> WF-19 monitors"
+}

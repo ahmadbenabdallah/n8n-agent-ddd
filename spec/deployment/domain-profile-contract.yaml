@@ -1,0 +1,13 @@
+domain_profile:
+  required:
+    - domain_id
+    - runtime_profile
+    - n8n_project
+    - workflow_namespace
+    - database_scope
+    - knowledge_namespace
+    - enabled_channels
+    - enabled_adapters
+    - policy_bundle
+  provider_neutral: true
+  secrets_injection_external: true

@@ -1,0 +1,39 @@
+workflow:
+  id: WF-20
+  name: WooCommerce Gateway
+  bounded_context: execution
+  version: 1.0.0
+  purpose: Execute only explicitly authorized, allowlisted commerce operations and
+    verify results.
+  dependencies: []
+  security: Only privileged commerce execution boundary; no arbitrary endpoint or
+    client-controlled credentials.
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Supabase; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown external
+    outcomes
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml
+  - contracts/platform/action.yaml
+  execution_contract:
+    allowed_system: WooCommerce
+    arbitrary_endpoint: false
+    client_supplied_price: false
+    client_supplied_credentials: false
+    verify_after_mutation: true
+    unknown_outcome: reconciliation_required

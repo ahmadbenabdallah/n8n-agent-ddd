@@ -1,0 +1,13 @@
+{
+  "security": {
+    "status": "clear",
+    "route": "continue",
+    "flags": [],
+    "safe_to_reply": true,
+    "llm_allowed": true,
+    "tools_allowed": true
+  },
+  "security_contract": {
+    "customer_content_untrusted": true
+  }
+}

@@ -1,0 +1,22 @@
+version: "0.17.0"
+schema:
+  decision:
+    type: "enum"
+    values: ["PROCEED", "BLOCK", "REVISE", "ESCALATE"]
+  risk:
+    type: "enum"
+    values: ["low", "medium", "high", "critical"]
+  affected_workflows:
+    type: "array"
+  required_tests:
+    type: "array"
+  required_reviews:
+    type: "array"
+  migration_required:
+    type: "boolean"
+  rollback_plan_required:
+    type: "boolean"
+rules:
+  - "Advisor output is advisory until a policy gate accepts it."
+  - "Security BLOCK cannot be overridden by a developer agent."
+  - "Critical-risk changes require explicit human approval."

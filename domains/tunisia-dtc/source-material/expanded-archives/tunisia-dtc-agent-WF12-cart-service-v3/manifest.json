@@ -1,0 +1,34 @@
+{
+  "name": "tunisia-dtc-agent-WF12-cart-service-v3",
+  "version": "3.0.0",
+  "status": "integration-ready scaffold",
+  "purpose": "WooCommerce-backed cart service with Supabase session mapping and fail-closed outage behavior",
+  "operations": [
+    "cart_view",
+    "cart_add",
+    "cart_update",
+    "cart_remove",
+    "cart_clear"
+  ],
+  "ownership": {
+    "cart": "WooCommerce",
+    "identity_context": "Supabase",
+    "authorization": "WF-10",
+    "integration_boundary": "WF-20"
+  },
+  "files": [
+    "contracts/wf12-cart-input.schema.json",
+    "contracts/wf12-cart-output.schema.json",
+    "n8n/WF-12-cart-service-v3.json",
+    "database/002_wc_cart_sessions.sql",
+    "tests/sql-smoke.sql",
+    "tests/regression.md",
+    "docs/05-wiring.md",
+    "docs/06-production-gate.md",
+    "docs/01-cart-contract.md",
+    "docs/04-security.md",
+    "docs/02-session-model.md",
+    "docs/03-outage-and-resume.md",
+    "docs/README.md"
+  ]
+}

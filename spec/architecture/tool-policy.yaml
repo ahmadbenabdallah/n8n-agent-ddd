@@ -1,0 +1,28 @@
+version: 1
+default_decision: deny
+evaluation_order:
+  - agent_identity
+  - task_scope
+  - domain_id
+  - capability
+  - environment
+  - risk
+  - policy
+  - authorization_boundary
+protected:
+  - commerce.mutation
+  - payment.mutation
+  - secret.read
+  - arbitrary_http
+  - credential.export
+rules:
+  commerce.mutation:
+    requires:
+      - wf10_authorization
+      - wf20_execution
+  secret.read:
+    default: deny
+  credential.export:
+    default: deny
+  arbitrary_http:
+    default: deny

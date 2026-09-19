@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "fields": {
+    "message_id": "string",
+    "conversation_id": "string",
+    "intent": "trusted",
+    "route": "sales|support|clarification|escalation|off_topic",
+    "language": "tn|ar|fr|en",
+    "script": "latin|arabic|unknown",
+    "register": "casual|neutral",
+    "customer_response": "string",
+    "action_proposal": "allowlisted proposal",
+    "execution_allowed": false,
+    "authorization_required": "boolean",
+    "evidence_refs": "array",
+    "needs_clarification": "boolean",
+    "escalation_required": "boolean"
+  },
+  "rule": "WF-10 alone authorizes execution."
+}

@@ -1,0 +1,60 @@
+phase:
+  id: "0.15.7"
+  name: "Blue/Green + Rollback Execution"
+  status: "EVIDENCE_FOUNDATION"
+  purpose: "Execute and capture a real staging blue/green deployment and controlled rollback drill."
+
+scope:
+  environment: "staging"
+  production_execution: false
+  traffic_switch_required: true
+  rollback_required: true
+  required_controls:
+    - "ALLOW_LIVE_BG=YES"
+    - "BLUE_GREEN_TARGET_ISOLATED=YES"
+    - "CONFIRM_BG=YES"
+
+exercise:
+  sequence:
+    - "preflight"
+    - "capture_blue_baseline"
+    - "prepare_green"
+    - "apply_expand_migrations"
+    - "deploy_green"
+    - "health_check_green"
+    - "smoke_test_green"
+    - "verify_contracts_and_workflow_inventory"
+    - "switch_traffic_to_green"
+    - "observe_green"
+    - "execute_controlled_rollback"
+    - "switch_traffic_back_to_blue"
+    - "drain_green"
+    - "verify_blue"
+    - "verify_database_compatibility"
+    - "audit_release_and_rollback"
+    - "validate_evidence"
+
+evidence_gates:
+  BG:
+    description: "Green can be deployed, verified, traffic-switched, and safely drained."
+    status: "NOT_EXECUTED"
+  ROLLBACK:
+    description: "A controlled rollback restores the previous known-good runtime without data corruption."
+    status: "NOT_EXECUTED"
+  MIGRATION_COMPATIBILITY:
+    description: "Expand/migrate/contract sequencing preserves compatibility across the transition."
+    status: "NOT_EXECUTED"
+
+safety:
+  no_production_execution: true
+  database_backup_required: true
+  destructive_migration_forbidden: true
+  rollback_target_must_be_known_good: true
+  traffic_switch_requires_health_and_smoke: true
+  rollback_requires_verification: true
+  no_unknown_commerce_replay: true
+  no_secrets_in_evidence: true
+
+pass_rule:
+  - "Do not mark BG/ROLLBACK/MIGRATION_COMPATIBILITY successful without captured staging runtime evidence."
+  - "A local script or static contract check is not deployment evidence."

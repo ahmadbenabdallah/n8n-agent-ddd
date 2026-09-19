@@ -1,0 +1,8 @@
+{
+  "package": "tunisia-dtc-agent-WF19-maintenance-monitoring-v4",
+  "version": "v4.0.0",
+  "workflow": "WF-19",
+  "name": "Maintenance & Monitoring",
+  "principle": "detect, recover, validate, report; never bypass authorization",
+  "files": 21
+}

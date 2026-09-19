@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "input": {
+    "authorized_action": {
+      "action": "cart_add",
+      "execution_allowed": true,
+      "idempotency_key": "msg-123|cart_add|SKU-001|42|1",
+      "parameters": {
+        "sku": "SKU-001",
+        "variant": {
+          "size": "42"
+        },
+        "quantity": 1
+      }
+    },
+    "identity": {
+      "identity_level": "channel_linked",
+      "subject_ref": "internal-ref"
+    },
+    "cart_context": {
+      "cart_id": "cart-123",
+      "live_stock": {
+        "SKU-001": 12
+      }
+    }
+  },
+  "supported_actions": [
+    "cart_view",
+    "cart_add",
+    "cart_remove",
+    "cart_update",
+    "cart_clear"
+  ],
+  "adapter_request": {
+    "cart_id": "string|null",
+    "operation": "enum",
+    "sku": "string|null",
+    "variant": "object",
+    "quantity": "integer|null",
+    "idempotency_key": "string"
+  },
+  "adapter_response": {
+    "verified": "boolean",
+    "owner_match": "boolean",
+    "cart": {
+      "id": "string",
+      "version": "string|integer",
+      "lines": "array"
+    }
+  },
+  "success_rule": "Only verified=true AND owner_match=true may produce execution_allowed=true.",
+  "source_of_truth": "commerce_adapter"
+}

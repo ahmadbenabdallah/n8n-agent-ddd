@@ -1,0 +1,11 @@
+version: "1"
+
+purpose:
+  - tls
+  - ingress
+  - routing
+  - health_checks
+
+production:
+  tls_required: true
+  health_endpoint_required: true

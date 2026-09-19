@@ -1,0 +1,35 @@
+version: "2026.09.9"
+provider: woocommerce
+environment: staging
+
+base_url_source: WOOCOMMERCE_BASE_URL
+credentials_source: n8n_credential_store
+
+allowlisted_operations:
+  read_product:
+    method: GET
+    path: /wp-json/wc/v3/products/{product_id}
+  read_variation:
+    method: GET
+    path: /wp-json/wc/v3/products/{product_id}/variations/{variation_id}
+  list_orders:
+    method: GET
+    path: /wp-json/wc/v3/orders
+  read_order:
+    method: GET
+    path: /wp-json/wc/v3/orders/{order_id}
+  create_order:
+    method: POST
+    path: /wp-json/wc/v3/orders
+  update_order:
+    method: PUT
+    path: /wp-json/wc/v3/orders/{order_id}
+
+rules:
+  - path_must_be_allowlisted
+  - customer_or_llm_cannot_supply_base_url
+  - customer_or_llm_cannot_supply_credentials
+  - client_price_is_never_authoritative
+  - create_order_requires_idempotency
+  - write_result_requires_read_back_verification
+  - unknown_timeout_requires_reconciliation

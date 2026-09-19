@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "n8n-agent-ddd Agent Manifest",
+  "type": "object",
+  "required": ["version", "project", "instructions", "skills", "agents", "harness", "lifecycle"],
+  "properties": {
+    "version": {"type": "string"},
+    "project": {"type": "object"},
+    "instructions": {"type": "object"},
+    "skills": {"type": "object"},
+    "agents": {"type": "object"},
+    "harness": {"type": "object"},
+    "lifecycle": {"type": "array"}
+  }
+}

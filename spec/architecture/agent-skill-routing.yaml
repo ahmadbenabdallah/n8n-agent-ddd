@@ -1,0 +1,54 @@
+version: "2026.09.10"
+
+routing:
+  principle: "Discover only the skills and tools needed for the current task."
+
+skill_namespaces:
+  core:
+    - repository-discovery
+    - skill-discovery
+    - skill-validation
+  runtime:
+    - n8n
+  database:
+    - postgres
+    - supabase
+    - pgvector
+    - drizzle
+  channel:
+    - meta-messenger
+    - whatsapp
+    - telegram
+  commerce:
+    - woocommerce
+    - shopify
+    - prestashop
+    - custom
+  security:
+    - identity
+    - authorization
+    - secrets
+    - threat-modeling
+
+routing_examples:
+  - task: "modify n8n workflow"
+    skills:
+      - runtime:n8n
+      - core:skill-discovery
+  - task: "change Supabase schema"
+    skills:
+      - database:supabase
+      - database:postgres
+      - database:drizzle
+      - database:pgvector
+  - task: "add Shopify adapter"
+    skills:
+      - commerce:shopify
+      - database:postgres
+      - runtime:n8n
+      - security:authorization
+  - task: "add WhatsApp channel"
+    skills:
+      - channel:whatsapp
+      - runtime:n8n
+      - security:identity

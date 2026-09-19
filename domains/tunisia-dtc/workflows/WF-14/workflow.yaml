@@ -1,0 +1,36 @@
+workflow:
+  id: WF-14
+  name: Checkout Service
+  bounded_context: commerce
+  version: 1.0.0
+  purpose: Prepare checkout by revalidating cart, price, stock, promotion and customer
+    scope.
+  dependencies:
+  - WF-10
+  - WF-11
+  - WF-12
+  - WF-13
+  - WF-15
+  security: Never trust stale checkout context.
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Supabase; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown external
+    outcomes
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml
+  - contracts/platform/action.yaml

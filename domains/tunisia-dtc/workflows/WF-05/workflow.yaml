@@ -1,0 +1,37 @@
+workflow:
+  id: WF-05
+  name: Sales Engine
+  bounded_context: sales
+  version: 1.0.0
+  purpose: Build a sales decision/action proposal from verified product, customer
+    and policy context.
+  dependencies:
+  - WF-09
+  - WF-10
+  - WF-11
+  - WF-12
+  - WF-13
+  - WF-14
+  security: Never invent price/stock/discount.
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Supabase; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown external
+    outcomes
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml
+  - contracts/platform/action.yaml

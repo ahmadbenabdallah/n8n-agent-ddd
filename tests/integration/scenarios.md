@@ -1,0 +1,11 @@
+# v0.14 live scenarios
+- restart n8n and verify durable state
+- execute read-only workflow
+- execute idempotent cart mutation
+- attempt unauthorized commerce mutation and verify WF-10 rejection
+- force unknown external outcome and verify reconciliation
+- modify permitted operator workflow and detect drift
+- attempt protected workflow modification and verify policy rejection
+- verify public webhook does not expose editor
+- verify PostgreSQL has no public ingress
+- capture artifacts for every gate

@@ -1,0 +1,27 @@
+version: 1
+database:
+  contract: postgres
+  profiles:
+    - supabase_cloud
+    - supabase_self_hosted
+    - managed_postgres
+    - self_hosted_postgres
+migration_strategy:
+  name: expand_migrate_contract
+  phases:
+    - expand
+    - migrate
+    - contract
+rules:
+  - production_migrations_must_be_forward_compatible
+  - destructive_changes_require_separate_release
+  - schema_version_is_recorded
+  - application_and_workflow_versions_are_recorded
+  - migration_is_idempotent_or_transactionally_safe
+  - rollback_uses_forward_fix_when_destructive_rollback_is_unsafe
+deployment:
+  preflight_required: true
+  compatibility_check_required: true
+  backup_required: true
+  restore_verification_required: true
+  migration_lock_required: true

@@ -1,0 +1,38 @@
+{
+  "system": "Tunisia DTC Agent System FINAL v4",
+  "workflow": "WF-14",
+  "name": "Checkout Service",
+  "version": "v1",
+  "status": "production-spec",
+  "files": [
+    "README.md",
+    "01-WF-14-CHECKOUT-SERVICE-SPEC.md",
+    "02-WF-14-CHECKOUT-STATE-MACHINE.md",
+    "03-WF-14-CHECKOUT-INPUT-CONTRACT.md",
+    "04-WF-14-FRESH-PREFLIGHT.md",
+    "05-WF-14-WF10-AUTHORIZATION.md",
+    "06-WF-14-TOTAL-AND-COMMERCE-AUTHORITY.md",
+    "07-WF-14-COD-PAYMENT-SEMANTICS.md",
+    "08-WF-14-ORDER-CREATION-AND-VERIFICATION.md",
+    "09-WF-14-IDEMPOTENCY-AND-RECONCILIATION.md",
+    "10-WF-14-IDENTITY-SHIPPING-VALIDATION.md",
+    "11-WF-14-HUMAN-OWNERSHIP.md",
+    "12-WF-14-N8N-IMPLEMENTATION.md",
+    "13-WF-14-ERROR-CONTRACT.md",
+    "14-WF-14-SECURITY-OWASP-TESTS.md",
+    "15-WF-14-E2E-FLOWS.md",
+    "16-WF-14-PRODUCTION-CHECKLIST.md",
+    "17-WF-14-DEPENDENCY-MATRIX.md",
+    "18-WF-14-ACCEPTANCE-MATRIX.md",
+    "19-WF-14-SUPABASE-STATE-CONTRACT.md",
+    "20-WF-14-OBSERVABILITY.md"
+  ],
+  "critical_invariant": "Order creation != payment",
+  "boundaries": {
+    "authorization": "WF-10",
+    "commerce": "WF-20",
+    "payment": "WF-15",
+    "state": "WF-03",
+    "ownership": "WF-08"
+  }
+}

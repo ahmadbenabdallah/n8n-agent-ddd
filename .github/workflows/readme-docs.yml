@@ -1,0 +1,36 @@
+name: Public Documentation Boundary
+
+on:
+  pull_request:
+    paths:
+      - 'documentation/**'
+      - 'scripts/docs/**'
+      - 'tests/documentation/**'
+  push:
+    branches: [main]
+    paths:
+      - 'documentation/**'
+      - 'scripts/docs/**'
+      - 'tests/documentation/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate public documentation boundary
+        run: bash tests/documentation/phase20.3-contract.sh
+
+  bridge:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain controlled bridge
+        run: |
+          echo "Public documentation is maintained in the dedicated n8n-agent-ddd-docs repository."
+          echo "A future repository-dispatch/app integration may open a reviewed docs PR."
+          echo "No automatic external write is performed by this foundation workflow."

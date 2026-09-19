@@ -1,0 +1,15 @@
+begin;
+select plan(12);
+select ok((select relrowsecurity from pg_class where oid='public.customer_identities'::regclass),'RLS customer_identities');
+select ok((select relrowsecurity from pg_class where oid='public.conversations'::regclass),'RLS conversations');
+select ok((select relrowsecurity from pg_class where oid='public.carts'::regclass),'RLS carts');
+select ok((select relrowsecurity from pg_class where oid='public.commerce_orders'::regclass),'RLS orders');
+select ok((select relrowsecurity from pg_class where oid='public.authorizations'::regclass),'RLS authorizations');
+select ok((select relrowsecurity from pg_class where oid='public.execution_operations'::regclass),'RLS execution');
+select ok((select relrowsecurity from pg_class where oid='public.transactions'::regclass),'RLS transactions');
+select ok((select relrowsecurity from pg_class where oid='public.audit_events'::regclass),'RLS audit');
+select ok((select relrowsecurity from pg_class where oid='public.idempotency_keys'::regclass),'RLS idempotency');
+select ok((select has_table_privilege('anon','public.customer_identities','select') is false),'anon cannot select domain state');
+select ok((select has_table_privilege('authenticated','public.commerce_orders','select') is false),'authenticated cannot select orders');
+select ok((select has_table_privilege('authenticated','public.audit_events','delete') is false),'authenticated cannot delete audit');
+select * from finish(); rollback;

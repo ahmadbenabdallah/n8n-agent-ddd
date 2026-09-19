@@ -1,0 +1,120 @@
+{
+  "name": "WF-20 \u2014 WooCommerce Gateway",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const x=$json;if(x.execution_allowed!==true)throw new Error('execution_not_authorized');if(!x.allowlisted_operation)throw new Error('operation_not_allowlisted');if(x.client_supplied_credentials)throw new Error('client_credentials_forbidden');return items;"
+      },
+      "id": "gate",
+      "name": "Execution Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if(!$json.idempotency_key)throw new Error('idempotency_key_required');return items;"
+      },
+      "id": "idempotency",
+      "name": "Require Idempotency",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,execution_status:'EXECUTION_STARTED',adapter:'woocommerce'}}];"
+      },
+      "id": "adapter",
+      "name": "WooCommerce Adapter Boundary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,verification_required:true}}];"
+      },
+      "id": "verify",
+      "name": "Verify External Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Execution Gate": {
+      "main": [
+        [
+          {
+            "node": "Require Idempotency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Require Idempotency": {
+      "main": [
+        [
+          {
+            "node": "WooCommerce Adapter Boundary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce Adapter Boundary": {
+      "main": [
+        [
+          {
+            "node": "Verify External Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "n8n-agent-ddd": {
+      "workflow_id": "WF-20",
+      "version": "1.0.0",
+      "phase": 8,
+      "implementation_status": "contract-executable-foundation",
+      "credentials": "externalized_to_n8n_runtime",
+      "phase_9": "staging-validation-target"
+    }
+  },
+  "tags": [
+    {
+      "name": "n8n-agent-ddd"
+    },
+    {
+      "name": "phase-8"
+    },
+    {
+      "name": "WF-20"
+    },
+    {
+      "name": "phase-9"
+    }
+  ]
+}

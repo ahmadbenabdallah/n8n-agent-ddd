@@ -1,0 +1,18 @@
+version: 1
+routing:
+  stages:
+    - normalize_task
+    - detect_capabilities
+    - match_skills
+    - check_prerequisites
+    - apply_policy
+    - load_skill
+    - record_execution
+    - validate_result
+constraints:
+  - least_skill_set
+  - no_skill_grants_permission
+  - security_skill_required_for_sensitive_tasks
+  - database_skill_required_for_schema_tasks
+  - n8n_skill_required_for_workflow_tasks
+  - commerce_security_boundary_required_for_mutations

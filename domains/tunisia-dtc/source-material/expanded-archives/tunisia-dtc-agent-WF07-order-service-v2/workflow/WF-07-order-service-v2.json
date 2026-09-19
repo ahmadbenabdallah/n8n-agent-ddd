@@ -1,0 +1,469 @@
+{
+  "name": "WF-07 — Order Service v2 (WooCommerce-backed)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const i=$json;\nconst required=['message_id','conversation_id','identity','intent'];\nconst missing=required.filter(k=>i[k]===undefined||i[k]===null);\nconst intentOk=i.intent==='order_status';\nreturn [{json:{...i,input_valid:missing.length===0&&intentOk,missing_fields:missing,intent_supported:intentOk}}];"
+      },
+      "id": "2",
+      "name": "Validate Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.input_valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{message_id:$json.message_id||null,conversation_id:$json.conversation_id||null,route:'escalation',safe_to_reply:false,tools_allowed:false,execution_allowed:false,llm_allowed:false,reason:'invalid_or_unsupported_order_request'}}];"
+      },
+      "id": "4",
+      "name": "Fail Closed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const id=$json.identity||{};\nconst level=id.level||'anonymous';\nconst customerId=id.woocommerce_customer_id ?? id.customer_id ?? null;\nconst email=(id.verified_email||'').trim().toLowerCase()||null;\nconst phone=(id.verified_phone||'').replace(/[^0-9+]/g,'')||null;\nconst authorized=['order_verified','high_assurance'].includes(level);\nconst scope={\n  customer_id: customerId ? Number(customerId) : null,\n  verified_email: email,\n  verified_phone: phone\n};\nconst scopePresent=Boolean(scope.customer_id||scope.verified_email||scope.verified_phone);\nreturn [{json:{...$json,identity_level:level,authorized,owner_scope:scope,owner_scope_present:scopePresent}}];"
+      },
+      "id": "5",
+      "name": "Build Trusted Owner Scope",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.authorized && $json.owner_scope_present}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "6",
+      "name": "Order Access Authorized?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'clarification',verification_required:true,tools_allowed:false,execution_allowed:false,llm_allowed:true,safe_to_reply:true,reason:'order_verification_required'}}];"
+      },
+      "id": "7",
+      "name": "Require Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const state=$json.state||{};\nconst orderId=String($json.order_id||state.order_id||'').trim();\nconst fields=['id','number','status','date_created','date_modified','customer_id','billing','shipping','line_items','shipping_lines','coupon_lines','meta_data'];\nlet operation='get_customer_orders';\nlet lookup={owner_scope:$json.owner_scope,limit:5,orderby:'date',order:'desc',include_sensitive:false};\nif(orderId){\n  if(!/^\\d{1,12}$/.test(orderId)) {\n    return [{json:{...$json,lookup_valid:false,reason:'invalid_order_id_format'}}];\n  }\n  operation='get_order';\n  lookup={order_id:Number(orderId),fields,include_sensitive:false};\n}\nreturn [{json:{...$json,lookup_valid:true,commerce_request:{operation,resource:'order',lookup},commerce_gateway:'WF-20'}}];"
+      },
+      "id": "8",
+      "name": "Build Woo Lookup Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.lookup_valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "9",
+      "name": "Lookup Request Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'clarification',verification_required:false,tools_allowed:false,execution_allowed:false,llm_allowed:true,safe_to_reply:true,reason:'invalid_order_id_format'}}];"
+      },
+      "id": "10",
+      "name": "Reject Invalid Order Identifier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "WF-20",
+          "mode": "id"
+        },
+        "options": {},
+        "inputSource": "passthrough"
+      },
+      "id": "11",
+      "name": "Execute WF-20 Commerce Gateway",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw=$json;\nconst result=raw.commerce_result ?? raw.result ?? raw.data ?? raw;\nconst orders=Array.isArray(result.orders)?result.orders:(Array.isArray(result)?result:[]);\nconst order=result.order && typeof result.order==='object'?result.order:(orders[0]||null);\nreturn [{json:{...raw,woo_order:order,woo_orders:orders,commerce_verified_source:result.verified_source===true||raw.verified_source===true,commerce_error:result.error||raw.error||null}}];"
+      },
+      "id": "12",
+      "name": "Normalize Woo Order Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const o=$json.woo_order;\nconst s=$json.owner_scope||{};\nif(!o){ return [{json:{...$json,owner_match:false,order_found:false,owner_match_reason:'not_found'}}]; }\nconst wcCustomer=o.customer_id!=null?Number(o.customer_id):null;\nconst billing=o.billing||{};\nconst orderEmail=String(billing.email||'').trim().toLowerCase()||null;\nconst orderPhone=String(billing.phone||'').replace(/[^0-9+]/g,'')||null;\nconst byCustomer=Boolean(s.customer_id && wcCustomer && Number(s.customer_id)===wcCustomer);\nconst byEmail=Boolean(s.verified_email && orderEmail && s.verified_email===orderEmail);\nconst byPhone=Boolean(s.verified_phone && orderPhone && s.verified_phone===orderPhone);\nconst ownerMatch=byCustomer||byEmail||byPhone;\nreturn [{json:{...$json,order_found:true,owner_match:ownerMatch,owner_match_reason:byCustomer?'customer_id':byEmail?'verified_email':byPhone?'verified_phone':'no_match'}}];"
+      },
+      "id": "13",
+      "name": "Verify Owner Match",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.commerce_verified_source && $json.owner_match}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "14",
+      "name": "Verified Owned Order?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,route:'support',safe_to_reply:true,tools_allowed:false,execution_allowed:false,llm_allowed:true,reason:$json.commerce_verified_source===false?'unverified_commerce_result':($json.order_found?'order_ownership_not_verified':'order_not_found'),verified_order_data:null}}];"
+      },
+      "id": "15",
+      "name": "Block Unverified Or Cross-Customer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const o=$json.woo_order||{};\nconst status=String(o.status||'unknown');\nconst fulfillmentMap={pending:'pending',processing:'processing','on-hold':'on_hold',completed:'completed',cancelled:'cancelled',refunded:'refunded',failed:'failed',trash:'unknown'};\nconst items=Array.isArray(o.line_items)?o.line_items.map(x=>({product_id:x.product_id??null,variation_id:x.variation_id??null,name:String(x.name||'').slice(0,160),quantity:Number(x.quantity||0)})):[];\nconst trackingMeta=Array.isArray(o.meta_data)?o.meta_data.filter(m=>/tracking/i.test(String(m.key||''))).slice(0,5):[];\nconst trackingUrl=trackingMeta.map(m=>m.value).find(v=>typeof v==='string'&&/^https?:\\/\\//i.test(v))||null;\nconst safe={order_id:o.id??null,order_number:o.number??null,status,fulfillment_status:fulfillmentMap[status]||'unknown',created_at:o.date_created||null,updated_at:o.date_modified||null,currency:o.currency||null,total:o.total||null,items_summary:items,shipping_method:Array.isArray(o.shipping_lines)?o.shipping_lines.map(s=>String(s.method_title||s.method_id||'')).filter(Boolean).slice(0,3):[],tracking_available:Boolean(trackingUrl),tracking_url:trackingUrl};\nreturn [{json:{...$json,verified_order_data:safe,route:'support',tools_allowed:false,execution_allowed:false,llm_allowed:true,safe_to_reply:true,reason:null}}];"
+      },
+      "id": "16",
+      "name": "Sanitize Verified Order",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d=$json.verified_order_data||null;\nreturn [{json:{message_id:$json.message_id||null,conversation_id:$json.conversation_id||null,route:$json.route||'support',intent:'order_status',identity_level:$json.identity_level||null,verification_required:$json.verification_required||false,commerce_gateway:'WF-20',commerce_request:$json.commerce_request||null,verified_source:$json.commerce_verified_source===true,owner_match:$json.owner_match===true,verified_order_data:d,execution_allowed:false,tools_allowed:false,llm_allowed:$json.llm_allowed!==false,safe_to_reply:$json.safe_to_reply!==false,reason:$json.reason||null}}];"
+      },
+      "id": "17",
+      "name": "Build Order Service Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Request": {
+      "main": [
+        [
+          {
+            "node": "Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Build Trusted Owner Scope",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail Closed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Trusted Owner Scope": {
+      "main": [
+        [
+          {
+            "node": "Order Access Authorized?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order Access Authorized?": {
+      "main": [
+        [
+          {
+            "node": "Build Woo Lookup Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Require Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Woo Lookup Request": {
+      "main": [
+        [
+          {
+            "node": "Lookup Request Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Request Valid?": {
+      "main": [
+        [
+          {
+            "node": "Execute WF-20 Commerce Gateway",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Order Identifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute WF-20 Commerce Gateway": {
+      "main": [
+        [
+          {
+            "node": "Normalize Woo Order Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Woo Order Result": {
+      "main": [
+        [
+          {
+            "node": "Verify Owner Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Owner Match": {
+      "main": [
+        [
+          {
+            "node": "Verified Owned Order?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verified Owned Order?": {
+      "main": [
+        [
+          {
+            "node": "Sanitize Verified Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Block Unverified Or Cross-Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanitize Verified Order": {
+      "main": [
+        [
+          {
+            "node": "Build Order Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Block Unverified Or Cross-Customer": {
+      "main": [
+        [
+          {
+            "node": "Build Order Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Require Verification": {
+      "main": [
+        [
+          {
+            "node": "Build Order Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reject Invalid Order Identifier": {
+      "main": [
+        [
+          {
+            "node": "Build Order Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail Closed": {
+      "main": [
+        [
+          {
+            "node": "Build Order Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf07-v2"
+}

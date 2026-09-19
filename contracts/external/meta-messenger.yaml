@@ -1,0 +1,5 @@
+external_contract:
+  id: meta-messenger
+  owner: WF-00/WF-16
+  operations: [receive_webhook, send_message]
+  restrictions: {signature_validation_required: true, secrets_in_runtime_only: true, customer_private_data_scope_required: true}

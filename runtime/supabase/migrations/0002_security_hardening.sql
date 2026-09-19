@@ -1,0 +1,20 @@
+-- Phase 7.5: RLS + least privilege. Customer-facing Data API has no direct domain access.
+alter table public.customer_identities enable row level security;
+alter table public.conversations enable row level security;
+alter table public.conversation_states enable row level security;
+alter table public.carts enable row level security;
+alter table public.cart_items enable row level security;
+alter table public.order_scopes enable row level security;
+alter table public.commerce_orders enable row level security;
+alter table public.actions enable row level security;
+alter table public.authorizations enable row level security;
+alter table public.execution_operations enable row level security;
+alter table public.transactions enable row level security;
+alter table public.escalations enable row level security;
+alter table public.audit_events enable row level security;
+alter table public.idempotency_keys enable row level security;
+alter table public.knowledge_documents enable row level security;
+revoke all on table public.customer_identities, public.conversations, public.conversation_states, public.carts, public.cart_items, public.order_scopes, public.commerce_orders, public.actions, public.authorizations, public.execution_operations, public.transactions, public.escalations, public.audit_events, public.idempotency_keys, public.knowledge_documents from anon, authenticated;
+alter default privileges in schema public revoke all on tables from anon, authenticated;
+alter default privileges in schema public revoke execute on functions from public;
+alter default privileges in schema public revoke execute on functions from anon, authenticated;

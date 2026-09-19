@@ -1,0 +1,13 @@
+projections:
+  - id: customer-profile
+    source: [CustomerIdentityLinked, IdentityAssuranceChanged]
+  - id: conversation-view
+    source: [ConversationStateUpdated, IntentRouted, HumanOwnershipAcquired]
+  - id: cart-view
+    source: [CartUpdated, PromotionApplied]
+  - id: order-view
+    source: [OrderCreated, CommerceMutationVerified]
+  - id: transaction-view
+    source: [TransactionCreated, TransactionVerified]
+  - id: audit-view
+    source: [AuditRecorded]

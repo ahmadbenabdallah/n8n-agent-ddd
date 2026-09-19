@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "input": {
+    "response_plan": {
+      "intent": "pricing",
+      "goal": "answer_customer"
+    },
+    "channel": {
+      "type": "messenger_dm",
+      "is_public": false
+    },
+    "language_context": {
+      "language": "tn",
+      "script": "latin",
+      "register": "casual",
+      "mixed_languages": [
+        "tn",
+        "fr"
+      ]
+    },
+    "verified_facts": {
+      "claims": [
+        {
+          "verified": true,
+          "text": "es-souma 189 DT."
+        }
+      ]
+    }
+  },
+  "output": {
+    "status": "ready_to_send",
+    "send_allowed": true,
+    "channel": "messenger_dm",
+    "language": "tn",
+    "script": "latin",
+    "customer_text": "string"
+  },
+  "rules": [
+    "Only verified facts",
+    "No internal disclosure",
+    "No secrets",
+    "Latin script means zero Arabic Unicode",
+    "Public comments must not expose PII/private order data"
+  ]
+}

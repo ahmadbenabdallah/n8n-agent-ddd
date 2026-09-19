@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "channel",
+    "external_message_id",
+    "external_thread_id",
+    "text",
+    "correlation_id"
+  ],
+  "properties": {
+    "channel": {
+      "type": "string"
+    },
+    "external_message_id": {
+      "type": "string"
+    },
+    "external_thread_id": {
+      "type": "string"
+    },
+    "external_customer_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "text": {
+      "type": "string"
+    },
+    "attachments": {
+      "type": "array"
+    },
+    "received_at": {
+      "type": "string"
+    },
+    "correlation_id": {
+      "type": "string"
+    }
+  }
+}

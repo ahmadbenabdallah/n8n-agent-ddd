@@ -1,0 +1,75 @@
+version: "2026.09.10"
+
+ports:
+  channel:
+    inbound:
+      - receive_message
+      - verify_webhook
+      - normalize_message
+      - resolve_channel_identity
+    outbound:
+      - send_text
+      - send_media
+      - send_template
+      - send_interactive
+    canonical_message:
+      fields:
+        - event_id
+        - channel
+        - external_user_id
+        - conversation_id
+        - message_id
+        - timestamp
+        - text
+        - attachments
+        - reply_context
+
+  commerce:
+    catalog:
+      - get_product
+      - search_products
+      - get_variation
+      - check_inventory
+    cart:
+      - get_cart
+      - add_item
+      - update_item
+      - remove_item
+    pricing:
+      - calculate_price
+      - validate_coupon
+    checkout:
+      - create_order
+      - get_order
+      - update_order
+    verification:
+      - verify_mutation_result
+    invariant:
+      "The application layer never depends on a vendor API shape."
+
+  payment:
+    operations:
+      - create_payment_intent
+      - get_payment_status
+      - verify_payment
+    invariant:
+      "Payment is a separate port from order creation."
+
+  identity:
+    operations:
+      - resolve_identity
+      - verify_order_scope
+      - link_channel_identity
+
+  knowledge:
+    operations:
+      - search
+      - retrieve
+      - publish_version
+
+  observability:
+    operations:
+      - audit
+      - metric
+      - trace
+      - reconciliation

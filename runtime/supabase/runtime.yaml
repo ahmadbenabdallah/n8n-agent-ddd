@@ -1,0 +1,27 @@
+version: "1"
+
+database:
+  engine: postgres
+  provider: supabase
+
+principles:
+  - durable_domain_state
+  - row_level_security
+  - migration_versioning
+  - transactional_idempotency
+  - auditable_mutations
+
+required_future_tables:
+  - customer_identity
+  - conversations
+  - conversation_state
+  - carts
+  - cart_items
+  - actions
+  - authorizations
+  - order_scope
+  - transactions
+  - escalations
+  - audit_events
+  - idempotency_keys
+  - knowledge_documents

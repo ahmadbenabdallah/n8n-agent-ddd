@@ -1,0 +1,141 @@
+{
+  "name": "WF-02 Identity v4 \u2014 Persistent Channel Identity",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\"channel\": \"facebook\", \"external_user_id\": \"<messenger_psid>\", \"conversation_external_id\": \"<stable_scope>\", \"turn_id\": \"<meta_message_id>\", \"display_name\": \"<optional>\"}"
+      },
+      "id": "02t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json, allowed=['facebook','whatsapp','instagram','internal'];\nif(!allowed.includes(x.channel)) throw new Error('identity_invalid_channel');\nfor(const k of ['external_user_id','conversation_external_id','turn_id'])\n if(typeof x[k]!=='string'||!x[k].trim()) throw new Error(`identity_missing_${k}`);\nreturn [{json:{...x,external_user_id:x.external_user_id.trim(),conversation_external_id:x.conversation_external_id.trim(),turn_id:x.turn_id.trim()}}];\n"
+      },
+      "id": "02v",
+      "name": "Validate Identity Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM public.resolve_channel_identity($1,$2,$3);",
+        "options": {
+          "queryReplacement": "={{ [$json.channel, $json.external_user_id, $json.display_name || null] }}"
+        }
+      },
+      "id": "02r",
+      "name": "Resolve Channel Identity (Supabase RPC)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst input=$('Validate Identity Input').first().json;\nconst row=Array.isArray($json)?$json[0]:$json;\nif(!row?.customer_id||!row?.identity_id) throw new Error('identity_resolution_failed');\nreturn [{json:{customer_id:row.customer_id,identity_id:row.identity_id,identity_level:Number(row.identity_level??1),channel:input.channel,external_user_id:input.external_user_id,conversation_external_id:input.conversation_external_id,turn_id:input.turn_id,created_customer:Boolean(row.created_customer),authorization_basis:'trusted_channel_identity'}}];\n"
+      },
+      "id": "02n",
+      "name": "Normalize Identity Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst x=$json;\nif(!Number.isInteger(x.identity_level)||x.identity_level<0||x.identity_level>3) throw new Error('identity_invalid_level');\nif(!x.customer_id) throw new Error('identity_missing_customer');\nreturn [{json:x}];\n"
+      },
+      "id": "02a",
+      "name": "Identity Safety Assertions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Identity Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Identity Input": {
+      "main": [
+        [
+          {
+            "node": "Resolve Channel Identity (Supabase RPC)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Channel Identity (Supabase RPC)": {
+      "main": [
+        [
+          {
+            "node": "Normalize Identity Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Identity Result": {
+      "main": [
+        [
+          {
+            "node": "Identity Safety Assertions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "REPLACE_ON_IMPORT",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "dtc-agent"
+    },
+    {
+      "name": "identity"
+    },
+    {
+      "name": "supabase"
+    }
+  ]
+}

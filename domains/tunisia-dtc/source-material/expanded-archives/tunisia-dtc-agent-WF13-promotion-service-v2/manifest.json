@@ -1,0 +1,16 @@
+{
+  "workflow": "WF-13 Promotion Service",
+  "version": "2.0",
+  "source_of_truth": "WooCommerce",
+  "files": [
+    "n8n/WF-13-promotion-service-v2.json",
+    "tests/test-matrix.md",
+    "docs/06-wiring.md",
+    "docs/04-security.md",
+    "docs/02-source-of-truth.md",
+    "docs/03-wf20-requirement.md",
+    "docs/01-contract.md",
+    "docs/05-checkout-boundary.md",
+    "docs/README.md"
+  ]
+}

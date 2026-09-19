@@ -1,0 +1,34 @@
+phase: "0.16.0"
+deployment_model:
+  staging:
+    purpose: "Primary runtime evidence environment."
+    topology: "provider-neutral"
+    required_components:
+      - "n8n"
+      - "PostgreSQL"
+      - "persistent n8n data"
+      - "secret injection"
+      - "HTTPS or private authenticated access"
+      - "monitoring"
+  production:
+    purpose: "Controlled production runtime after certification."
+    topology: "provider-neutral"
+    traffic_switch: "explicit approval only"
+
+release_flow:
+  - "build"
+  - "manifest"
+  - "preflight"
+  - "backup"
+  - "deploy"
+  - "health"
+  - "smoke"
+  - "traffic_switch"
+  - "drain"
+  - "audit"
+
+rollback:
+  prerequisite: true
+  strategy: "known-good release"
+  database_strategy: "expand-contract-first"
+  unknown_external_outcome: "reconcile-before-retry"

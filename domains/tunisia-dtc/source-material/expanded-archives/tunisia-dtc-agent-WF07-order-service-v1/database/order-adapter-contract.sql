@@ -1,0 +1,15 @@
+-- WF-07 intentionally does not require direct DB access.
+-- Use an internal service/connector as the transaction boundary.
+--
+-- Conceptual contract:
+-- get_order_status(customer_key, order_id, requested_fields)
+--
+-- MUST enforce:
+-- 1. authenticated server-side caller
+-- 2. customer scoping
+-- 3. field allowlist
+-- 4. no sensitive payment/authentication fields
+-- 5. verified_source=true
+-- 6. owner_match=true
+--
+-- Do not expose raw database credentials to n8n customer-facing nodes.

@@ -1,0 +1,41 @@
+version: "0.12.4"
+name: local-runtime
+runtime:
+  orchestrator: n8n
+  database: postgres
+  optional:
+    redis: true
+domain:
+  default: tunisia-dtc
+workflows:
+  source: domains/tunisia-dtc/workflows
+  expected_count: 21
+  ids:
+    - WF-00
+    - WF-01
+    - WF-02
+    - WF-03
+    - WF-04
+    - WF-05
+    - WF-06
+    - WF-07
+    - WF-08
+    - WF-09
+    - WF-10
+    - WF-11
+    - WF-12
+    - WF-13
+    - WF-14
+    - WF-15
+    - WF-16
+    - WF-17
+    - WF-18
+    - WF-19
+    - WF-20
+sync:
+  mode: desired-state
+  activation: explicit
+  drift_detection: enabled
+safety:
+  production_forbidden: true
+  require_local_environment: true

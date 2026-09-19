@@ -1,0 +1,22 @@
+domain_id: tunisia-dtc
+version: 0.10.0
+
+n8n:
+  project: domain-tunisia-dtc
+  workflow_namespace: tunisia-dtc
+  environment: configurable
+
+adapters:
+  channels:
+    - configurable
+  commerce:
+    - configurable
+  knowledge: postgres-pgvector
+
+state:
+  postgres_profile: configurable
+  postgres_schema: tunisia_dtc
+  vector_namespace: tunisia-dtc
+
+security:
+  authorization_policy: tunisia-dtc-wf10

@@ -1,0 +1,16 @@
+version: "2026.09.10"
+tests:
+  - id: DATA-ARCH-001
+    rule: domain_does_not_import_supabase_sdk_directly
+  - id: DATA-ARCH-002
+    rule: postgres_is_the_logical_database_contract
+  - id: DATA-ARCH-003
+    rule: vector_store_is_behind_port
+  - id: DATA-ARCH-004
+    rule: kb_cannot_authorize_commerce_mutation
+  - id: DATA-ARCH-005
+    rule: live_price_and_inventory_require_commerce_source
+  - id: DATA-ARCH-006
+    rule: commerce_adapter_is_optional_for_knowledge_first_domains
+  - id: DATA-ARCH-007
+    rule: drizzle_and_sql_migrations_are_reproducible

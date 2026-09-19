@@ -1,0 +1,52 @@
+version: "2026.09.9"
+phase: 9
+name: staging-integration-validation
+status: complete-foundation
+
+objective:
+  - connect the Phase 8 runtime boundaries to real staging-compatible integration contracts
+  - prove external verification and idempotency behavior
+  - provide repeatable staging smoke, E2E, failure-injection, and readiness gates
+  - keep production activation blocked until all evidence gates pass
+
+integrations:
+  supabase:
+    role: durable_domain_state
+    required: true
+  woocommerce:
+    role: commerce_source_of_truth
+    required: true
+    mode: staging
+  meta_messenger:
+    role: inbound_outbound_channel
+    required: true
+    mode: staging
+  llm:
+    role: proposal_and_reasoning
+    required: true
+    structured_output: true
+
+required_evidence:
+  - database_migrations
+  - database_security_tests
+  - meta_webhook_verification
+  - woocommerce_read_write_smoke
+  - llm_structured_output_validation
+  - messenger_e2e
+  - concurrency_idempotency
+  - failure_injection
+  - reconciliation
+  - red_team
+  - load_test
+  - backup_restore
+  - blue_green_rollback
+  - workflow_drift_detection
+
+production_gate:
+  allowed_only_when:
+    - all_required_evidence_passes
+    - no_critical_or_high_open_findings
+    - rollback_verified
+    - restore_verified
+    - security_review_approved
+    - architecture_review_approved

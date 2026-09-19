@@ -1,0 +1,494 @@
+{
+  "name": "WF-14 — Checkout Service",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json,a=x.authorized_action||{},i=x.identity||{},p=a.parameters||{}; const action=a.action||x.intent; const ok=['checkout_start','checkout_confirm'].includes(action)&&a.execution_allowed===true&&['order_verified','high_assurance'].includes(i.identity_level); return [{json:{...x,_input_ok:Boolean(ok),_action:action,_params:p}}];"
+      },
+      "id": "v",
+      "name": "Validate Checkout Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._input_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "iv",
+      "name": "Checkout Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{service:'checkout',status:'rejected',reason:'invalid_or_unauthorized_input',execution_allowed:false}}];"
+      },
+      "id": "r",
+      "name": "Reject Invalid Checkout Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p=$json._params||{},c=$json.cart_context||{}; const cart=c.cart||p.cart||{}; const lines=Array.isArray(cart.lines)?cart.lines:[]; const hasCart=Boolean(c.cart_id||cart.id); const nonEmpty=lines.length>0; const version=cart.version??c.cart_version??null; return [{json:{...$json,_cart_snapshot:{id:c.cart_id||cart.id||null,version,lines,subtotal:Number(cart.subtotal||0),currency:cart.currency||'TND'},_cart_ok:hasCart&&nonEmpty}}];"
+      },
+      "id": "cart",
+      "name": "Load and Snapshot Cart",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._cart_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "ic",
+      "name": "Cart Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -780,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,service:'checkout',status:'rejected',reason:'cart_missing_or_empty',execution_allowed:false}}];"
+      },
+      "id": "rc",
+      "name": "Reject Invalid Cart",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p=$json._params||{},s=$json._cart_snapshot; const customer=p.customer||$json.customer_context||{}; const ship=p.shipping_address||p.shipping||{}; const required=['first_name','last_name','phone','address','city','postal_code']; const missing=required.filter(k=>!ship[k]); const payment=p.payment_method||null; const paymentAllowed=Boolean(payment); return [{json:{...$json,_checkout_data:{customer_ref:customer.customer_ref||null,shipping:ship,payment_method:payment},_checkout_fields_ok:missing.length===0&&paymentAllowed,_missing_fields:missing}}];"
+      },
+      "id": "data",
+      "name": "Validate Checkout Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._checkout_fields_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "id",
+      "name": "Checkout Data Complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -340,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,service:'checkout',status:'needs_customer_data',reason:'missing_checkout_fields',missing_fields:$json._missing_fields||[],execution_allowed:false}}];"
+      },
+      "id": "rd",
+      "name": "Request Missing Checkout Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c=$json._cart_snapshot, d=$json._checkout_data, promo=$json.promotion_context?.live_source_result; const p=$json._params||{}; const priceVersion=p.price_version||c.price_version||null; const cartVersion=c.version; const idem=($json.authorized_action||{}).idempotency_key||$json.message_id||null; const snapshot={cart_id:c.id,cart_version:cartVersion,price_version:priceVersion,promotion_version:promo?.rules_version||null,subtotal:c.subtotal,currency:c.currency,lines:c.lines,promotion:promo||null,shipping:d.shipping,payment_method:d.payment_method}; return [{json:{...$json,_checkout_snapshot:snapshot,_idempotency_key:idem}}];"
+      },
+      "id": "snap",
+      "name": "Build Checkout Snapshot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json,s=x._checkout_snapshot||{}, live=x.checkout_context?.live_validation_result; const p=x._params||{}; const mustLive=['checkout_start','checkout_confirm'].includes(x._action); const ok=Boolean(s.cart_id&&s.cart_version!=null&&s.lines?.length&&s.currency&&s.shipping?.phone&&s.payment_method&&(!mustLive||live?.verified===true)); return [{json:{...x,_preflight_ok:ok,_preflight:{cart_version:s.cart_version,live_verified:live?.verified===true,price_current:live?.price_current===true,promotion_current:live?.promotion_current===true,stock_current:live?.stock_current===true}}}];"
+      },
+      "id": "pre",
+      "name": "Live Price Stock Promotion Preflight",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._preflight_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "ip",
+      "name": "Preflight Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,service:'checkout',status:'revalidation_required',reason:'cart_price_stock_or_promotion_not_verified',execution_allowed:false}}];"
+      },
+      "id": "rp",
+      "name": "Stop on Stale Checkout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const idem=x._idempotency_key; const existing=(x.checkout_context?.idempotency_keys||{})[idem]; const action=x._action; const request={operation:action,cart_id:x._checkout_snapshot.cart_id,cart_version:x._checkout_snapshot.cart_version,customer_ref:x._checkout_data.customer_ref,shipping:x._checkout_data.shipping,payment_method:x._checkout_data.payment_method,promotion:x._checkout_snapshot.promotion,idempotency_key:idem}; return [{json:{...x,_duplicate:Boolean(existing),_checkout_request:request}}];"
+      },
+      "id": "idem",
+      "name": "Checkout Idempotency Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._duplicate}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "dup",
+      "name": "Duplicate Checkout?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{service:'checkout',status:'duplicate',reason:'idempotency_key_already_seen',execution_allowed:false}}];"
+      },
+      "id": "rdp",
+      "name": "Reject Duplicate Checkout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,status:'ready_for_checkout_adapter',execution_allowed:true,adapter:'COMMERCE_CHECKOUT_ADAPTER',request:$json._checkout_request}}];"
+      },
+      "id": "req",
+      "name": "Build Commerce Checkout Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json,r=x.commerce_result||x.adapter_result; if(!r) return [{json:{...x,status:'awaiting_adapter',verification_status:'not_run',execution_allowed:false}}]; const verified=r.verified===true&&r.owner_match===true&&r.cart_version_match===true&&r.price_verified===true; return [{json:{...x,status:verified?'completed':'failed',verification_status:verified?'verified':'failed',execution_allowed:false,checkout_result:verified?{checkout_id:r.checkout_id,status:r.status,expires_at:r.expires_at||null}:null}}];"
+      },
+      "id": "verify",
+      "name": "Post-Action Checkout Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; return [{json:{service:'checkout',status:x.status||'failed',action:x._action,execution_allowed:false,verification_status:x.verification_status||'not_run',checkout:x.checkout_result||null,missing_fields:x.missing_fields||x._missing_fields||[],idempotency_key:x._idempotency_key||null}}];"
+      },
+      "id": "out",
+      "name": "Build Checkout Service Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Checkout Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Checkout Contract": {
+      "main": [
+        [
+          {
+            "node": "Checkout Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checkout Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Load and Snapshot Cart",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Checkout Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load and Snapshot Cart": {
+      "main": [
+        [
+          {
+            "node": "Cart Ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cart Ready?": {
+      "main": [
+        [
+          {
+            "node": "Validate Checkout Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Cart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Checkout Data": {
+      "main": [
+        [
+          {
+            "node": "Checkout Data Complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checkout Data Complete?": {
+      "main": [
+        [
+          {
+            "node": "Build Checkout Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Request Missing Checkout Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Checkout Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Live Price Stock Promotion Preflight",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Live Price Stock Promotion Preflight": {
+      "main": [
+        [
+          {
+            "node": "Preflight Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preflight Valid?": {
+      "main": [
+        [
+          {
+            "node": "Checkout Idempotency Guard",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop on Stale Checkout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checkout Idempotency Guard": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Checkout?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Checkout?": {
+      "main": [
+        [
+          {
+            "node": "Build Commerce Checkout Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Duplicate Checkout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Commerce Checkout Request": {
+      "main": [
+        [
+          {
+            "node": "Post-Action Checkout Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post-Action Checkout Verification": {
+      "main": [
+        [
+          {
+            "node": "Build Checkout Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf14-checkout-service-v1"
+}

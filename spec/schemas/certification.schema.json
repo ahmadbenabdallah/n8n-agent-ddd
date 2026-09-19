@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Production Certification Decision",
+  "type": "object",
+  "required": ["release", "decision", "generated_at", "gates"],
+  "properties": {
+    "release": {"type": "string"},
+    "decision": {"enum": ["CERTIFIED", "BLOCKED"]},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "gates": {"type": "object"},
+    "open_critical_findings": {"type": "integer", "minimum": 0},
+    "open_high_findings": {"type": "integer", "minimum": 0},
+    "approvals": {"type": "object"}
+  }
+}

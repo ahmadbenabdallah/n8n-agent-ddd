@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-15 Verified COD Transaction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "success",
+    "operation",
+    "customer_id",
+    "action_id",
+    "commerce_status",
+    "verified",
+    "order"
+  ],
+  "properties": {
+    "success": {
+      "type": "boolean"
+    },
+    "operation": {
+      "const": "create_cod_order"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "action_id": {
+      "type": "string"
+    },
+    "commerce_status": {
+      "type": "string"
+    },
+    "verified": {
+      "type": "boolean"
+    },
+    "order": {
+      "type": "object"
+    },
+    "message_state": {
+      "type": "string"
+    }
+  }
+}

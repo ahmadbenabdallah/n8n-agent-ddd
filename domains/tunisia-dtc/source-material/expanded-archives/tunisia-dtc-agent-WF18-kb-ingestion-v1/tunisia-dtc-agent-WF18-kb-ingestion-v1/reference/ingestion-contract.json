@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "input": {
+    "documents": [
+      {
+        "path": "products/example.md",
+        "content": "---\\nid: product-001\\ntype: product\\nlast_updated: 2026-09-16\\n---\\nVerified product facts."
+      }
+    ]
+  },
+  "pipeline": [
+    "normalize",
+    "frontmatter_validate",
+    "security_scan",
+    "quarantine_or_continue",
+    "chunk",
+    "embed",
+    "vector_upsert",
+    "audit"
+  ],
+  "output": {
+    "status": "persisted|ready_for_persistence|quarantined|failed",
+    "document_count": "integer",
+    "chunk_count": "integer"
+  },
+  "source_of_truth": "approved KB repository for static factual content only"
+}

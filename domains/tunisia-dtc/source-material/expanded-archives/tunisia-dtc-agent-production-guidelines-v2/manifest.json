@@ -1,0 +1,19 @@
+{
+  "package": "Tunisia DTC AI Commerce Agent - Production Guidelines v2",
+  "purpose": "Consolidated documentation after rebuilding WF-07, WF-11, WF-12, WF-13, WF-14, WF-15 and WF-20 around WooCommerce.",
+  "includes_previous_guide": true,
+  "updated_workflows": [
+    "WF-07 v2",
+    "WF-11 v2",
+    "WF-12 v2",
+    "WF-13 v2",
+    "WF-14 v2",
+    "WF-15 v2",
+    "WF-20 v3"
+  ],
+  "sections": [
+    "00-previous-production-guide",
+    "01-consolidated-guidelines",
+    "10-commerce-workflow-guidelines"
+  ]
+}

@@ -1,0 +1,13 @@
+version: "0.12.5"
+name: persistent-data-contract
+durable: [postgresql, audit_events, idempotency_keys, conversations, customer_identity,
+  carts, orders, transactions, escalations, knowledge_base, migration_history]
+disposable: [n8n_container, worker_container, reverse_proxy_container, temporary_build_artifacts]
+migration:
+  strategy: expand-migrate-contract
+  backup_required: true
+  restore_verification_required: true
+  destructive_rollback_forbidden: true
+release:
+  must_record: [runtime_version, git_commit, workflow_version, database_schema_version,
+    policy_versions, llm_version, knowledge_base_version]

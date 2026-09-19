@@ -1,0 +1,10 @@
+n8n:
+  image: docker.n8n.io/n8nio/n8n:2.39.8
+  source: docker
+  pin_type: exact
+  channel: stable
+  upgrade_policy: explicit
+  production_change_requires_release: true
+  mcp:
+    instance_level: required
+    workflow_management: enabled

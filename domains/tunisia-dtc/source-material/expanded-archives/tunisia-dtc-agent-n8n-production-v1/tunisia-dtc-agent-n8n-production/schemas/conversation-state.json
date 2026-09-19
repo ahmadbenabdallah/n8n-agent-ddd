@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Conversation State",
+  "type": "object",
+  "properties": {
+    "stage": {
+      "type": "string"
+    },
+    "intent": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "selected_product": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "selected_variant": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "cart_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "identity_level": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "script": {
+      "type": "string"
+    },
+    "register": {
+      "type": "string"
+    },
+    "turn_count": {
+      "type": "integer"
+    },
+    "escalation": {
+      "type": "object"
+    }
+  }
+}

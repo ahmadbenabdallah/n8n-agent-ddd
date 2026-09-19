@@ -1,0 +1,19 @@
+{
+  "state_contract": {
+    "conversation_id": "facebook_messenger:<PSID>",
+    "stage": "CONSIDERING",
+    "intent": "pricing",
+    "selected_product": "PROD-001",
+    "selected_variant": {
+      "size": "42"
+    },
+    "cart_id": "CART-001",
+    "turn_count": 4,
+    "language": "tn",
+    "script": "latin",
+    "register": "casual",
+    "escalation": {
+      "required": false
+    }
+  }
+}

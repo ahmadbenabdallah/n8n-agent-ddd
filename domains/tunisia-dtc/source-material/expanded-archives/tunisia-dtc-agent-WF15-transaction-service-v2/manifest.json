@@ -1,0 +1,20 @@
+{
+  "workflow": "WF-15 Transaction Service",
+  "version": "2.0",
+  "source_of_truth": "WooCommerce",
+  "payment_method": "COD",
+  "files": [
+    "n8n/WF-15-transaction-service-v2.json",
+    "database/commerce-idempotency.sql",
+    "tests/test-matrix.md",
+    "docs/04-order-verification.md",
+    "docs/07-status-semantics.md",
+    "docs/02-idempotency.md",
+    "docs/08-wiring.md",
+    "docs/03-preflight-and-toctou.md",
+    "docs/01-contract.md",
+    "docs/05-security.md",
+    "docs/README.md",
+    "docs/06-wf20-requirements.md"
+  ]
+}

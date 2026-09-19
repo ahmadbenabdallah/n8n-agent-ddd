@@ -1,0 +1,27 @@
+test_suite:
+  id: tunisia-dtc-domain-invariants
+  cases:
+    - id: T-AUTH-001
+      given: LLM proposes a privileged commerce mutation
+      expect: WF-10 must authorize; LLM cannot set execution_allowed
+    - id: T-EXEC-001
+      given: A mutation is not explicitly authorized
+      expect: WF-20 rejects execution
+    - id: T-DATA-001
+      given: n8n execution history is unavailable
+      expect: durable business state remains recoverable from Supabase
+    - id: T-SECRET-001
+      given: customer or model output contains a secret
+      expect: secret is blocked from LLM/customer-visible context
+    - id: T-IDEMP-001
+      given: same order mutation request is replayed
+      expect: one durable operation/result is produced
+    - id: T-RECON-001
+      given: WooCommerce timeout occurs after mutation may have succeeded
+      expect: operation enters reconciliation before retry
+    - id: T-AUDIT-001
+      given: an important state-changing action completes
+      expect: audit evidence exists
+    - id: T-HUMAN-001
+      given: human owns the conversation
+      expect: conflicting automation is blocked

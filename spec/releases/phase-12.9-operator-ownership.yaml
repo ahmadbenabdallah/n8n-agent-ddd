@@ -1,0 +1,19 @@
+version: "0.12.9"
+name: operator-ownership-and-runtime-binding
+status: foundation
+objectives:
+  - "Define the installer/deployer as the operator rather than assuming a customer UI."
+  - "Separate platform ownership from operator configuration and extension ownership."
+  - "Bind an operator domain to an n8n project without making n8n the authorization boundary."
+  - "Preserve operator-owned state across platform upgrades."
+non_goals:
+  - "Build a custom administration UI."
+  - "Expose raw infrastructure environment variables to operators."
+  - "Allow operators to replace protected security or commerce workflows."
+acceptance:
+  - "Ownership surfaces are machine-readable."
+  - "Operator role permissions are explicit."
+  - "Protected workflows remain non-editable through the operator extension surface."
+  - "Upgrade rules preserve operator-owned configuration and compatible extensions."
+validation:
+  static: "tests/architecture/operator-ownership.sh"

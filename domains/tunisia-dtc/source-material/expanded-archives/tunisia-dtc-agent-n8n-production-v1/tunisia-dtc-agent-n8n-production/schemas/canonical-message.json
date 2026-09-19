@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Canonical Agent Message",
+  "type": "object",
+  "required": [
+    "channel",
+    "message_id",
+    "text"
+  ],
+  "properties": {
+    "conversation_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "facebook_messenger",
+        "whatsapp",
+        "instagram"
+      ]
+    },
+    "page_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "channel_user_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "message_id": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": [
+        "string",
+        "number",
+        "null"
+      ]
+    },
+    "language": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "script": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "latin",
+        "arabic",
+        "auto",
+        null
+      ]
+    },
+    "register": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "mixed_languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "raw_event": {
+      "type": "object"
+    }
+  }
+}

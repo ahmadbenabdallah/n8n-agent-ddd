@@ -1,0 +1,25 @@
+{
+  "package": "Tunisia DTC Agent System FINAL v4 \u2014 WF-05 Sales Engine",
+  "version": "v4",
+  "workflow": "WF-05",
+  "status": "production-spec",
+  "files": [
+    "README.md",
+    "01-WF-05-SALES-ENGINE-SPEC.md",
+    "02-WF-05-STATE-AND-INTENT-MATRIX.md",
+    "03-WF-05-LLM-CONTRACT.md",
+    "04-WF-05-SECURITY-AND-OWASP-TESTS.md",
+    "05-WF-05-N8N-IMPLEMENTATION.md",
+    "06-WF-05-E2E-FLOWS.md",
+    "07-WF-05-PRODUCTION-CHECKLIST.md"
+  ],
+  "architecture_invariants": [
+    "LLM proposes; n8n validates/authorizes; commerce executes; n8n verifies; renderer replies",
+    "WF-10 is the sole hard authorization boundary",
+    "WF-20 is the sole privileged WooCommerce boundary",
+    "WF-03 owns canonical conversation state",
+    "WF-05 cannot promote identity",
+    "WF-05 respects human ownership",
+    "Live commerce facts come from authoritative services"
+  ]
+}

@@ -1,0 +1,23 @@
+release:
+  version: "2026.09.11"
+runtime:
+  n8n: "pinned-version"
+workflows:
+  version: "43"
+business_policy:
+  version: "2026.09.3"
+security_policy:
+  version: "2026.09.7"
+llm:
+  model: "configured-at-deployment"
+  prompt_version: "14"
+knowledge_base:
+  version: "82"
+database:
+  schema_version: "37"
+deployment:
+  strategy: blue_green
+  drain_timeout: 300
+  health_check: required
+  smoke_test: required
+  rollback: enabled

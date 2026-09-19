@@ -1,0 +1,120 @@
+{
+  "name": "WF-13 Promotion Service v2 - WooCommerce Coupon Authority",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst ops=['coupon_validate','coupon_preview','promotion_info'];\nif(!ops.includes(x.operation)) throw new Error('Invalid promotion operation');\nif(!x.request_id||!x.conversation_id||!x.customer_id) throw new Error('Missing promotion identity');\nif(['coupon_validate','coupon_preview'].includes(x.operation) && !x.code) throw new Error('Coupon code required');\nif(x.code && (typeof x.code!=='string'||x.code.length<1||x.code.length>100||/[\\\\r\\\\n]/.test(x.code))) throw new Error('Invalid coupon code');\nreturn [{json:{\n request_id:String(x.request_id),conversation_id:String(x.conversation_id),customer_id:String(x.customer_id),\n operation:x.operation,code:x.code?x.code.trim():null,cart:x.cart??null,\n caller_context:x.caller_context??{},email:x.email??null\n}}];"
+      },
+      "id": "validate",
+      "name": "Validate Promotion Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\n// Only bounded coupon operations are permitted.\n// No arbitrary REST paths, coupon IDs, discount amounts or eligibility flags from the LLM.\nreturn [{json:{...x,gateway_operation:'coupon_validate'}}];"
+      },
+      "id": "map",
+      "name": "Build WF-20 Coupon Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "REPLACE_WITH_WF20_WORKFLOW_ID",
+        "options": {}
+      },
+      "id": "wf20",
+      "name": "WF-20 WooCommerce Gateway",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$json;\nif(r.error||r.success===false){\n return [{json:{success:false,request_id:$node['Validate Promotion Contract'].json.request_id,\n operation:$node['Validate Promotion Contract'].json.operation,\n code:$node['Validate Promotion Contract'].json.code,\n eligible:false,error_code:r.error_code||'coupon_validation_failed',\n source:'woocommerce'}}];\n}\nconst v=r.coupon_validation||r.data?.coupon_validation||r;\nconst safe={\n code:v.code??$node['Validate Promotion Contract'].json.code,\n eligible:v.eligible===true,\n discount_type:v.discount_type??null,\n discount_amount:v.discount_amount??null,\n free_shipping:v.free_shipping===true,\n reason_code:v.reason_code??null\n};\nreturn [{json:{success:true,request_id:$node['Validate Promotion Contract'].json.request_id,\noperation:$node['Validate Promotion Contract'].json.operation,coupon:safe,\nsource:'woocommerce',verified_at:new Date().toISOString()}}];"
+      },
+      "id": "normalize",
+      "name": "Normalize Verified Promotion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Promotion Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Promotion Contract": {
+      "main": [
+        [
+          {
+            "node": "Build WF-20 Coupon Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build WF-20 Coupon Request": {
+      "main": [
+        [
+          {
+            "node": "WF-20 WooCommerce Gateway",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF-20 WooCommerce Gateway": {
+      "main": [
+        [
+          {
+            "node": "Normalize Verified Promotion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

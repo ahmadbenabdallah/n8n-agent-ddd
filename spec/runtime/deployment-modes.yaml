@@ -1,0 +1,37 @@
+version: 1
+modes:
+  local_all:
+    command: pnpm runtime:up
+    services: [postgres, n8n]
+    persisted: [postgres_data, n8n_data]
+    purpose: local development and integration testing
+  n8n_remote:
+    services: [n8n]
+    database: external
+    purpose: n8n runtime hosted independently from the developer machine
+    control_plane: git_ci_or_harness
+  vps_all:
+    services: [postgres, n8n]
+    purpose: self-hosted production
+    persistent_mounts: [postgres_data, n8n_data]
+  managed_provider:
+    services: [n8n]
+    database: provider_managed_or_external
+    purpose: managed container deployment
+configuration_layers:
+  infrastructure:
+    examples: [N8N_HOST, N8N_PORT, N8N_PROTOCOL, WEBHOOK_URL, DB_POSTGRESDB_HOST]
+    owner: deployment
+    storage: provider_secret_store_or_runtime_env
+  domain:
+    examples: [currency, cod_enabled, support_hours, business_rules]
+    owner: operator
+    storage: PostgreSQL
+  n8n_runtime:
+    examples: [workflows, credentials, projects, executions]
+    owner: operator_or_platform_by_policy
+    storage: n8n_database_and_encryption_key
+  secrets:
+    examples: [N8N_ENCRYPTION_KEY, database_password, provider_api_keys]
+    owner: deployment_operator
+    storage: secret_manager_or_provider_secret_store

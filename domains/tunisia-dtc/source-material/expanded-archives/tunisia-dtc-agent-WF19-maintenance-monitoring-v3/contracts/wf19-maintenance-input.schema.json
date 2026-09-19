@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-19 Maintenance Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation"
+  ],
+  "properties": {
+    "operation": {
+      "type": "string",
+      "enum": [
+        "health_check",
+        "reconcile",
+        "cleanup",
+        "freshness_check",
+        "security_check"
+      ]
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "all",
+        "commerce",
+        "database",
+        "kb",
+        "security",
+        "workflows"
+      ]
+    },
+    "run_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 256
+    }
+  }
+}

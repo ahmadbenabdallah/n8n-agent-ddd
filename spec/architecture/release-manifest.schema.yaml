@@ -1,0 +1,17 @@
+version: 1
+required:
+  - release_version
+  - runtime
+  - workflows
+  - business_policy
+  - security_policy
+  - llm
+  - knowledge_base
+  - database
+  - deployment
+rules:
+  - all_versions_are_explicit
+  - deployment_strategy_is_declared
+  - rollback_is_declared
+  - health_check_is_required
+  - smoke_test_is_required

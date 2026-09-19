@@ -1,0 +1,9 @@
+version: "0.13.5"
+record:
+  domain_id: string
+  workflow_key: string
+  n8n_workflow_id: string
+  source_hash: string
+  runtime_hash: string
+  validation_status: string
+  activated: boolean

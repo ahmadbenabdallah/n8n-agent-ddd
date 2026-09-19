@@ -1,0 +1,17 @@
+version: "0.14.1"
+name: runtime-execution-harness
+status: evidence-producing-harness
+goal: run the Phase 14 integration suite against a real deployment without fabricating evidence
+requirements:
+  - N8N_BASE_URL
+  - N8N_API_KEY
+  - configured project
+  - synchronized workflows
+evidence:
+  format: jsonl
+  directory: artifacts/runtime-evidence
+rules:
+  - fail_closed
+  - no_secret_values_in_evidence
+  - no_pass_without_command_exit_zero
+  - no_pass_without_live_endpoint

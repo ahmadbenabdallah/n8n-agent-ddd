@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "type": "streamable-http",
+      "url": "${N8N_BASE_URL}/mcp-server/http"
+    }
+  }
+}

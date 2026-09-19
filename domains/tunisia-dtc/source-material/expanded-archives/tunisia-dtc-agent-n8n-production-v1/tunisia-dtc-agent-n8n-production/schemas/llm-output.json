@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LLM Structured Output",
+  "type": "object",
+  "required": [
+    "response",
+    "language",
+    "script",
+    "register",
+    "intent",
+    "decision"
+  ],
+  "properties": {
+    "response": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "script": {
+      "type": "string"
+    },
+    "register": {
+      "type": "string"
+    },
+    "intent": {
+      "type": "string"
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "answer",
+        "clarify",
+        "propose_action",
+        "escalate",
+        "refuse"
+      ]
+    },
+    "action": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "grounding": {
+      "type": "object"
+    },
+    "escalation": {
+      "type": "object"
+    }
+  }
+}

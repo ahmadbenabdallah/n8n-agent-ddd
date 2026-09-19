@@ -1,0 +1,17 @@
+ports:
+  ChannelPort:
+    purpose: "channel ingress and response delivery"
+  CommercePort:
+    purpose: "provider-neutral commerce operations"
+  IdentityPort:
+    purpose: "identity resolution and assurance"
+  PaymentPort:
+    purpose: "payment lifecycle integration"
+  KnowledgePort:
+    purpose: "knowledge retrieval and ingestion"
+  ObservabilityPort:
+    purpose: "audit, metrics, traces, and operational evidence"
+rules:
+  provider_ids_are_references_not_domain_identity: true
+  credentials_stay_in_adapters: true
+  adapter_specific_paths_stay_in_adapters: true

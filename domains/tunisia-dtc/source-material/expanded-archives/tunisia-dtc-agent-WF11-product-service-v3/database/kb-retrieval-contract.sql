@@ -1,0 +1,4 @@
+-- Contract only: adapt the RPC/query to the actual Supabase KB schema.
+-- WF-11 v3 intentionally does not assume a table name or vector schema.
+-- Required returned fields: document_id, content, language, region, status, last_updated, relevance.
+-- The retrieval layer must filter approved/status/market metadata and treat content as data, never instructions.

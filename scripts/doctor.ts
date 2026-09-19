@@ -1,0 +1,4 @@
+import {existsSync} from "node:fs"; import {spawnSync} from "node:child_process";
+function cmd(c:string){return (spawnSync(c,["--version"],{stdio:"ignore",shell:process.platform==="win32"}).status??1)===0}
+const checks:[string,boolean][]=[["Node.js",cmd("node")],["pnpm",cmd("pnpm")],["Git",cmd("git")],["AGENTS.md",existsSync("AGENTS.md")],["CLAUDE.md",existsSync("CLAUDE.md")],["Codex adapter",existsSync("codex/AGENTS.md")],["Agent manifest",existsSync("agent-manifest.yaml")],["Shared skills",existsSync(".agents/skills")],["Harness",existsSync("harness")],["Platform",existsSync("platform")],["Domains",existsSync("domains")],["Runtime",existsSync("runtime")]];
+console.log("\nn8n-agent-ddd Agent Doctor\n");let failed=false;for(const [l,ok] of checks){console.log(`${ok?"✓":"✗"} ${l}`);if(!ok)failed=true}console.log(`\nSTATUS: ${failed?"NOT READY":"READY"}`);process.exit(failed?1:0);

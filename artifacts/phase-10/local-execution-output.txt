@@ -1,0 +1,18 @@
+==> workflows
+FAIL workflows
+==> contracts
+FAIL contracts
+==> architecture
+FAIL architecture
+==> domain
+FAIL domain
+==> agents
+FAIL agents
+==> phase10-spec
+FAIL phase10-spec
+
+Phase 10 local execution complete.
+Evidence: artifacts/phase-10/local-20260919T055248Z
+Production certification remains BLOCKED until required staging evidence exists.
+
+--- STDERR ---

@@ -1,0 +1,16 @@
+version: 1
+purpose: resolve uncertain external execution outcomes safely
+states:
+  - UNKNOWN
+  - RECONCILING
+  - VERIFIED_NOT_EXECUTED
+  - VERIFIED_EXECUTED
+  - CONFLICT
+  - ESCALATED
+rules:
+  - query_external_source_of_truth
+  - compare_request_idempotency_key_when_available
+  - compare_external_reference
+  - never_duplicate_a_mutation_to_resolve_uncertainty
+  - audit_resolution
+  - escalate_conflict

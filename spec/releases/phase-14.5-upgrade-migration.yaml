@@ -1,0 +1,31 @@
+version: "0.14.5"
+name: phase-14.5-upgrade-migration
+status: foundation
+prerequisites:
+  - "0.14.4"
+
+deliverables:
+  - spec/runtime/upgrade-migration.yaml
+  - docs/operations/upgrade-migration.md
+  - scripts/migrations/preflight.sh
+  - scripts/migrations/plan.sh
+  - scripts/migrations/apply.sh
+  - scripts/migrations/verify.sh
+  - scripts/upgrades/compatibility-check.sh
+  - scripts/upgrades/release-preflight.sh
+  - tests/architecture/phase14.5-upgrade-migration.sh
+
+gates:
+  lifecycle_contract: PASS
+  expand_contract_policy: PASS
+  migration_scripts_contract: PASS
+  version_skew_policy: PASS
+  live_migration: NOT_EXECUTED
+  live_upgrade: NOT_EXECUTED
+  live_rollback: NOT_EXECUTED
+
+certification:
+  production_ready: false
+  reason: >
+    This release defines and scaffolds the upgrade/migration lifecycle.
+    Real staging execution and rollback evidence are still required.

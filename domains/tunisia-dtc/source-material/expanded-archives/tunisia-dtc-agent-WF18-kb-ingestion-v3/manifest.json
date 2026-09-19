@@ -1,0 +1,31 @@
+{
+  "name": "tunisia-dtc-agent-WF18-kb-ingestion-v3",
+  "version": "3.0.0",
+  "status": "integration-ready scaffold",
+  "purpose": "Versioned, security-scanned KB ingestion for pgvector RAG",
+  "authority": "informational_only",
+  "dynamic_truth_excluded": [
+    "stock",
+    "current_price",
+    "availability",
+    "order_status",
+    "payment_status",
+    "checkout",
+    "coupon_eligibility"
+  ],
+  "files": [
+    "contracts/wf18-ingestion-input.schema.json",
+    "contracts/wf18-ingestion-output.schema.json",
+    "n8n/WF-18-kb-ingestion-v3.json",
+    "database/005_kb_ingestion.sql",
+    "tests/regression.md",
+    "docs/06-wiring.md",
+    "docs/01-ingestion-lifecycle.md",
+    "docs/03-source-of-truth.md",
+    "docs/04-versioning.md",
+    "docs/05-retrieval-contract.md",
+    "docs/02-poisoning-defense.md",
+    "docs/README.md",
+    "docs/07-production-gate.md"
+  ]
+}

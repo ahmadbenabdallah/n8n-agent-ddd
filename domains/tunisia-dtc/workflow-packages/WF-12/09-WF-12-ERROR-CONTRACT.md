@@ -1,0 +1,23 @@
+# WF-12 Error Contract
+
+Recommended codes:
+
+`CART_NOT_FOUND`
+`INVALID_CART_REQUEST`
+`PRODUCT_NOT_FOUND`
+`VARIATION_NOT_FOUND`
+`VARIATION_UNAVAILABLE`
+`QUANTITY_INVALID`
+`QUANTITY_LIMIT`
+`AUTHORIZATION_INVALID`
+`ACCESS_DENIED`
+`CART_CHANGED`
+`DUPLICATE_REQUEST`
+`COMMERCE_UNAVAILABLE`
+`COMMERCE_TIMEOUT`
+`UNKNOWN_EXECUTION`
+`RECONCILIATION_REQUIRED`
+`INTERNAL_ERROR`
+
+Errors must be machine-readable and safe for WF-16.
+Never expose raw WooCommerce responses, credentials, session tokens or internal stack traces.

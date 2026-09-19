@@ -1,0 +1,37 @@
+version: 1
+environment: production
+components:
+  edge:
+    - reverse_proxy
+    - tls
+  application:
+    - n8n_main
+    - n8n_worker
+  state:
+    - postgres
+    - redis
+  storage:
+    - object_storage
+  observability:
+    - metrics
+    - structured_logs
+    - alerts
+  backup:
+    - postgres_backup
+    - configuration_backup
+  deployment:
+    - blue_environment
+    - green_environment
+connections:
+  n8n_to_postgres: private_network
+  n8n_to_redis: private_network
+  n8n_to_commerce: outbound_allowlisted
+  n8n_to_llm: outbound_allowlisted
+  edge_to_n8n: private_network
+security:
+  public_services:
+    - reverse_proxy
+  non_public:
+    - postgres
+    - redis
+    - n8n_internal

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-14 Checkout Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation",
+    "customer_id",
+    "channel"
+  ],
+  "properties": {
+    "operation": {
+      "type": "string",
+      "enum": [
+        "checkout_start",
+        "checkout_confirm"
+      ]
+    },
+    "customer_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "channel": {
+      "type": "string"
+    },
+    "store_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "action_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 256
+    },
+    "authorization_result": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "allow",
+        "deny",
+        null
+      ]
+    }
+  }
+}

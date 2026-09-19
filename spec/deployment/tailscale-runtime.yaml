@@ -1,0 +1,23 @@
+version: "0.13.2"
+name: tailscale-runtime
+deployment:
+  local:
+    tailscale: optional_for_single_machine
+  vps:
+    tailscale: required_for_operator_admin
+    n8n_public_port: false
+    ssh_public_port: false
+    postgres_public_port: false
+  managed_provider:
+    tailscale: preferred_when_provider_networking_allows_private_admin_access
+    public_webhooks: explicit_exception
+architecture:
+  operator:
+    laptop: tailscale_client
+    access: n8n_ui_over_tailnet
+  server:
+    tailscale_client: true
+    n8n: localhost_or_private_interface
+  webhook:
+    public_only_if_channel_requires_it
+    isolated_from_editor_access: true

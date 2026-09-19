@@ -1,0 +1,25 @@
+version: "1"
+root: .agents/skills
+
+skill_contract:
+  required_file: SKILL.md
+  required_frontmatter:
+    - name
+    - description
+  required_sections:
+    - Required sequence
+    - Safety
+
+routing:
+  mode: capability
+  selection_order:
+    - task_type
+    - affected_layer
+    - affected_domain
+    - security_sensitivity
+
+upstream:
+  policy_file: THIRD-PARTY.md
+  require_license_review: true
+  require_version_or_commit: true
+  require_attribution: true

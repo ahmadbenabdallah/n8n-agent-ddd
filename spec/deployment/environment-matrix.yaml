@@ -1,0 +1,27 @@
+version: "0.14.2"
+profiles:
+  local:
+    n8n: docker
+    postgres: docker
+    admin_access: localhost
+    persistent_state: named_volumes
+  vps:
+    n8n: docker
+    postgres: external
+    admin_access: private_access_policy
+    persistent_state: n8n_volume + external_postgres
+  vps_all:
+    n8n: docker
+    postgres: docker
+    admin_access: private_access_policy
+    persistent_state: named_volumes
+  railway:
+    n8n: provider_container
+    postgres: managed_or_external
+    admin_access: provider_private_or_authenticated_access
+    persistent_state: provider_volume
+common:
+  n8n_image: pinned
+  domain_state: postgresql
+  workflow_surface: native_n8n_ui
+  control_plane: mcp_plus_skills

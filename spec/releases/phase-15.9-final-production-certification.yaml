@@ -1,0 +1,51 @@
+phase:
+  id: "0.15.9"
+  name: "Final Production Certification"
+  status: "CERTIFICATION_GATE"
+  purpose: "Evaluate production readiness from captured evidence without fabricating runtime results."
+
+certification:
+  environment: "staging"
+  production_execution: false
+  certification_rule: "Every required gate must have valid runtime evidence and explicit approval."
+  no_fabricated_evidence: true
+  no_implicit_pass: true
+
+required_gates:
+  INT: {description: "Real n8n/Postgres runtime integration evidence.", source_phase: "0.15.0", status: "NOT_EXECUTED"}
+  WF21: {description: "All canonical WF-00..WF-20 execute with evidence.", source_phase: "0.15.1", status: "NOT_EXECUTED"}
+  E2E: {description: "Real channel + commerce E2E evidence.", source_phase: "0.15.2", status: "NOT_EXECUTED"}
+  SECURITY: {description: "Security/red-team evidence.", source_phase: "0.15.3", status: "NOT_EXECUTED"}
+  IDEMP: {description: "Idempotency evidence.", source_phase: "0.15.4", status: "NOT_EXECUTED"}
+  RECON: {description: "Reconciliation evidence.", source_phase: "0.15.4", status: "NOT_EXECUTED"}
+  LOAD: {description: "Load/resilience evidence.", source_phase: "0.15.5", status: "NOT_EXECUTED"}
+  DR: {description: "Backup/restore evidence.", source_phase: "0.15.6", status: "NOT_EXECUTED"}
+  BG: {description: "Blue/green evidence.", source_phase: "0.15.7", status: "NOT_EXECUTED"}
+  ROLLBACK: {description: "Controlled rollback evidence.", source_phase: "0.15.7", status: "NOT_EXECUTED"}
+  DRIFT: {description: "Drift detection/reconciliation evidence.", source_phase: "0.15.8", status: "NOT_EXECUTED"}
+  SELF_HEAL: {description: "Bounded self-healing evidence.", source_phase: "0.15.8", status: "NOT_EXECUTED"}
+  SAFETY: {description: "Self-healing safety evidence.", source_phase: "0.15.8", status: "NOT_EXECUTED"}
+  AUDIT: {description: "Operational audit evidence.", source_phase: "0.15.8", status: "NOT_EXECUTED"}
+
+certification_states:
+  - "NOT_READY"
+  - "READY_FOR_APPROVAL"
+  - "CERTIFIED"
+
+rules:
+  - "A local contract test cannot satisfy a runtime gate."
+  - "A static file, script, or schema cannot satisfy a runtime gate."
+  - "Every successful gate must reference sanitized runtime evidence."
+  - "Missing evidence means the gate is NOT_EXECUTED."
+  - "Any failed mandatory gate blocks certification."
+  - "Security or authorization boundary failures block certification."
+  - "Production certification must not be inferred from successful staging scripts alone."
+
+approval:
+  required_roles: ["operator", "security_reviewer", "architecture_reviewer", "release_owner"]
+  production_switch_requires_explicit_approval: true
+
+output:
+  manifest: "runtime/evidence/phase-15.9/certification-manifest.yaml"
+  decision: "runtime/evidence/phase-15.9/certification-decision.yaml"
+  evidence_index: "runtime/evidence/phase-15.9/evidence-index.yaml"

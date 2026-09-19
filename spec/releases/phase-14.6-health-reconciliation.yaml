@@ -1,0 +1,32 @@
+version: "0.14.6"
+name: phase-14.6-health-reconciliation
+status: foundation
+prerequisites:
+  - "0.14.5"
+
+deliverables:
+  - spec/runtime/health-reconciliation.yaml
+  - docs/operations/runtime-health.md
+  - docs/operations/reconciliation.md
+  - scripts/operations/runtime-health.sh
+  - scripts/operations/reconciliation-status.sh
+  - scripts/operations/drift-policy-check.sh
+  - scripts/operations/self-healing-policy-check.sh
+  - tests/architecture/phase14.6-health-reconciliation.sh
+
+gates:
+  health_contract: PASS
+  reconciliation_contract: PASS
+  self_healing_safety: PASS
+  drift_policy: PASS
+  upgrade_awareness: PASS
+  live_health: NOT_EXECUTED
+  live_reconciliation: NOT_EXECUTED
+  live_self_healing: NOT_EXECUTED
+  live_drift_remediation: NOT_EXECUTED
+
+certification:
+  production_ready: false
+  reason: >
+    The control contracts and local policy checks exist, but real staging
+    runtime evidence is still required before production certification.

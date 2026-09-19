@@ -1,0 +1,15 @@
+extension_id: "customer.notification-after-sale"
+version: "1.0.0"
+owner: customer
+type: n8n_workflow
+compatibility:
+  runtime: ">=0.12.8 <0.13.0"
+  domain: "tunisia-dtc@1"
+permissions:
+  - notifications.send
+workflows:
+  - "customer/notification-after-sale"
+provenance:
+  source: n8n
+  createdBy: customer-operator
+lifecycle: DRAFT

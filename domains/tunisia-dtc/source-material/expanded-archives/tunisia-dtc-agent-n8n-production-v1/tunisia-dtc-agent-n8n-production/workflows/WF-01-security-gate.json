@@ -1,0 +1,76 @@
+{
+  "name": "WF-01 \u2014 Security Gate",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const text=String(x.text??\"\"); const flags=[];\nif(text.length>12000) flags.push(\"input_too_large\");\nfor(const p of [/ignore\\\\s+(all|previous|prior)\\\\s+instructions/i,/reveal\\\\s+(the\\\\s+)?system\\\\s+prompt/i,/show\\\\s+(me\\\\s+)?(your|the)\\\\s+api\\\\s+key/i,/developer\\\\s+message/i]) if(p.test(text)) flags.push(\"prompt_injection\");\nreturn [{json:{...x,security:{status:flags.length?\"review\":\"clear\",flags}}}];"
+      },
+      "id": "validate-/-prepare",
+      "name": "Validate / Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,workflow_result:\"ok\"}}];"
+      },
+      "id": "return-contract",
+      "name": "Return Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        620,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate / Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate / Prepare": {
+      "main": [
+        [
+          {
+            "node": "Return Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf01",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

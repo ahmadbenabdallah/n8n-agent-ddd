@@ -1,0 +1,21 @@
+version: "0.13.1"
+name: runtime-config
+classes:
+  infrastructure:
+    examples: [N8N_BASE_URL, WEBHOOK_URL, DB_POSTGRESDB_HOST]
+    owner: deployment
+  secrets:
+    examples: [N8N_ENCRYPTION_KEY, DB_POSTGRESDB_PASSWORD]
+    owner: secret_provider
+  application:
+    examples: [currency, cod_enabled, support_hours]
+    owner: operator
+    persistence: postgresql
+  workflow:
+    examples: [workflow_activation, extension_metadata]
+    owner: operator
+    persistence: n8n
+validation:
+  fail_on_missing_required: true
+  fail_on_secret_in_git: true
+  fail_on_unpinned_n8n_image: true

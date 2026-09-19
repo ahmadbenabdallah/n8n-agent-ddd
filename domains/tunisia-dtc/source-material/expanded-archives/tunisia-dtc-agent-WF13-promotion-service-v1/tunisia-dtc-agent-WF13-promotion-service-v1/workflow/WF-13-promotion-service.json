@@ -1,0 +1,317 @@
+{
+  "name": "WF-13 — Promotion Service",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const a=x.authorized_action||{}; const allowed=['promotion','pricing','cart_add','checkout_start','checkout_confirm']; const ok=x.identity&&a&&allowed.includes(a.action||x.intent); return [{json:{...x,_wf13_input_valid:Boolean(ok)}}];"
+      },
+      "id": "validate",
+      "name": "Validate Promotion Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf13_input_valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "ifvalid",
+      "name": "Promotion Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{service:'promotion',status:'rejected',reason:'invalid_input',execution_allowed:false}}];"
+      },
+      "id": "reject",
+      "name": "Reject Invalid Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const a=$json.authorized_action||{}, i=$json.identity||{}; const action=a.action||$json.intent; const readOnly=['promotion','pricing'].includes(action); const identityOk=readOnly ? true : ['channel_linked','order_verified','high_assurance'].includes(i.identity_level); const contractOk=a.execution_allowed===true || readOnly; return [{json:{...$json,_wf13_auth_ok:identityOk&&contractOk,_wf13_read_only:readOnly,_wf13_action:action}}];"
+      },
+      "id": "auth",
+      "name": "Check Promotion Authorization",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf13_auth_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "ifauth",
+      "name": "Authorization Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -580,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{service:'promotion',status:'rejected',reason:'authorization_failed',execution_allowed:false}}];"
+      },
+      "id": "rejectauth",
+      "name": "Reject Unauthorized Promotion Operation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -360,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const a=$json.authorized_action||{}, p=a.parameters||{}; const ctx=$json.promotion_context||{}; const now=Date.now(); const codes=Array.isArray(p.promo_codes)?p.promo_codes:[p.promo_code].filter(Boolean); const cart=p.cart||ctx.cart||{}; const items=Array.isArray(cart.lines)?cart.lines:[]; const total=Number(cart.subtotal||0); const customer=ctx.customer||{}; const candidates=Array.isArray(ctx.promotions)?ctx.promotions:[]; return [{json:{...$json,_wf13_eval:{codes,cart,items,total,customer,candidates,now},_wf13_parameters_valid:true}}];"
+      },
+      "id": "prepare",
+      "name": "Prepare Promotion Evaluation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -360,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const e=$json._wf13_eval; const results=[]; for(const p of e.candidates){let reasons=[]; let eligible=true; if(p.active===false) {eligible=false;reasons.push('inactive')} if(p.starts_at&&Date.parse(p.starts_at)>e.now){eligible=false;reasons.push('not_started')} if(p.ends_at&&Date.parse(p.ends_at)<e.now){eligible=false;reasons.push('expired')} if(p.min_order_value!=null&&e.total<Number(p.min_order_value)){eligible=false;reasons.push('minimum_not_met')} if(Array.isArray(p.allowed_customer_refs)&&p.allowed_customer_refs.length&&!p.allowed_customer_refs.includes(e.customer.customer_ref)){eligible=false;reasons.push('customer_not_eligible')} if(p.usage_limit_remaining!=null&&Number(p.usage_limit_remaining)<=0){eligible=false;reasons.push('usage_limit_reached')} results.push({promotion_id:p.id,code:p.code||null,eligible,reasons,discount_type:p.discount_type||null,discount_value:p.discount_value??null,priority:Number(p.priority||0),exclusive:Boolean(p.exclusive)});} return [{json:{...$json,_wf13_results:results}}];"
+      },
+      "id": "eligibility",
+      "name": "Evaluate Eligibility",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rs=$json._wf13_results||[]; const eligible=rs.filter(r=>r.eligible); const exclusives=eligible.filter(r=>r.exclusive); let applicable=exclusives.length?exclusives:eligible; applicable=[...applicable].sort((a,b)=>b.priority-a.priority); const stacking=$json.promotion_context?.stacking_policy||'exclusive_by_default'; if(stacking==='one_only'&&applicable.length>1) applicable=applicable.slice(0,1); return [{json:{...$json,_wf13_applicable:applicable,_wf13_stacking_policy:stacking}}];"
+      },
+      "id": "stack",
+      "name": "Apply Stacking and Exclusivity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const applicable=$json._wf13_applicable||[]; const cart=$json._wf13_eval?.cart||{}; let discount=0; for(const p of applicable){const v=Number(p.discount_value||0); if(p.discount_type==='percentage') discount += Number(cart.subtotal||0)*v/100; else if(p.discount_type==='fixed') discount += v;} const subtotal=Number(cart.subtotal||0); const bounded=Math.max(0,Math.min(discount,subtotal)); return [{json:{...$json,_wf13_quote:{promotion_ids:applicable.map(x=>x.promotion_id),codes:applicable.map(x=>x.code).filter(Boolean),discount:bounded,subtotal,total_after_discount:Math.max(0,subtotal-bounded),currency:cart.currency||'TND'}}}];"
+      },
+      "id": "quote",
+      "name": "Build Promotion Quote",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const action=x._wf13_action; const live=x.promotion_context?.live_source_result; if(['cart_add','checkout_start','checkout_confirm'].includes(action) && !live) return [{json:{...x,status:'awaiting_live_promotion_check',execution_allowed:false,verification_status:'not_run'}}]; if(live && live.verified!==true) return [{json:{...x,status:'failed',execution_allowed:false,verification_status:'failed'}}]; return [{json:{...x,status:'ready',execution_allowed:false,verification_status:live?'verified':'static_only'}}];"
+      },
+      "id": "live",
+      "name": "Require Live Validation for Transactional Use",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const quote=x._wf13_quote||{}; return [{json:{service:'promotion',status:x.status||'ready',action:x._wf13_action,execution_allowed:false,verification_status:x.verification_status||'static_only',quote:{promotion_ids:quote.promotion_ids||[],codes:quote.codes||[],discount:quote.discount||0,total_after_discount:quote.total_after_discount??null,currency:quote.currency||'TND'},eligibility:x._wf13_results||[],note:'Promotion Service proposes/validates promotion facts; checkout/commerce remains the final source of truth.'}}];"
+      },
+      "id": "contract",
+      "name": "Build Promotion Service Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Promotion Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Promotion Input": {
+      "main": [
+        [
+          {
+            "node": "Promotion Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Promotion Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Check Promotion Authorization",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Promotion Authorization": {
+      "main": [
+        [
+          {
+            "node": "Authorization Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorization Valid?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Promotion Evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Unauthorized Promotion Operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Promotion Evaluation": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Eligibility",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Eligibility": {
+      "main": [
+        [
+          {
+            "node": "Apply Stacking and Exclusivity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Stacking and Exclusivity": {
+      "main": [
+        [
+          {
+            "node": "Build Promotion Quote",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Promotion Quote": {
+      "main": [
+        [
+          {
+            "node": "Require Live Validation for Transactional Use",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Require Live Validation for Transactional Use": {
+      "main": [
+        [
+          {
+            "node": "Build Promotion Service Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf13-promotion-service-v1"
+}

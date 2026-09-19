@@ -1,0 +1,22 @@
+domain_pack:
+  required:
+    - domain.yaml
+    - domain-project.yaml
+    - business
+    - entities
+    - aggregates
+    - value-objects
+    - commands
+    - events
+    - policies
+    - projections
+    - workflows
+    - knowledge
+    - adapters
+    - tests
+  identity:
+    stable_domain_id: required
+  isolation:
+    cross_domain_access: deny_by_default
+  deployment:
+    provider_neutral: true

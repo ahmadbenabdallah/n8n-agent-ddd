@@ -1,0 +1,219 @@
+{
+  "name": "WF-12 Cart Service v2 - WooCommerce Validated Cart",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst ops=['cart_view','cart_add','cart_remove','cart_update','cart_clear'];\nif(!ops.includes(x.operation)) throw new Error('Invalid cart operation');\nif(!x.request_id || !x.conversation_id || !x.customer_id) throw new Error('Missing cart identity');\nif(!['sales','cart_validation','checkout_validation'].includes(x.caller_context?.purpose)) throw new Error('Invalid caller purpose');\n\nconst itemOps=['cart_add','cart_remove','cart_update'];\nif(itemOps.includes(x.operation) && (!x.product_id || (x.quantity===undefined && x.operation!=='cart_remove'))) {\n  throw new Error('Missing product/quantity');\n}\nif(x.quantity!==undefined && (!Number.isInteger(Number(x.quantity)) || Number(x.quantity)<0 || Number(x.quantity)>99)) {\n  throw new Error('Invalid quantity');\n}\nreturn [{json:{\n  request_id:String(x.request_id),\n  conversation_id:String(x.conversation_id),\n  customer_id:String(x.customer_id),\n  operation:x.operation,\n  caller_context:x.caller_context,\n  product_id:x.product_id ?? null,\n  variation_id:x.variation_id ?? null,\n  quantity:x.quantity===undefined?null:Number(x.quantity),\n  cart:x.cart ?? null,\n  idempotency_key:x.idempotency_key ?? `${x.customer_id}:${x.conversation_id}:${x.operation}:${x.product_id??'cart'}:${x.quantity??''}`\n}}];"
+      },
+      "id": "validate",
+      "name": "Validate Cart Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst readOnly=x.operation==='cart_view';\nconst mutation=x.operation!=='cart_view';\nreturn [{json:{\n ...x,\n authorization_required:mutation,\n live_product_validation:true,\n stale_cart_check:true,\n execution_mode:readOnly?'read':'validated_mutation'\n}}];"
+      },
+      "id": "policy",
+      "name": "Cart Policy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nif(x.authorization_required && x.caller_context?.authorized !== true) {\n  return [{json:{...x,rejected:true,rejection_reason:'cart_mutation_not_authorized'}}];\n}\nreturn [{json:{...x,rejected:false}}];"
+      },
+      "id": "auth",
+      "name": "Mutation Authorization",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.rejected}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if-rejected",
+      "name": "Rejected?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        860,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{\n success:false,\n request_id:$json.request_id,\n operation:$json.operation,\n error_code:$json.rejection_reason,\n execution_allowed:false\n}}];"
+      },
+      "id": "reject",
+      "name": "Reject Mutation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\n// WF-12 deliberately delegates live product/stock validation to WF-11\n// and persistence/execution to WF-20. This node creates the bounded contract.\nlet gateway_operation='cart_view';\nif(x.operation==='cart_add') gateway_operation='cart_add';\nif(x.operation==='cart_remove') gateway_operation='cart_remove';\nif(x.operation==='cart_update') gateway_operation='cart_update';\nif(x.operation==='cart_clear') gateway_operation='cart_clear';\n\nreturn [{json:{...x,gateway_operation}}];"
+      },
+      "id": "map",
+      "name": "Build WF-20 Cart Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "REPLACE_WITH_WF20_WORKFLOW_ID",
+        "options": {}
+      },
+      "id": "wf20",
+      "name": "WF-20 WooCommerce Gateway",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$json;\nif(r.error || r.success===false) {\n  return [{json:{\n    success:false,\n    request_id:$node['Validate Cart Contract'].json.request_id,\n    operation:$node['Validate Cart Contract'].json.operation,\n    error_code:r.error_code || 'cart_execution_failed',\n    execution_allowed:false\n  }}];\n}\nconst cleanCart=r.cart || r.data?.cart || null;\nreturn [{json:{\n success:true,\n request_id:$node['Validate Cart Contract'].json.request_id,\n conversation_id:$node['Validate Cart Contract'].json.conversation_id,\n customer_id:$node['Validate Cart Contract'].json.customer_id,\n operation:$node['Validate Cart Contract'].json.operation,\n cart:cleanCart,\n source:'woocommerce',\n verified_at:new Date().toISOString(),\n execution_allowed:$node['Validate Cart Contract'].json.authorization_required ? true : false\n}}];"
+      },
+      "id": "normalize",
+      "name": "Normalize + Verify Cart",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        120
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Cart Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Cart Contract": {
+      "main": [
+        [
+          {
+            "node": "Cart Policy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cart Policy": {
+      "main": [
+        [
+          {
+            "node": "Mutation Authorization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mutation Authorization": {
+      "main": [
+        [
+          {
+            "node": "Rejected?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rejected?": {
+      "main": [
+        [
+          {
+            "node": "Reject Mutation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build WF-20 Cart Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build WF-20 Cart Request": {
+      "main": [
+        [
+          {
+            "node": "WF-20 WooCommerce Gateway",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF-20 WooCommerce Gateway": {
+      "main": [
+        [
+          {
+            "node": "Normalize + Verify Cart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

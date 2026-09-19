@@ -1,0 +1,58 @@
+phase:
+  id: "0.15.6"
+  name: "Backup / Restore Execution"
+  status: "EVIDENCE_FOUNDATION"
+  purpose: "Execute and capture an isolated staging disaster-recovery restore drill."
+
+scope:
+  environment: "staging"
+  production_restore: false
+  restore_target: "isolated"
+  external_commerce_mutations: false
+  required_controls:
+    - "ALLOW_LIVE_DR=YES"
+    - "RESTORE_TARGET_ISOLATED=YES"
+    - "CONFIRM_DR=YES"
+
+exercise:
+  sequence:
+    - "preflight"
+    - "create_synthetic_fixture"
+    - "create_postgres_backup"
+    - "verify_backup_checksum"
+    - "capture_runtime_state"
+    - "provision_isolated_restore_target"
+    - "restore_postgres"
+    - "restore_n8n_persistent_state_provider_specific"
+    - "inject_same_persistent_n8n_encryption_key"
+    - "start_restored_runtime"
+    - "verify_schema_project_and_workflows"
+    - "verify_durable_fixture"
+    - "run_reconciliation"
+    - "run_smoke_tests"
+    - "record_rpo_rto"
+    - "validate_evidence"
+
+evidence_gates:
+  DR:
+    description: "Backup can be restored into an isolated staging runtime and durable state is recoverable."
+    status: "NOT_EXECUTED"
+  RPO:
+    description: "Measured data-loss window for the exercised recovery point."
+    status: "NOT_EXECUTED"
+  RTO:
+    description: "Measured time from restore initiation to verified runtime readiness."
+    status: "NOT_EXECUTED"
+
+safety:
+  no_secrets_in_evidence: true
+  no_production_restore: true
+  no_unknown_commerce_replay: true
+  no_payment_replay: true
+  isolated_restore_required: true
+  same_n8n_encryption_key_required: true
+  evidence_must_be_runtime_captured: true
+
+pass_rule:
+  - "Do not mark DR/RPO/RTO successful without captured staging evidence."
+  - "A script or contract passing locally is not runtime evidence."

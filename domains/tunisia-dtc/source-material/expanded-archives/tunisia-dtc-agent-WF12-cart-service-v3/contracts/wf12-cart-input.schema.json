@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-12 Cart Service Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation",
+    "customer_id",
+    "channel"
+  ],
+  "properties": {
+    "operation": {
+      "type": "string",
+      "enum": [
+        "cart_view",
+        "cart_add",
+        "cart_update",
+        "cart_remove",
+        "cart_clear"
+      ]
+    },
+    "customer_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "facebook",
+        "whatsapp",
+        "instagram",
+        "internal"
+      ]
+    },
+    "store_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "product_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    },
+    "variation_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    },
+    "sku": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    },
+    "quantity": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 99
+    },
+    "idempotency_key": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 256
+    },
+    "action_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 256
+    }
+  }
+}

@@ -1,0 +1,12 @@
+version: "0.14.1"
+evidence:
+  forbidden_fields:
+    - N8N_API_KEY
+    - N8N_ENCRYPTION_KEY
+    - DB_POSTGRESDB_PASSWORD
+    - access_token
+    - authorization
+    - cookie
+  storage: artifacts/runtime-evidence
+  format: jsonl
+  retention: deployment_policy

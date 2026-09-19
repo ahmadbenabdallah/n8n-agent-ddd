@@ -1,0 +1,6 @@
+external_contract:
+  id: llm
+  owner: WF-09
+  role: proposal_only
+  output: {structured: true, schema_versioned: true}
+  restrictions: {direct_commerce_execution: false, authorization: false, credential_access: false, final_price_authority: false, stock_authority: false}

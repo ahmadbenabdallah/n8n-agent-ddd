@@ -1,0 +1,16 @@
+{
+  "workflow": "WF-12 Cart Service",
+  "version": "2.0",
+  "commerce_source": "WooCommerce",
+  "files": [
+    "n8n/WF-12-cart-service-v2.json",
+    "tests/test-matrix.md",
+    "docs/06-wiring.md",
+    "docs/04-security.md",
+    "docs/05-stale-cart.md",
+    "docs/02-source-of-truth.md",
+    "docs/03-store-api-design.md",
+    "docs/01-contract.md",
+    "docs/README.md"
+  ]
+}

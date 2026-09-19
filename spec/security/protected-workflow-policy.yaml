@@ -1,0 +1,7 @@
+version: "0.13.6"
+rules:
+  protected_workflows_are_not_operator_editable: true
+  operator_cannot_set_execution_allowed: true
+  mcp_cannot_bypass_wf10: true
+  n8n_ui_cannot_bypass_wf10: true
+  protected_edits_require_release: true

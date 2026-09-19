@@ -1,0 +1,23 @@
+{
+  "name": "tunisia-dtc-agent-WF19-maintenance-monitoring-v3",
+  "version": "3.0.0",
+  "status": "integration-ready scaffold",
+  "purpose": "Operational monitoring, maintenance and recovery coordination",
+  "authorization": "never-authorizes-commerce",
+  "next": "production integration / final WF-20-WF19 wiring",
+  "files": [
+    "contracts/wf19-maintenance-input.schema.json",
+    "contracts/wf19-maintenance-output.schema.json",
+    "n8n/WF-19-maintenance-monitoring-v3.json",
+    "database/006_maintenance_runs.sql",
+    "tests/regression.md",
+    "docs/06-wiring.md",
+    "docs/04-cleanup-retention.md",
+    "docs/03-recovery.md",
+    "docs/01-monitoring-model.md",
+    "docs/02-alert-severity.md",
+    "docs/05-security.md",
+    "docs/README.md",
+    "docs/07-production-gate.md"
+  ]
+}

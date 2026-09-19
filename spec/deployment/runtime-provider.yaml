@@ -1,0 +1,44 @@
+version: "0.13.1"
+name: runtime-provider-contract
+principles:
+  - provider-neutral
+  - docker-first
+  - runtime-config-is-deployment-owned
+  - durable-state-is-externalizable
+  - n8n-is-runtime-and-operator-surface
+providers:
+  local:
+    mode: local_all
+    runtime: docker
+    postgres: docker
+  vps:
+    mode: n8n_remote
+    runtime: docker
+    postgres: external
+  vps_all:
+    mode: vps_all
+    runtime: docker
+    postgres: docker
+  railway:
+    mode: managed_provider
+    runtime: container
+    postgres: managed_or_external
+required_inputs:
+  - N8N_BASE_URL
+  - N8N_ENCRYPTION_KEY
+  - DB_POSTGRESDB_HOST
+  - DB_POSTGRESDB_DATABASE
+  - DB_POSTGRESDB_USER
+  - DB_POSTGRESDB_PASSWORD
+optional_inputs:
+  - N8N_BASIC_AUTH_ACTIVE
+  - N8N_EDITOR_BASE_URL
+  - N8N_SECURE_COOKIE
+  - WEBHOOK_URL
+  - N8N_LOG_LEVEL
+  - N8N_DIAGNOSTICS_ENABLED
+forbidden_in_git:
+  - credentials
+  - encryption_keys
+  - database_passwords
+  - api_tokens

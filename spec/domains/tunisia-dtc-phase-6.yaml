@@ -1,0 +1,20 @@
+phase:
+  id: 6
+  name: Tunisia DTC Domain
+  version: "2026.09.1"
+  status: foundation-complete
+  outputs:
+    - domain_model
+    - business_rules
+    - aggregates
+    - value_objects
+    - commands
+    - events
+    - policies
+    - projections
+    - workflow_specs
+    - domain_contract
+    - invariant_tests
+  next:
+    phase: 7
+    focus: durable_supabase_state_and_executable_n8n_workflows

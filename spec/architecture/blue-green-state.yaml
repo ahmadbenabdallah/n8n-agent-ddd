@@ -1,0 +1,19 @@
+version: 1
+slots:
+  blue:
+    role: previous_or_active
+  green:
+    role: candidate_or_active
+state:
+  database: shared_durable_state
+  domain_state: never_slot_local
+  idempotency: shared_durable_state
+  audit: shared_durable_state
+  reconciliation: shared_durable_state
+  workflow_version: release_managed
+rules:
+  - both_slots_must_be_compatible_with_current_schema_during_transition
+  - only_one_slot_receives_new_public_traffic_after_switch
+  - active_executions_are_drained_before_slot_retirement
+  - no_slot_may_own_unique_business_state
+  - unknown_external_outcomes_are_reconciled_before_retry

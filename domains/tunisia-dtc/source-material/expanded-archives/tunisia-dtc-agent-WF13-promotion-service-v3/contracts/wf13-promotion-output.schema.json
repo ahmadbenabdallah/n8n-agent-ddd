@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF-13 Verified Promotion Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "success",
+    "operation",
+    "commerce_status",
+    "verified"
+  ],
+  "properties": {
+    "success": {
+      "type": "boolean"
+    },
+    "operation": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "commerce_status": {
+      "type": "string"
+    },
+    "verified": {
+      "type": "boolean"
+    },
+    "promotion": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "error": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  }
+}

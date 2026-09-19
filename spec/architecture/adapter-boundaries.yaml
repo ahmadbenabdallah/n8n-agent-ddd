@@ -1,0 +1,72 @@
+version: "2026.09.10"
+principle: "Domain logic is portable; external channels and commerce platforms are adapters."
+
+layers:
+  domain:
+    owns:
+      - customer
+      - conversation
+      - cart
+      - order
+      - promotion
+      - payment
+      - escalation
+      - authorization
+      - business_rules
+      - domain_events
+    must_not_depend_on:
+      - whatsapp
+      - messenger
+      - telegram
+      - shopify
+      - woocommerce
+      - prestashop
+      - vendor_specific_api
+
+  application:
+    owns:
+      - use_cases
+      - command_handlers
+      - policies
+      - orchestration_contracts
+      - idempotency
+      - authorization_flow
+      - verification_flow
+    invokes_ports:
+      - channel_port
+      - commerce_port
+      - identity_port
+      - knowledge_port
+      - payment_port
+      - notification_port
+
+  infrastructure:
+    owns:
+      channels:
+        - meta_messenger
+        - whatsapp
+        - telegram
+        - webchat
+        - sms
+      commerce:
+        - woocommerce
+        - shopify
+        - prestashop
+        - custom_commerce
+      providers:
+        - llm
+        - vector_store
+        - payment_provider
+        - email
+
+  runtime:
+    owns:
+      - n8n_workflow_adapters
+      - secrets
+      - queues
+      - observability
+      - deployment
+
+dependency_rule:
+  allowed: "infrastructure -> application -> domain"
+  forbidden: "domain -> infrastructure"

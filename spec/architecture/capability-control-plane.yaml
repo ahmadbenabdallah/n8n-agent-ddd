@@ -1,0 +1,16 @@
+version: 1
+model:
+  skills: procedural_knowledge
+  tools: executable_capabilities
+  plugins: packaged_capabilities
+  mcp: agent_control_interface
+  policies: access_constraints
+  agents: reasoning_and_orchestration
+  n8n: runtime_orchestration
+rules:
+  - discovery_never_implies_authorization
+  - mcp_never_bypasses_wf10
+  - plugins_must_declare_capabilities_and_permissions
+  - tools_must_have_policy_ids
+  - skill_selection_is_not_permission_grant
+  - commerce_mutations_require_wf10_and_wf20

@@ -1,0 +1,844 @@
+{
+  "name": "WF-20 WooCommerce Gateway v3 - Central Commerce Boundary",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst ops=[\n 'get_product','get_products','get_variation',\n 'get_order','create_cod_order','update_order_status',\n 'coupon_validate','cart_view','cart_add','cart_remove','cart_update','cart_clear',\n 'checkout_validate','transaction_preflight','health'\n];\nif(!ops.includes(x.gateway_operation)) throw new Error('WF-20 operation not allowed');\nif(!x.request_id) throw new Error('request_id required');\n\nconst idOps=['get_product','get_order','get_variation','update_order_status'];\nif(idOps.includes(x.gateway_operation) && x.gateway_operation!=='health' && x.gateway_operation!=='get_product' && x.gateway_operation!=='get_variation' && !x.order_id && x.gateway_operation==='get_order') throw new Error('order_id required');\n\nif(['cart_add','cart_remove','cart_update','cart_clear','cart_view','checkout_validate'].includes(x.gateway_operation) && !x.cart_reference) {\n  throw new Error('cart_reference required');\n}\n\nreturn [{json:{\n  ...x,\n  request_id:String(x.request_id),\n  gateway_version:'3.0',\n  received_at:new Date().toISOString()\n}}];"
+      },
+      "id": "validate",
+      "name": "Validate Gateway Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const op=$json.gateway_operation;\nlet route='unsupported';\nif(['get_product','get_products','get_variation'].includes(op)) route='native_product';\nif(['get_order','create_cod_order','update_order_status'].includes(op)) route='native_order';\nif(op==='coupon_validate') route='rest_coupon';\nif(['cart_view','cart_add','cart_remove','cart_update','cart_clear'].includes(op)) route='store_cart';\nif(op==='checkout_validate') route='store_checkout';\nif(op==='transaction_preflight') route='transaction_preflight';\nif(op==='health') route='health';\nreturn [{json:{...$json,route}}];"
+      },
+      "id": "route",
+      "name": "Operation Router",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.route}}",
+              "operation": "equal",
+              "value2": "native_product"
+            }
+          ]
+        }
+      },
+      "id": "if-product",
+      "name": "Product Route?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        650,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.route}}",
+              "operation": "equal",
+              "value2": "native_order"
+            }
+          ]
+        }
+      },
+      "id": "if-order",
+      "name": "Order Route?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        650,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.route}}",
+              "operation": "equal",
+              "value2": "rest_coupon"
+            }
+          ]
+        }
+      },
+      "id": "if-coupon",
+      "name": "Coupon Route?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        650,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.route}}",
+              "operation": "equal",
+              "value2": "store_cart"
+            }
+          ]
+        }
+      },
+      "id": "if-cart",
+      "name": "Cart Route?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        650,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.route}}",
+              "operation": "equal",
+              "value2": "store_checkout"
+            }
+          ]
+        }
+      },
+      "id": "if-checkout",
+      "name": "Checkout Route?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        650,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.route}}",
+              "operation": "equal",
+              "value2": "transaction_preflight"
+            }
+          ]
+        }
+      },
+      "id": "if-preflight",
+      "name": "Transaction Preflight?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        650,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.route}}",
+              "operation": "equal",
+              "value2": "health"
+            }
+          ]
+        }
+      },
+      "id": "if-health",
+      "name": "Health Route?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        650,
+        1080
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "product",
+        "operation": "get",
+        "productId": "={{$json.product_id}}"
+      },
+      "id": "wc-product",
+      "name": "WooCommerce Native - Get Product",
+      "type": "n8n-nodes-base.woocommerce",
+      "typeVersion": 1,
+      "position": [
+        930,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "product",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": "={{$json.per_page || 20}}"
+      },
+      "id": "wc-products",
+      "name": "WooCommerce Native - Get Products",
+      "type": "n8n-nodes-base.woocommerce",
+      "typeVersion": 1,
+      "position": [
+        930,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "order",
+        "operation": "get",
+        "orderId": "={{$json.order_id}}"
+      },
+      "id": "wc-order-get",
+      "name": "WooCommerce Native - Get Order",
+      "type": "n8n-nodes-base.woocommerce",
+      "typeVersion": 1,
+      "position": [
+        930,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "order",
+        "operation": "create",
+        "jsonParameters": true,
+        "additionalFields": {}
+      },
+      "id": "wc-order-create",
+      "name": "WooCommerce Native - Create COD Order",
+      "type": "n8n-nodes-base.woocommerce",
+      "typeVersion": 1,
+      "position": [
+        930,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "order",
+        "operation": "update",
+        "orderId": "={{$json.order_id}}",
+        "jsonParameters": true,
+        "additionalFields": {}
+      },
+      "id": "wc-order-update",
+      "name": "WooCommerce Native - Update Order",
+      "type": "n8n-nodes-base.woocommerce",
+      "typeVersion": 1,
+      "position": [
+        930,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/v3/coupons'}}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "code",
+              "value": "={{$json.code}}",
+              "type": "string"
+            }
+          ]
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "options": {}
+      },
+      "id": "coupon",
+      "name": "WooCommerce REST - Coupon Lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        930,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/store/v1/cart'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cart-Token",
+              "value": "={{$json.cart_token}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cart-view",
+      "name": "Store API - Get Cart",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        930,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/store/v1/cart/add-item'}}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{$json.product_id}}",
+              "type": "string"
+            },
+            {
+              "name": "quantity",
+              "value": "={{$json.quantity}}",
+              "type": "string"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cart-Token",
+              "value": "={{$json.cart_token}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cart-add",
+      "name": "Store API - Add Item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        930,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/store/v1/cart/remove-item'}}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{$json.cart_item_key}}",
+              "type": "string"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cart-Token",
+              "value": "={{$json.cart_token}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cart-remove",
+      "name": "Store API - Remove Item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        930,
+        760
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/store/v1/cart/update-item'}}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{$json.cart_item_key}}",
+              "type": "string"
+            },
+            {
+              "name": "quantity",
+              "value": "={{$json.quantity}}",
+              "type": "string"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cart-Token",
+              "value": "={{$json.cart_token}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cart-update",
+      "name": "Store API - Update Item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        930,
+        860
+      ]
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/store/v1/cart/items'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cart-Token",
+              "value": "={{$json.cart_token}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cart-clear",
+      "name": "Store API - Clear Cart",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        930,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/store/v1/checkout'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cart-Token",
+              "value": "={{$json.cart_token}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "checkout-get",
+      "name": "Store API - Get Checkout",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        930,
+        1060
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/v3'}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "health",
+      "name": "WooCommerce REST Health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        930,
+        1160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst original=$items('Validate Gateway Contract',0,0)[0].json;\nconst op=original.gateway_operation;\nif(x.error && !x.statusCode) {\n  return [{json:{success:false,request_id:original.request_id,gateway_operation:op,\n    error_code:'woocommerce_gateway_error',error_message:String(x.error)}}];\n}\nlet data=x;\nif(Array.isArray(x.body)) data=x.body;\nelse if(x.body!==undefined) data=x.body;\n\nif(op==='health') return [{json:{success:true,request_id:original.request_id,gateway_operation:op,healthy:true}}];\n\nif(op==='coupon_validate'){\n const coupon=Array.isArray(data)?data[0]:data;\n if(!coupon || !coupon.id) return [{json:{success:true,request_id:original.request_id,gateway_operation:op,\n   coupon_validation:{code:original.code,eligible:false,reason_code:'coupon_not_found'}}}];\n return [{json:{success:true,request_id:original.request_id,gateway_operation:op,\n   coupon_validation:{code:coupon.code,eligible:true,discount_type:coupon.discount_type,\n   discount_amount:coupon.amount,free_shipping:coupon.free_shipping===true,\n   reason_code:'coupon_found',raw_rules:{\n     minimum_amount:coupon.minimum_amount,maximum_amount:coupon.maximum_amount,\n     usage_limit:coupon.usage_limit,usage_limit_per_user:coupon.usage_limit_per_user,\n     individual_use:coupon.individual_use,product_ids:coupon.product_ids,\n     excluded_product_ids:coupon.excluded_product_ids,product_categories:coupon.product_categories,\n     excluded_product_categories:coupon.excluded_product_categories,email_restrictions:coupon.email_restrictions,\n     date_expires:coupon.date_expires\n   }}}}];\n}\nif(op==='get_product'||op==='get_variation') {\n return [{json:{success:true,request_id:original.request_id,gateway_operation:op,product:data}}];\n}\nif(op==='get_products') return [{json:{success:true,request_id:original.request_id,gateway_operation:op,products:Array.isArray(data)?data:[]}}];\nif(op==='get_order') return [{json:{success:true,request_id:original.request_id,gateway_operation:op,order:data}}];\nif(op==='create_cod_order') return [{json:{success:true,request_id:original.request_id,gateway_operation:op,order:data}}];\nif(op==='update_order_status') return [{json:{success:true,request_id:original.request_id,gateway_operation:op,order:data}}];\nif(op.startsWith('cart_')) return [{json:{success:true,request_id:original.request_id,gateway_operation:op,cart:data}}];\nif(op==='checkout_validate') return [{json:{success:true,request_id:original.request_id,gateway_operation:op,\n checkout_validation:{valid:true,cart:data}}}];\nif(op==='transaction_preflight') return [{json:{success:true,request_id:original.request_id,gateway_operation:op,\n valid:true,validation:data}}];\nreturn [{json:{success:false,request_id:original.request_id,error_code:'unsupported_normalization'}}];"
+      },
+      "id": "normalize",
+      "name": "Normalize Gateway Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$json;\nif(r.success!==true) return [{json:r}];\nconst op=r.gateway_operation;\nif(op==='create_cod_order' && r.order?.set_paid===true) {\n  return [{json:{...r,success:false,error_code:'invalid_paid_state_for_cod',order:null}}];\n}\nreturn [{json:{...r,verified_gateway:true}}];"
+      },
+      "id": "guard",
+      "name": "Gateway Semantic Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1530,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Gateway Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Gateway Contract": {
+      "main": [
+        [
+          {
+            "node": "Operation Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Operation Router": {
+      "main": [
+        [
+          {
+            "node": "Product Route?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product Route?": {
+      "main": [
+        [
+          {
+            "node": "WooCommerce Native - Get Product",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Order Route?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order Route?": {
+      "main": [
+        [
+          {
+            "node": "WooCommerce Native - Get Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Coupon Route?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Coupon Route?": {
+      "main": [
+        [
+          {
+            "node": "WooCommerce REST - Coupon Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cart Route?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cart Route?": {
+      "main": [
+        [
+          {
+            "node": "Store API - Get Cart",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Checkout Route?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checkout Route?": {
+      "main": [
+        [
+          {
+            "node": "Store API - Get Checkout",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Transaction Preflight?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transaction Preflight?": {
+      "main": [
+        [
+          {
+            "node": "Store API - Get Checkout",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Health Route?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Health Route?": {
+      "main": [
+        [
+          {
+            "node": "WooCommerce REST Health",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WooCommerce REST Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce Native - Get Product": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce Native - Get Products": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce Native - Get Order": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce Native - Create COD Order": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce Native - Update Order": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce REST - Coupon Lookup": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store API - Get Cart": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store API - Add Item": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store API - Remove Item": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store API - Update Item": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store API - Clear Cart": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store API - Get Checkout": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce REST Health": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gateway Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Gateway Result": {
+      "main": [
+        [
+          {
+            "node": "Gateway Semantic Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

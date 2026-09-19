@@ -1,0 +1,49 @@
+{
+  "type": "object",
+  "required": [
+    "channel",
+    "message_id",
+    "text"
+  ],
+  "properties": {
+    "channel": {
+      "type": "string"
+    },
+    "channel_user_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "page_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "message_id": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "language": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "script": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "register": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

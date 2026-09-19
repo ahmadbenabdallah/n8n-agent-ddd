@@ -1,0 +1,21 @@
+version: "2026.09.10"
+
+profiles:
+  messenger-woocommerce:
+    channel_adapter: meta_messenger
+    commerce_adapter: woocommerce
+
+  whatsapp-shopify:
+    channel_adapter: whatsapp
+    commerce_adapter: shopify
+
+  whatsapp-prestashop:
+    channel_adapter: whatsapp
+    commerce_adapter: prestashop
+
+  webchat-custom:
+    channel_adapter: webchat
+    commerce_adapter: custom
+
+principle:
+  "Changing a deployment profile changes adapters, not bounded-context business rules."

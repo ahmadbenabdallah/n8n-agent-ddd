@@ -1,0 +1,17 @@
+invariants:
+  - id: SUPA-001
+    rule: every_domain_table_has_rls_enabled
+  - id: SUPA-002
+    rule: anon_and_authenticated_have_no_direct_domain_table_access
+  - id: SUPA-003
+    rule: service_role_is_server_side_only
+  - id: SUPA-004
+    rule: security_definer_functions_have_empty_search_path
+  - id: SUPA-005
+    rule: sensitive_functions_have_explicit_execute_grants
+  - id: SUPA-006
+    rule: audit_events_are_append_only
+  - id: SUPA-007
+    rule: important_external_operations_have_unique_idempotency_keys
+  - id: SUPA-008
+    rule: database_security_tests_are_present

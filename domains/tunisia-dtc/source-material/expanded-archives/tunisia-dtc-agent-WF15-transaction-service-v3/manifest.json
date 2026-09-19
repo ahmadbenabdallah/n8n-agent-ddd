@@ -1,0 +1,28 @@
+{
+  "name": "tunisia-dtc-agent-WF15-transaction-service-v3",
+  "version": "3.0.0",
+  "status": "integration-ready scaffold",
+  "purpose": "Final authorized COD order creation with idempotency, fresh preflight and post-create verification",
+  "operation": "create_cod_order",
+  "payment_method": "cod",
+  "payment_status": "not_paid",
+  "authorization": "WF-10",
+  "commerce_boundary": "WF-20",
+  "next": "WF-16 response renderer",
+  "files": [
+    "contracts/wf15-transaction-output.schema.json",
+    "contracts/wf15-transaction-input.schema.json",
+    "n8n/WF-15-transaction-service-v3.json",
+    "database/003_commerce_idempotency.sql",
+    "tests/regression.md",
+    "docs/01-security-boundary.md",
+    "docs/03-cod-semantics.md",
+    "docs/07-wiring.md",
+    "docs/02-idempotency.md",
+    "docs/05-post-create-verification.md",
+    "docs/README.md",
+    "docs/08-production-gate.md",
+    "docs/06-outage-and-recovery.md",
+    "docs/04-fresh-preflight.md"
+  ]
+}

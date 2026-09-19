@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF17AuditEventV3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "timestamp",
+    "correlation_id",
+    "request_id",
+    "conversation_id",
+    "workflow",
+    "success"
+  ],
+  "properties": {
+    "event_id": {"type": "string", "minLength": 1},
+    "event_type": {"type": "string", "minLength": 1},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "correlation_id": {"type": "string", "minLength": 1},
+    "request_id": {"type": "string", "minLength": 1},
+    "conversation_id": {"type": "string", "minLength": 1},
+    "channel": {"type": "string"},
+    "workflow": {"type": "string"},
+    "workflow_version": {"type": "string"},
+    "customer_ref": {"type": "string"},
+    "identity_level": {"type": "integer", "minimum": 0, "maximum": 3},
+    "identity_state": {"type": "string"},
+    "order_scope_ref": {"type": "string"},
+    "intent": {"type": "string"},
+    "action_id": {"type": "string"},
+    "action_type": {"type": "string"},
+    "authorization_result": {"type": "string"},
+    "execution_state": {"type": "string"},
+    "commerce_operation_id": {"type": "string"},
+    "response_id": {"type": "string"},
+    "case_id": {"type": "string"},
+    "human_owner_state": {"type": "string"},
+    "language": {"type": "string"},
+    "script": {"type": "string"},
+    "risk_flags": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "source_fact_ids": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "success": {"type": "boolean"},
+    "duration_ms": {"type": "integer", "minimum": 0},
+    "retry_count": {"type": "integer", "minimum": 0},
+    "error_code": {"type": "string"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

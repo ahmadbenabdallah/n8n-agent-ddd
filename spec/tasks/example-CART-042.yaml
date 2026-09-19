@@ -1,0 +1,32 @@
+id: CART-042
+title: Add variation-aware cart update
+goal: Allow a verified customer to update a product variation and quantity through Messenger.
+lifecycle: SPECIFY
+domain: tunisia-dtc
+scope:
+  workflows: [WF-04, WF-09, WF-10, WF-12, WF-16, WF-20]
+requirements:
+  - variation_id must be validated against live commerce state
+  - quantity must be a positive integer
+  - customer must have cart scope
+  - action must pass WF-10 authorization
+  - result must be verified before rendering
+security:
+  - no arbitrary product IDs
+  - no arbitrary WooCommerce endpoint
+  - no client-supplied price
+  - no direct LLM commerce execution
+acceptance:
+  - cart update succeeds for an authorized valid variation
+  - stale variation is rejected
+  - unauthorized update is rejected
+  - timeout enters reconciliation
+  - renderer reports verified result only
+tests:
+  - cart_update_happy_path
+  - cart_update_invalid_variation
+  - cart_update_unauthorized
+  - cart_update_timeout_reconciliation
+dependencies: []
+worktree:
+  required: true

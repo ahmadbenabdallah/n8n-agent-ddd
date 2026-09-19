@@ -1,0 +1,10 @@
+version: "2026.09.1"
+model:
+  public_client_access: denied
+  server_runtime: service_role_or_private_connection
+  controls: [postgres_grants, rls, constraints, function_privileges, append_only_audit, idempotency]
+policy_rule:
+  direct_anon_authenticated_access: deny
+  authorization_source: WF-10
+  commerce_execution_source: WF-20
+  secrets_source: runtime_secret_store

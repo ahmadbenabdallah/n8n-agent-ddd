@@ -1,0 +1,9 @@
+version: "0.13.3"
+name: n8n-initialization-project-bootstrap
+goal: initialize a target n8n instance and idempotently resolve/create the domain project
+requirements:
+  - n8n_health_readiness
+  - operator_api_credential_or_mcp_admin_credential
+  - project_id_persisted
+  - no_business_state_in_n8n_project_metadata
+  - no_secret_material_in_git

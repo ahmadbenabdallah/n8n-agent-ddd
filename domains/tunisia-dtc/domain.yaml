@@ -1,0 +1,71 @@
+domain:
+  id: tunisia-dtc
+  name: Tunisia Direct-to-Consumer Commerce
+  version: "2026.09.1"
+  purpose: >
+    Autonomous Messenger sales and customer-support agent for a Tunisia DTC
+    WooCommerce business, with durable domain state in Supabase/Postgres and
+    n8n as the orchestration runtime.
+
+bounded_contexts:
+  - id: customer-identity
+    responsibility: Resolve and verify customer identity and scope.
+  - id: conversation
+    responsibility: Maintain conversation state, language, intent and handoff state.
+  - id: commerce
+    responsibility: Products, carts, promotions, checkout and orders.
+  - id: payment
+    responsibility: Track payment/transaction state without storing payment secrets.
+  - id: support
+    responsibility: Handle support requests and escalation.
+  - id: knowledge
+    responsibility: Curate and retrieve approved business knowledge.
+  - id: governance
+    responsibility: Authorization, audit, reconciliation and monitoring.
+
+actors:
+  - customer
+  - human_agent
+  - autonomous_agent
+  - woo_commerce
+  - meta_messenger
+  - llm_provider
+  - operator
+
+identity_ladder:
+  - ANONYMOUS
+  - CHANNEL-LINKED
+  - COMMERCE-MATCHED
+  - ORDER-VERIFIED
+  - HIGH-ASSURANCE
+
+language_policy:
+  default:
+    language: tn
+    script: latin
+    register: casual
+    mixed_languages: [tn, fr]
+  arabic_unicode: >
+    Do not emit Arabic Unicode when the customer is using Latin/Arabizi unless
+    explicitly requested or required by a legitimate quoted source.
+
+sources_of_truth:
+  domain_state: supabase
+  commerce: woocommerce
+  orchestration: n8n
+  reasoning: llm
+  authorization: WF-10
+  privileged_commerce_execution: WF-20
+  audit: WF-17
+  monitoring_and_reconciliation: WF-19
+
+runtime_invariants:
+  - AUTH-001
+  - AUTH-002
+  - EXEC-001
+  - DATA-001
+  - SECRET-001
+  - IDEMP-001
+  - RECON-001
+  - AUDIT-001
+  - HUMAN-001

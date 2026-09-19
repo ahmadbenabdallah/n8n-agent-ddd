@@ -1,0 +1,38 @@
+version: "1"
+
+invariants:
+  - id: AUTH-001
+    statement: LLM output cannot authorize privileged commerce execution.
+    severity: critical
+
+  - id: AUTH-002
+    statement: Only WF-10 may authorize commerce execution.
+    severity: critical
+
+  - id: EXEC-001
+    statement: Only WF-20 may execute privileged WooCommerce mutations.
+    severity: critical
+
+  - id: DATA-001
+    statement: Domain state must not depend on n8n execution history.
+    severity: critical
+
+  - id: SECRET-001
+    statement: Runtime secrets must not enter repository, LLM context or customer-visible output.
+    severity: critical
+
+  - id: IDEMP-001
+    statement: Important external mutations require durable idempotency.
+    severity: critical
+
+  - id: RECON-001
+    statement: Unknown external outcomes require reconciliation before retry.
+    severity: critical
+
+  - id: AUDIT-001
+    statement: Important state-changing actions produce audit evidence.
+    severity: high
+
+  - id: HUMAN-001
+    statement: Human ownership blocks conflicting automation.
+    severity: high

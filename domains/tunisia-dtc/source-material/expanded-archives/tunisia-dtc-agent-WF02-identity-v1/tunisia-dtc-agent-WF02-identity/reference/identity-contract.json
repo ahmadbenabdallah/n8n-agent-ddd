@@ -1,0 +1,17 @@
+{
+  "identity_contract": {
+    "level": "channel_linked",
+    "verified": false,
+    "customer_record_id": "<trusted application value>",
+    "decision": "continue",
+    "allowed": true,
+    "permitted_operations": [
+      "public_information",
+      "customer_profile",
+      "cart_read",
+      "cart_write"
+    ],
+    "verification_required": false,
+    "never_request_secrets": true
+  }
+}

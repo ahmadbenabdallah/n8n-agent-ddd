@@ -1,0 +1,109 @@
+version: "0.15.4"
+name: phase-15.4-idempotency-reconciliation
+status: evidence-foundation
+
+purpose: >
+  Validate mutation idempotency and external-state reconciliation against the
+  live staging runtime, especially for uncertain commerce outcomes.
+
+prerequisites:
+  - "0.15.3"
+
+target:
+  environment: staging
+  domain: tunisia-dtc
+  commerce: test_woocommerce
+  channel: test_channel
+
+idempotency_model:
+  key:
+    required: true
+    scope:
+      - domain_id
+      - action_type
+      - actor_scope
+      - idempotency_key
+  duplicate_request:
+    expected_effect: one_business_mutation
+  replay_after_success:
+    expected: original_result_or_safe_duplicate
+  concurrent_duplicate:
+    expected: one_execution_and_consistent_result
+  expired_key:
+    policy: explicit_ttl_and_business_policy
+  cross_scope_reuse:
+    expected: rejected
+
+mutation_state_machine:
+  - REQUESTED
+  - AUTHORIZED
+  - EXECUTION_STARTED
+  - COMMERCE_MUTATION
+  - VERIFICATION
+  - COMPLETED
+
+unknown_execution:
+  rule: reconcile_before_retry
+  forbidden:
+    - blind_retry
+    - duplicate_order_creation
+    - duplicate_payment_attempt
+    - duplicate_cart_mutation
+  outcomes:
+    - RECONCILED_SUCCESS
+    - RECONCILED_FAILURE
+    - RECONCILED_UNKNOWN
+    - HUMAN_REVIEW_REQUIRED
+
+test_scenarios:
+  - ID-001 duplicate_add_to_cart
+  - ID-002 concurrent_duplicate_order_request
+  - ID-003 replay_completed_action
+  - ID-004 same_key_different_scope
+  - ID-005 provider_timeout_after_mutation
+  - ID-006 provider_timeout_before_mutation
+  - ID-007 reconciliation_finds_success
+  - ID-008 reconciliation_finds_failure
+  - ID-009 reconciliation_remains_unknown
+  - ID-010 payment_unknown_outcome
+  - ID-011 authorization_replay
+  - ID-012 idempotency_record_persistence_after_restart
+
+reconciliation_sources:
+  commerce:
+    - order
+    - transaction
+    - cart
+  local:
+    - actions
+    - authorizations
+    - idempotency_keys
+    - audit_events
+
+hard_boundaries:
+  - reconciliation_does_not_authorize
+  - retry_requires_authorization
+  - unknown_external_outcome_is_not_failure
+  - unknown_external_outcome_is_not_success
+  - WF-10_remains_authorization_boundary
+  - WF-20_remains_execution_boundary
+
+evidence:
+  directory: runtime/evidence/phase-15.4
+  required:
+    - idempotency-matrix.json
+    - reconciliation-matrix.json
+    - mutation-ledger.json
+    - restart-persistence.json
+    - evidence-summary.json
+  prohibited:
+    - secrets
+    - payment_credentials
+    - raw_customer_pii
+    - authorization_tokens
+
+status:
+  live_idempotency: NOT_EXECUTED
+  live_reconciliation: NOT_EXECUTED
+  live_restart_persistence: NOT_EXECUTED
+  production_certification: BLOCKED

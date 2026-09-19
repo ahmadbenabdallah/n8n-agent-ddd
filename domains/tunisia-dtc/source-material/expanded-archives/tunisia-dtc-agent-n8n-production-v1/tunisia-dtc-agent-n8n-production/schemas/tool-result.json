@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tool Result",
+  "type": "object",
+  "required": [
+    "tool",
+    "status"
+  ],
+  "properties": {
+    "tool": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "failed",
+        "denied",
+        "not_found",
+        "unavailable"
+      ]
+    },
+    "data": {
+      "type": [
+        "object",
+        "array",
+        "null"
+      ]
+    },
+    "error_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "verified_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

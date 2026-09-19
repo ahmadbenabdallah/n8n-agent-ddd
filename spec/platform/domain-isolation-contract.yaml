@@ -1,0 +1,18 @@
+domain_isolation:
+  required_scope_dimensions:
+    - domain_id
+    - n8n_project
+    - workflow_namespace
+    - data_scope
+    - knowledge_namespace
+    - authorization_scope
+    - audit_scope
+  defaults:
+    cross_domain_calls: deny
+    shared_customer_identity: deny
+    shared_order_scope: deny
+    shared_credentials: deny
+  exception:
+    explicit_cross_domain_contract_required: true
+    authorization_required: true
+    audit_required: true

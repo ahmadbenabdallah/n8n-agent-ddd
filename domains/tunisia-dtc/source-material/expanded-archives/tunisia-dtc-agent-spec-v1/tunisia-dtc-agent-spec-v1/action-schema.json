@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DTC Agent Action",
+  "type": "object",
+  "required": [
+    "type",
+    "parameters"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "SEARCH_PRODUCTS",
+        "GET_PRODUCT",
+        "CHECK_AVAILABILITY",
+        "SEARCH_KB",
+        "GET_SHIPPING_QUOTE",
+        "GET_VERIFIED_ORDER",
+        "CREATE_CART",
+        "ADD_CART_ITEM",
+        "UPDATE_CART_ITEM",
+        "REMOVE_CART_ITEM",
+        "CREATE_CHECKOUT",
+        "ESCALATE"
+      ]
+    },
+    "parameters": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

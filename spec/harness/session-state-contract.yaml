@@ -1,0 +1,6 @@
+session_state:
+  durable: [session_id, task_graph_id, agent_role, current_task, lifecycle_state, decisions, artifacts, evidence_refs, blockers]
+  secret_values_excluded: true
+  credential_material_excluded: true
+  resume_from_durable_state: true
+  stale_session_detection: true

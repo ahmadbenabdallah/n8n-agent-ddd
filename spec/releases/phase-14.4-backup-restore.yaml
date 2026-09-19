@@ -1,0 +1,31 @@
+version: "0.14.4"
+name: phase-14.4-backup-restore
+status: foundation
+prerequisites:
+  - "0.14.3"
+
+deliverables:
+  - spec/runtime/backup-restore.yaml
+  - infrastructure/backups/README.md
+  - docs/operations/backup-restore.md
+  - scripts/backups/create-postgres-backup.sh
+  - scripts/backups/verify-postgres-backup.sh
+  - scripts/backups/restore-postgres-backup.sh
+  - scripts/backups/create-runtime-manifest.sh
+  - tests/architecture/phase14.4-backup-restore.sh
+
+gates:
+  backup_contract: PASS
+  restore_contract: PASS
+  secret_handling_contract: PASS
+  persistence_contract: PASS
+  live_backup: NOT_EXECUTED
+  live_restore: NOT_EXECUTED
+  disaster_recovery: NOT_EXECUTED
+
+certification:
+  production_ready: false
+  reason: >
+    This release adds executable backup/restore tooling and contracts but does
+    not claim that a real production backup, restore, or disaster-recovery
+    exercise has been executed.

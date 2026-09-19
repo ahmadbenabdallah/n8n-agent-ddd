@@ -1,0 +1,32 @@
+version: "2026.09.10"
+
+domain_profile:
+  name: tunisia-dtc
+  channel_adapters:
+    configurable: true
+  commerce_adapter:
+    configurable: true
+    optional: true
+  knowledge_base:
+    enabled: true
+    vector_store: postgres_pgvector
+
+domain_types:
+  commerce_domain:
+    requires:
+      - commerce_adapter_for_mutations
+  knowledge_first_domain:
+    requires:
+      - knowledge_base
+    may_not_require:
+      - commerce_adapter
+  hybrid_domain:
+    requires:
+      - domain_state
+      - knowledge_base
+    optional:
+      - commerce_adapter
+
+selection:
+  deployment_configuration_selects_profile
+  domain_rules_remain_provider_neutral

@@ -1,0 +1,15 @@
+version: "0.13.1"
+name: runtime-provider-adapters
+status: implementation_foundation
+goal: provider-neutral deployment configuration for local, VPS, and managed Docker providers
+non_goals:
+  - provider-specific business logic
+  - custom workflow editor
+  - live provider deployment without credentials
+gates:
+  - provider_contract
+  - runtime_config_validation
+  - n8n_image_pinned
+  - secrets_not_in_git
+  - persistent_n8n_data
+  - rollback_defined

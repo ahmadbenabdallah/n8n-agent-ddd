@@ -1,0 +1,317 @@
+{
+  "name": "WF-17 — Audit & Analytics",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "t",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const event=x.audit_event||x; const required=['event_type','event_id']; const missing=required.filter(k=>event[k]==null); return [{json:{...x,_wf17_event:event,_wf17_input_ok:missing.length===0,_wf17_missing:missing}}];"
+      },
+      "id": "v",
+      "name": "Validate Audit Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf17_input_ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "iv",
+      "name": "Audit Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{service:'audit',status:'rejected',reason:'invalid_audit_event',persist_allowed:false}];"
+      },
+      "id": "r",
+      "name": "Reject Invalid Audit Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const e=$json._wf17_event||{}; const text=JSON.stringify(e); const sensitive=/(cvv|cvc|otp|pin|password|api[_ -]?key|secret|access[_ -]?token|authorization:\\s*bearer|private[_ -]?key|card[_ -]?number|pan)/i.test(text); const promptLeak=/(system prompt|developer prompt|system message|hidden instruction)/i.test(text); return [{json:{...$json,_wf17_security:{sensitive,prompt_leak:promptLeak},_wf17_safe:!sensitive&&!promptLeak}}];"
+      },
+      "id": "scan",
+      "name": "Audit Data Security Scan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._wf17_safe}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "isafe",
+      "name": "Audit Data Safe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -980,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{service:'audit',status:'rejected',reason:'sensitive_or_prompt_data_detected',persist_allowed:false,security_flags:$json._wf17_security}];"
+      },
+      "id": "rs",
+      "name": "Reject Unsafe Audit Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -760,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const e=$json._wf17_event||{}; const safe={event_id:String(e.event_id),event_type:String(e.event_type),occurred_at:e.occurred_at||new Date().toISOString(),trace_id:e.trace_id||null,conversation_id:e.conversation_id||null,message_id:e.message_id||null,channel:e.channel||null,actor_ref:e.actor_ref||null,intent:e.intent||null,stage:e.stage||null,decision:e.decision||null,status:e.status||null,action:e.action||null,execution_allowed:e.execution_allowed===true,verification_status:e.verification_status||null,escalation:e.escalation||null,error_code:e.error_code||null,latency_ms:Number.isFinite(Number(e.latency_ms))?Number(e.latency_ms):null,model:e.model||null,workflow:e.workflow||null,metadata:e.metadata||{}}; return [{json:{...$json,_wf17_safe_event:safe}}];"
+      },
+      "id": "norm",
+      "name": "Normalize Audit Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const e=$json._wf17_safe_event; const metadata={...e.metadata}; const prohibited=['raw_message','raw_prompt','system_prompt','developer_prompt','customer_message','retrieved_chunk_text','card_number','cvv','otp','pin','password','access_token','authorization']; for(const k of prohibited) delete metadata[k]; const redacted={...e,metadata}; return [{json:{...$json,_wf17_record:redacted}}];"
+      },
+      "id": "redact",
+      "name": "Minimize and Redact Audit Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -540,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const e=$json._wf17_record; const stable=JSON.stringify({event_id:e.event_id,event_type:e.event_type,occurred_at:e.occurred_at,trace_id:e.trace_id,conversation_id:e.conversation_id,message_id:e.message_id,channel:e.channel,actor_ref:e.actor_ref,intent:e.intent,stage:e.stage,decision:e.decision,status:e.status,action:e.action,execution_allowed:e.execution_allowed,verification_status:e.verification_status,escalation:e.escalation,error_code:e.error_code,workflow:e.workflow}); let hash=0; for(let i=0;i<stable.length;i++) hash=((hash<<5)-hash+stable.charCodeAt(i))|0; return [{json:{...$json,_wf17_event_fingerprint:String(hash>>>0),_wf17_chain_record:{...e,fingerprint:String(hash>>>0)}}}];"
+      },
+      "id": "finger",
+      "name": "Create Event Fingerprint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const rec=x._wf17_chain_record; const previous=x.audit_context?.previous_fingerprint||null; return [{json:{...x,_wf17_persist_payload:{...rec,previous_fingerprint:previous}}}];"
+      },
+      "id": "payload",
+      "name": "Build Audit Persistence Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const persisted=x.audit_context?.persisted===true; return [{json:{...x,status:persisted?'persisted':'ready_for_persistence',persist_allowed:true,audit_record:x._wf17_persist_payload}}];"
+      },
+      "id": "persist",
+      "name": "Persist Audit Event Adapter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; return [{json:{service:'audit',status:x.status||'failed',persist_allowed:x.persist_allowed===true,event_id:x.audit_record?.event_id||null,event_type:x.audit_record?.event_type||null,trace_id:x.audit_record?.trace_id||null,fingerprint:x.audit_record?.fingerprint||null,previous_fingerprint:x.audit_record?.previous_fingerprint||null}}];"
+      },
+      "id": "out",
+      "name": "Build Audit Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Audit Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Audit Event": {
+      "main": [
+        [
+          {
+            "node": "Audit Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Audit Data Security Scan",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Audit Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit Data Security Scan": {
+      "main": [
+        [
+          {
+            "node": "Audit Data Safe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit Data Safe?": {
+      "main": [
+        [
+          {
+            "node": "Normalize Audit Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Unsafe Audit Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Audit Event": {
+      "main": [
+        [
+          {
+            "node": "Minimize and Redact Audit Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Minimize and Redact Audit Record": {
+      "main": [
+        [
+          {
+            "node": "Create Event Fingerprint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Event Fingerprint": {
+      "main": [
+        [
+          {
+            "node": "Build Audit Persistence Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Audit Persistence Payload": {
+      "main": [
+        [
+          {
+            "node": "Persist Audit Event Adapter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Audit Event Adapter": {
+      "main": [
+        [
+          {
+            "node": "Build Audit Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf17-audit-analytics-v1"
+}

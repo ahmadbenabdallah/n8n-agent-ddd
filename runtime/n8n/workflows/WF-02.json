@@ -1,0 +1,96 @@
+{
+  "name": "WF-02 \u2014 Customer Identity",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,identity_resolution:'server_side'}}];"
+      },
+      "id": "resolve",
+      "name": "Resolve Identity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if($json.requested_assurance&&!$json.verification_evidence)delete $json.requested_assurance;return items;"
+      },
+      "id": "assurance",
+      "name": "Preserve Assurance",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;"
+      },
+      "id": "result",
+      "name": "Emit Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Resolve Identity": {
+      "main": [
+        [
+          {
+            "node": "Preserve Assurance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preserve Assurance": {
+      "main": [
+        [
+          {
+            "node": "Emit Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "n8n-agent-ddd": {
+      "workflow_id": "WF-02",
+      "version": "1.0.0",
+      "phase": 8,
+      "implementation_status": "contract-executable-foundation",
+      "credentials": "externalized_to_n8n_runtime",
+      "phase_9": "staging-validation-target"
+    }
+  },
+  "tags": [
+    {
+      "name": "n8n-agent-ddd"
+    },
+    {
+      "name": "phase-8"
+    },
+    {
+      "name": "WF-02"
+    },
+    {
+      "name": "phase-9"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "version": "1.0",
+  "required": [
+    "event_id",
+    "event_type",
+    "occurred_at"
+  ],
+  "fields": [
+    "trace_id",
+    "conversation_id",
+    "message_id",
+    "channel",
+    "actor_ref",
+    "intent",
+    "stage",
+    "decision",
+    "status",
+    "action",
+    "execution_allowed",
+    "verification_status",
+    "escalation",
+    "error_code",
+    "latency_ms",
+    "model",
+    "workflow",
+    "metadata",
+    "fingerprint",
+    "previous_fingerprint"
+  ],
+  "prohibited": [
+    "raw_message",
+    "raw_prompt",
+    "system_prompt",
+    "developer_prompt",
+    "retrieved_chunk_text",
+    "card_number",
+    "pan",
+    "cvv",
+    "otp",
+    "pin",
+    "password",
+    "access_token",
+    "authorization_header"
+  ],
+  "principle": "Audit metadata must support investigation without becoming a copy of sensitive conversation/payment data."
+}

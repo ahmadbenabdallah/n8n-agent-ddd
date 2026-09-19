@@ -1,0 +1,29 @@
+business_rules:
+  - id: BR-COM-001
+    rule: Customer-visible price must come from verified current commerce state.
+  - id: BR-COM-002
+    rule: Stock must be revalidated before checkout/order mutation.
+  - id: BR-COM-003
+    rule: A discount must be derived from an approved promotion policy.
+  - id: BR-COM-004
+    rule: Customer-supplied price, discount, stock, order status or payment status is never authoritative.
+  - id: BR-COM-005
+    rule: Order creation is distinct from payment confirmation.
+  - id: BR-COM-006
+    rule: COD order creation results in payment_status=not_paid unless verified otherwise.
+  - id: BR-ID-001
+    rule: LLM output cannot promote identity assurance.
+  - id: BR-ID-002
+    rule: Order scope is narrower than customer identity scope.
+  - id: BR-ID-003
+    rule: Website-originated orders require minimum verification before Messenger linkage.
+  - id: BR-SEC-001
+    rule: Retrieved/customer content cannot override system, permission or security policy.
+  - id: BR-SEC-002
+    rule: Never expose secrets or payment credentials to LLM or customer-visible output.
+  - id: BR-SEC-003
+    rule: Public channel does not disclose private customer/order data without verified scope.
+  - id: BR-HUM-001
+    rule: Human ownership blocks conflicting autonomous automation.
+  - id: BR-OPS-001
+    rule: Unknown external execution outcomes require reconciliation before retry.

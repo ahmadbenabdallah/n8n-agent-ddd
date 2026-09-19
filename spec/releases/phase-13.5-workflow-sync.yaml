@@ -1,0 +1,13 @@
+version: "0.13.5"
+name: twenty-one-workflow-synchronization
+workflow_count: 21
+identity: domain_id + workflow_key
+source_of_truth: git
+runtime_target: n8n_project
+rules:
+  - create_or_update_inactive
+  - validate_after_write
+  - read_back_after_write
+  - record_source_hash
+  - record_n8n_workflow_id
+  - never_activate_during_sync

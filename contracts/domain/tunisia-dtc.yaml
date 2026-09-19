@@ -1,0 +1,24 @@
+domain_contract:
+  id: tunisia-dtc
+  version: "1.0.0"
+  command_policy:
+    commands_may_request: true
+    commands_may_execute: false
+  action_flow:
+    proposal: WF-09
+    authorization: WF-10
+    execution: WF-20
+    verification: WF-20
+    rendering: WF-16
+    audit: WF-17
+    monitoring: WF-19
+  identity:
+    ladder: [ANONYMOUS, CHANNEL-LINKED, COMMERCE-MATCHED, ORDER-VERIFIED, HIGH-ASSURANCE]
+  commerce:
+    source_of_truth: WooCommerce
+    price_source: live_verified_commerce_state
+    stock_source: live_verified_commerce_state
+  state:
+    durable_store: Supabase
+    important_mutations_require_idempotency: true
+    unknown_external_outcome_requires_reconciliation: true

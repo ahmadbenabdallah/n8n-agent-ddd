@@ -1,0 +1,179 @@
+version: "0.14.6"
+name: runtime-health-reconciliation
+status: foundation
+purpose: >
+  Turn the Phase 12 operations foundation into an upgrade-aware runtime
+  health, drift, reconciliation, and bounded self-healing contract.
+
+principles:
+  - observe_before_act
+  - classify_before_remediate
+  - verify_after_act
+  - audit_every_state_change
+  - bounded_self_healing
+  - human_ownership_blocks_conflicting_automation
+  - never_self_authorize_commerce
+  - never_blind_retry_unknown_external_outcomes
+  - reconciliation_precedes_retry
+
+control_loop:
+  - OBSERVE
+  - CLASSIFY
+  - DECIDE
+  - ACT
+  - VERIFY
+  - AUDIT
+  - LEARN
+
+health_dimensions:
+  process:
+    checks:
+      - n8n_reachable
+      - database_reachable
+      - worker_reachable
+  application:
+    checks:
+      - workflow_inventory
+      - required_workflow_versions
+      - project_binding
+      - runtime_configuration
+  data:
+    checks:
+      - database_connectivity
+      - migration_state
+      - durable_state_integrity
+      - idempotency_store
+  integration:
+    checks:
+      - commerce_adapter_reachable
+      - channel_adapter_reachable
+      - provider_error_rate
+  security:
+    checks:
+      - protected_workflow_set
+      - secret_presence_without_secret_disclosure
+      - authorization_boundary
+  operations:
+    checks:
+      - drift
+      - reconciliation_backlog
+      - incident_state
+      - cost_anomaly
+
+health_states:
+  - HEALTHY
+  - DEGRADED
+  - UNHEALTHY
+  - UNKNOWN
+  - MAINTENANCE
+
+classification:
+  transient:
+    examples:
+      - worker_restart_required
+      - bounded_internal_retry
+      - stale_runtime_lock
+  configuration:
+    examples:
+      - missing_non_secret_runtime_config
+      - workflow_drift
+      - version_mismatch
+  data:
+    examples:
+      - schema_mismatch
+      - reconciliation_backlog
+      - integrity_failure
+  external:
+    examples:
+      - commerce_provider_unavailable
+      - channel_provider_unavailable
+      - unknown_external_mutation_outcome
+  security:
+    examples:
+      - protected_workflow_change
+      - unauthorized_capability
+      - secret_configuration_failure
+
+reconciliation:
+  required_before:
+    - retrying_unknown_commerce_mutation
+    - retrying_payment_related_external_operation
+    - declaring_external_state_failed_when_outcome_is_unknown
+  scope:
+    - orders
+    - transactions
+    - carts
+    - authorizations
+    - idempotency_keys
+  outcome_states:
+    - RECONCILED_SUCCESS
+    - RECONCILED_FAILURE
+    - RECONCILED_UNKNOWN
+    - HUMAN_REVIEW_REQUIRED
+
+self_healing:
+  allowed:
+    - restart_disposable_worker
+    - retry_transient_internal_operation
+    - clear_stale_runtime_lock
+    - reschedule_reconciliation
+  forbidden:
+    - authorize_commerce
+    - change_price
+    - change_stock
+    - change_payment_status
+    - bypass_wf10
+    - retry_unknown_commerce_mutation_without_reconciliation
+    - rotate_or_export_secrets
+    - alter_security_policy
+  bounds:
+    max_attempts: 3
+    cooldown_required: true
+    circuit_breaker_required: true
+    audit_required: true
+    human_override_required: true
+
+drift:
+  sources:
+    - git
+    - n8n_runtime
+    - database_schema
+    - release_manifest
+    - protected_workflow_policy
+  default_action: report
+  auto_repair:
+    allowed_only_for:
+      - explicitly_declared_safe_runtime_metadata
+    prohibited_for:
+      - protected_workflows
+      - authorization_logic
+      - commerce_logic
+      - security_policy
+
+ownership:
+  states:
+    - AUTOMATION_OWNED
+    - HUMAN_OWNED
+    - MAINTENANCE
+  conflict_rule: >
+    Human ownership blocks conflicting autonomous actions until ownership is
+    released or an explicitly approved emergency policy applies.
+
+upgrade_awareness:
+  runtime_version_change:
+    actions:
+      - compare_release_manifest
+      - verify_schema_version
+      - verify_workflow_inventory
+      - run_health_baseline
+      - run_reconciliation
+  degraded_after_upgrade:
+    action: stop_traffic_escalate
+  unknown_after_upgrade:
+    action: do_not_claim_healthy
+
+evidence:
+  live_health: NOT_EXECUTED
+  live_reconciliation: NOT_EXECUTED
+  live_self_healing: NOT_EXECUTED
+  live_drift_remediation: NOT_EXECUTED

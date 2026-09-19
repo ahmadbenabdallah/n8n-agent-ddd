@@ -1,0 +1,19 @@
+{
+  "request": {
+    "cart_id": "cart-1",
+    "cart_version": 7,
+    "customer_ref": "internal-ref",
+    "promotion_ids": [
+      "promo-1"
+    ]
+  },
+  "response": {
+    "verified": true,
+    "cart_version": 7,
+    "price_current": true,
+    "stock_current": true,
+    "promotion_current": true,
+    "rules_version": "v12"
+  },
+  "failure": "Any false/missing mutable-fact validation blocks transactional checkout."
+}

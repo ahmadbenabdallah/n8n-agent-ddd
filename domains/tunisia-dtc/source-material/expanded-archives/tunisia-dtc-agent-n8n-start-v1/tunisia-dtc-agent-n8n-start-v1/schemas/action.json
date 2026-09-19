@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "required": [
+    "type",
+    "parameters"
+  ],
+  "properties": {
+    "type": {
+      "type": "string"
+    },
+    "parameters": {
+      "type": "object"
+    }
+  }
+}

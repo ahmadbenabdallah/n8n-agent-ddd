@@ -1,0 +1,15 @@
+{
+  "version": "4.0.0-wf03",
+  "title": "Tunisia DTC Agent System FINAL v4 \u2014 WF-03 Conversation State",
+  "scope": "WF-03 incremental production update",
+  "files": [
+    "README.md",
+    "01-WF-03-CONVERSATION-STATE-SPEC.md",
+    "02-WF-03-STATE-TRANSITIONS.md",
+    "03-WF-03-SUPABASE-CONTRACT.md",
+    "04-WF-03-SECURITY-TESTS.md",
+    "05-WF-03-E2E-EXAMPLES.md",
+    "06-WF-03-CHECKLIST.md",
+    "manifest.json"
+  ]
+}

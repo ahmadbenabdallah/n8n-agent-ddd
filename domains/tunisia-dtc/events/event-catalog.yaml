@@ -1,0 +1,22 @@
+events:
+  - CustomerIdentityLinked
+  - IdentityAssuranceChanged
+  - ConversationStateUpdated
+  - IntentRouted
+  - ActionProposed
+  - ActionAuthorized
+  - ActionRejected
+  - ExecutionStarted
+  - CommerceMutationVerified
+  - CartUpdated
+  - PromotionApplied
+  - CheckoutPrepared
+  - OrderCreated
+  - TransactionCreated
+  - TransactionVerified
+  - EscalationCreated
+  - HumanOwnershipAcquired
+  - ResponseRendered
+  - KnowledgeVersionPublished
+  - ExecutionReconciliationRequired
+  - AuditRecorded

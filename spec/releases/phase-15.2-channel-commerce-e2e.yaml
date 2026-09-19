@@ -1,0 +1,103 @@
+version: "0.15.2"
+name: phase-15.2-channel-commerce-e2e
+status: evidence-foundation
+
+purpose: >
+  Define controlled end-to-end staging tests from an external customer channel
+  through the n8n workflow chain, authorization boundary, commerce adapter,
+  verification, response rendering, and audit.
+
+prerequisites:
+  - "0.15.1"
+
+scenario:
+  domain: tunisia-dtc
+  channel: test_channel
+  commerce: test_woocommerce
+  environment: staging
+
+required_flow:
+  - WF-00
+  - WF-01
+  - WF-02
+  - WF-03
+  - WF-04
+  - WF-09
+  - WF-10
+  - WF-11
+  - WF-12
+  - WF-13
+  - WF-14
+  - WF-15
+  - WF-16
+  - WF-17
+  - WF-20
+
+commerce_truth:
+  product: commerce_provider
+  price: commerce_provider
+  inventory: commerce_provider
+  promotion: commerce_provider
+  order: commerce_provider
+  payment_status: commerce_provider
+
+test_scenarios:
+  informational_product_question:
+    mutation: false
+    expected: verified_information_response
+  add_to_cart:
+    mutation: true
+    authorization_required: true
+    verification_required: true
+  checkout:
+    mutation: true
+    authorization_required: true
+    live_state_revalidation: required
+  cod_order:
+    mutation: true
+    payment_status_after_order: not_paid
+    payment_creation: separate_operation
+  invalid_authorization:
+    mutation: true
+    expected: blocked
+  unknown_external_outcome:
+    mutation: true
+    expected: reconcile_before_retry
+  private_order_request_without_scope:
+    mutation: false
+    expected: deny_or_escalate
+
+security_invariants:
+  - llm_cannot_execute_commerce
+  - llm_cannot_set_final_price
+  - llm_cannot_set_payment_status
+  - wf10_is_authorization_boundary
+  - wf20_is_privileged_commerce_boundary
+  - response_uses_verified_facts
+  - audit_is_not_authorization
+
+idempotency:
+  required_for_mutations: true
+  duplicate_request_expected_effect: one_business_mutation
+  unknown_outcome: reconcile_before_retry
+
+evidence:
+  directory: runtime/evidence/phase-15.2
+  required:
+    - scenario-results.json
+    - commerce-verification.json
+    - authorization-evidence.json
+    - audit-evidence.json
+    - evidence-summary.json
+  prohibited:
+    - payment_credentials
+    - card_data
+    - api_keys
+    - customer_pii
+    - session_tokens
+
+status:
+  live_channel_e2e: NOT_EXECUTED
+  live_commerce_mutations: NOT_EXECUTED
+  live_authorization: NOT_EXECUTED
+  live_reconciliation: NOT_EXECUTED

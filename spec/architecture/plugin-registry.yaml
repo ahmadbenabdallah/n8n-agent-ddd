@@ -1,0 +1,26 @@
+version: 1
+plugins:
+  - id: n8n-runtime
+    type: runtime
+    capabilities:
+      - workflow.execution
+      - workflow.validation
+    permissions:
+      - workflow.read
+      - workflow.execute
+  - id: postgres-drizzle
+    type: database
+    capabilities:
+      - sql
+      - typed_queries
+      - migrations
+    permissions:
+      - database.read
+      - database.write
+  - id: commerce-adapter
+    type: adapter
+    capabilities:
+      - commerce
+    permissions:
+      - commerce.execute
+    authorization_boundary: WF-10

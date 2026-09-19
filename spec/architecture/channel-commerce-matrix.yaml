@@ -1,0 +1,48 @@
+version: "2026.09.10"
+principle: "Channel selection and commerce-source selection are independent axes."
+
+channel_adapters:
+  - meta_messenger
+  - whatsapp
+  - telegram
+  - webchat
+  - sms
+  - custom
+
+commerce_adapters:
+  - woocommerce
+  - shopify
+  - prestashop
+  - magento
+  - commercetools
+  - custom
+  - domain_specific_platform
+
+valid_examples:
+  - {channel: meta_messenger, commerce: shopify}
+  - {channel: whatsapp, commerce: shopify}
+  - {channel: meta_messenger, commerce: woocommerce}
+  - {channel: whatsapp, commerce: prestashop}
+  - {channel: telegram, commerce: custom}
+  - {channel: webchat, commerce: domain_specific_platform}
+
+rule:
+  "No channel adapter implies a commerce adapter, and no commerce adapter implies a channel adapter."
+
+source_of_truth:
+  commerce:
+    catalog: commerce_platform
+    inventory: commerce_platform
+    price: commerce_platform
+    promotion: commerce_platform
+    cart: commerce_platform
+    order: commerce_platform
+    payment_status: payment_or_commerce_platform
+  identity:
+    source: domain_identity_store
+  conversation:
+    source: domain_state_store
+  authorization:
+    source: domain_authorization_store
+  audit:
+    source: append_only_audit_store

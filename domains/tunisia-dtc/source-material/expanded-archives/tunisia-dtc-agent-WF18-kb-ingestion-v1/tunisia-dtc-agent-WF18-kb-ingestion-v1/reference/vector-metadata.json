@@ -1,0 +1,27 @@
+{
+  "document_fields": [
+    "id",
+    "type",
+    "category",
+    "last_updated",
+    "source_path",
+    "document_hash"
+  ],
+  "chunk_fields": [
+    "document_id",
+    "chunk_id",
+    "text",
+    "embedding",
+    "language",
+    "type",
+    "category",
+    "last_updated",
+    "document_hash"
+  ],
+  "recommended_indexes": [
+    "HNSW vector index",
+    "GIN metadata index"
+  ],
+  "embedding_model": "text-embedding-3-small",
+  "dimensions": 1536
+}

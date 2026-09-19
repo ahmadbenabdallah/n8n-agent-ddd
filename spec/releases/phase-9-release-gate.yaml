@@ -1,0 +1,41 @@
+release: "0.9.0"
+phase: 9
+production_status: blocked
+
+gates:
+  - id: GATE-001
+    name: staging-integrations
+    required: true
+  - id: GATE-002
+    name: security-and-red-team
+    required: true
+  - id: GATE-003
+    name: e2e-and-concurrency
+    required: true
+  - id: GATE-004
+    name: failure-reconciliation
+    required: true
+  - id: GATE-005
+    name: load
+    required: true
+  - id: GATE-006
+    name: backup-restore
+    required: true
+  - id: GATE-007
+    name: blue-green-rollback
+    required: true
+  - id: GATE-008
+    name: workflow-drift
+    required: true
+  - id: GATE-009
+    name: security-approval
+    required: true
+  - id: GATE-010
+    name: architecture-approval
+    required: true
+
+decision_rule:
+  any_failed_required_gate: BLOCK
+  any_open_critical_finding: BLOCK
+  any_open_high_finding: BLOCK
+  missing_evidence: BLOCK

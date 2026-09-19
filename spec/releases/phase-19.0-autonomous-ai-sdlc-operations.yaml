@@ -1,0 +1,37 @@
+phase:
+  id: "19.0"
+  name: "Autonomous AI-SDLC & Operations"
+  status: "foundation"
+  objective: "Provide bounded multi-agent orchestration for development, validation, deployment, and operations."
+boundaries:
+  harness_is_control_plane: true
+  customer_runtime_remains_n8n_domain_runtime: true
+  n8n_native_dashboard_remains_operator_ui: true
+  capability_discovery_is_not_authorization: true
+  autonomous_production_mutation_is_forbidden_without_existing_gates_and_approval: true
+  WF-10_remains_commerce_authorization_boundary: true
+agents:
+  chief: {role: orchestrator}
+  pm: {role: requirements_and_task_decomposition}
+  architect: {role: architecture_and_design}
+  security: {role: threat_model_and_security_review}
+  developers: {role: implementation, initial_parallelism: 2}
+  qa: {role: testing_and_evidence}
+  reviewer: {role: final_review}
+lifecycle: [DISCOVER, DEFINE, DOMAIN, SPECIFY, ARCHITECT, DECOMPOSE, PLAN, IMPLEMENT, TEST, SECURITY, REVIEW, INTEGRATE, DEPLOY, VERIFY, OPERATE, LEARN]
+controls:
+  task_dependency_graph: true
+  isolated_worktrees: true
+  session_state: true
+  durable_task_state: true
+  review_checkpoints: true
+  bounded_autonomy: true
+  evaluation_loop: true
+  self_improvement_requires_evidence: true
+  human_approval_for_high_impact_actions: true
+gates:
+  contract: "tests/harness/phase19-contract.sh"
+  live_multi_agent_execution: "NOT_EXECUTED"
+  live_autonomous_production_operations: "NOT_EXECUTED"
+truth:
+  no_autonomous_production_execution_claimed: true
