@@ -7,7 +7,7 @@ instructions:
   canonical: AGENTS.md
   adapters:
     claude: CLAUDE.md
-    codex: codex/AGENTS.md
+    codex: .codex/AGENTS.md
 skills:
   root: .agents/skills
   required_metadata: [name, description]
