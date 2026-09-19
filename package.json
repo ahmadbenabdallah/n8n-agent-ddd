@@ -51,6 +51,7 @@
     "db:migrate": "tsx platform/state/db/migrate.ts",
     "db:introspect": "drizzle-kit introspect",
     "db:validate": "tsx platform/state/db/validate.ts",
+    "db:verify": "bash scripts/db/verify-migrations.sh",
     "test:db:contract": "bash tests/production/drizzle-contract.sh",
     "test:architecture:db": "bash tests/architecture/domain-drizzle-parity.sh",
     "test:architecture:capabilities": "bash tests/architecture/capability-control-plane.sh",
