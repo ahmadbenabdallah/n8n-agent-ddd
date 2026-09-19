@@ -6,7 +6,7 @@
 [![Version](https://img.shields.io/badge/version-0.13.3-blue)](#project-status)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](#license)
 
-Repository: [github.com/ahmadbenabdallah/n8n-agent-ddd](https://github.com/ahmadbenabdallah/n8n-agent-ddd) · Documentation: [`documentation/`](documentation/) · Guides: [`docs-user/`](docs-user/) · Licence: [Apache-2.0](LICENSE)
+Repository: [github.com/ahmadbenabdallah/n8n-agent-ddd](https://github.com/ahmadbenabdallah/n8n-agent-ddd) · Documentation: [`documentation/`](documentation/) · Licence: [Apache-2.0](LICENSE)
 
 > **Status: the architecture and contracts are in place; the runtime is not.** All 21 workflows in `runtime/n8n/workflows/` are placeholders, the WF-10 to WF-20 authorization boundary is not enforced yet, webhook signatures are not verified, and the deployment scripts print rather than deploy. The system has never run end to end. See [Project status](#project-status) before planning anything on top of it.
 
@@ -29,7 +29,7 @@ A framework for building autonomous business agents that hold conversations with
 Each layer is prepared so you can build your own agent:
 
 - **A domain pack**: your business model as data, not code, in entities, aggregates, policies, commands, events and workflow contracts.
-- **A workflow chain**: 21 n8n workflows from inbound message to audited action, with fixed boundaries between reasoning, authorization and execution.
+- **A workflow chain**: from inbound message to audited action, with fixed boundaries between reasoning, authorization and execution. The plumbing (channel connector, security gate, conversation state, identity, reasoning shell, authorization engine, renderer, audit, knowledge ingestion, reconciliation, execution gateway) is shared and configured by your domain; you write only your own business workflows.
 - **Durable state**: PostgreSQL holds identities, conversations, authorizations, orders and audit records. n8n execution history is transient and never the source of truth.
 - **Ports and adapters**: the channel (Messenger, WhatsApp) and the business system (WooCommerce, Shopify) sit behind contracts, so the domain rules do not change when the provider does.
 - **Agent development support**: shared skills, roles and policies for Claude Code and Codex, so the repository can be worked on by AI agents under explicit rules.
@@ -49,18 +49,20 @@ This framework takes the opposite approach: the model proposes, a separate workf
 ```text
   propose            authorize              execute            verify
  ─────────►         ──────────►            ────────►          ────────►
-   LLM        →      WF-10        →         WF-20      →    provider check
-(suggests)      (decides, using        (the only writer   (confirm what
-                 durable state          to the business    actually happened)
-                 and policy)            system)
+   LLM        →   authorization   →    execution gateway →  provider check
+(suggests)        (decides, using      (the only writer     (confirm what
+                   durable state        to the business      actually happened)
+                   and policy)          system)
 ```
 
 Four rules follow from that shape, and the rest of the design follows from them:
 
 1. **The model never authorizes.** Its output is a proposal with no authority.
-2. **One authorizer.** WF-10 decides, from stored identity, scope, policy and live business state.
-3. **One executor.** WF-20 is the only workflow that may change the business system, and only with an authorization it can verify.
+2. **One authorizer.** A single workflow decides, from stored identity, scope, policy and live business state.
+3. **One executor.** A single workflow may change the business system, and only with an authorization it can verify.
 4. **Uncertainty is reconciled, not retried.** If an external call may have succeeded, the outcome is established before anything is attempted again.
+
+These are **roles**, not fixed workflow names. Each domain declares which of its workflows fills each role, in `domain.yaml` under `workflow_roles`; the Tunisia example uses WF-10 for authorization and WF-20 for execution.
 
 The full list lives in [`AGENTS.md`](AGENTS.md) and [`spec/invariants/platform.yaml`](spec/invariants/platform.yaml).
 
@@ -101,7 +103,6 @@ The full list lives in [`AGENTS.md`](AGENTS.md) and [`spec/invariants/platform.y
 | [`scripts/`](scripts/) | Validation, runtime, database, release and operations scripts |
 | [`tests/`](tests/) | Contract and architecture checks |
 | [`documentation/`](documentation/) | Public reference documentation |
-| [`docs-user/`](docs-user/) | Task guides that live next to the code |
 | [`.agents/`](.agents/), [`.claude/`](.claude/), [`.codex/`](.codex/) | Shared agent skills and policies, plus the Claude Code and Codex adapters |
 
 Canonical locations, so nothing has two homes:
@@ -387,7 +388,6 @@ The design is worth knowing, because the workflows are built for it: WF-19 handl
 | Tree | Audience | Published |
 |---|---|---|
 | [`documentation/`](documentation/) | Reference for users and developers | Yes |
-| [`docs-user/`](docs-user/) | Task guides kept next to the code | Yes |
 | `docs/` | Internal engineering notes, security material and runbooks | No, and not in clones |
 
 Start with [`documentation/getting-started/`](documentation/getting-started/) and [`documentation/development/`](documentation/development/).

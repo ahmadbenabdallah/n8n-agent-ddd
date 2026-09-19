@@ -14,15 +14,25 @@ n8n Agent DDD is a framework for building domain-driven AI business agents. n8n 
 
 ## Runtime model
 
+Workflow ids belong to the domain; the platform defines the roles they fill. Tunisia DTC fills them with WF-00 to WF-20.
+
 ```
 channel (e.g. Messenger)
-  -> WF-00 inbound gateway  -> WF-01 security gate -> WF-02 identity -> WF-03 conversation state
-  -> WF-04 intent router    -> WF-09 LLM reasoning (proposes only)
-  -> WF-10 action authorization      <- the only place an action becomes allowed
-  -> WF-20 commerce gateway          <- the only place a commerce system is changed
-  -> provider verification -> WF-16 response (verified facts only)
-  -> WF-17 audit           -> WF-19 reconciliation of unknown outcomes
+  -> inbound gateway -> security gate -> identity -> conversation state
+  -> intent router   -> LLM reasoning (proposes only)
+  -> authorization              <- the only place an action becomes allowed
+  -> execution gateway          <- the only place an external system is changed
+  -> provider verification -> response rendering (verified facts only)
+  -> audit                 -> reconciliation of unknown outcomes
 ```
+
+A domain declares the mapping in `domain.yaml` under `workflow_roles`.
+
+## Shared workflows and domain workflows
+
+The plumbing is written once and configured per domain: channel ingress, security gate, identity, conversation state, intent routing, the reasoning shell, the authorization engine, rendering, audit, knowledge ingestion, reconciliation and the execution gateway. A domain writes only its business workflows, such as a sales engine or a booking engine, and supplies the policies, prompts and catalogs the shared workflows enforce.
+
+Each domain registry marks every workflow `scope: shared` or `scope: domain`.
 
 - **State:** Postgres is the source of truth for domain state (identities, conversations, carts, orders, authorizations, audit, knowledge). Supabase is one supported provider; any Postgres works. Migrations live in `platform/state/db/migrations` and are provider-neutral, with provider-specific statements in `platform/state/db/profiles/`.
 - **Commerce:** the commerce platform (WooCommerce in the reference domain) stays the source of truth for products, prices, stock and orders.
