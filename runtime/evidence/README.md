@@ -6,10 +6,10 @@ committed here.
 
 A local or CI run may write evidence under:
 
-`evidence/phase-10/runs/<run-id>/`
+`runtime/evidence/phase-10/runs/<run-id>/`
 
 The generated certification decision belongs at:
 
-`evidence/phase-10/certification.json`
+`runtime/evidence/phase-10/certification.json`
 
 Use synthetic staging identities and sanitized outputs.

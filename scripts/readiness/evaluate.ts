@@ -16,7 +16,7 @@ const required = [
   "LOAD", "DR", "BG", "DRIFT", "ARCH", "SECURITY"
 ];
 
-const root = process.env.EVIDENCE_ROOT ?? "evidence/phase-10/runs";
+const root = process.env.EVIDENCE_ROOT ?? "runtime/evidence/phase-10/runs";
 const evidence: Evidence[] = [];
 
 if (existsSync(root)) {
@@ -76,7 +76,7 @@ const decision = {
   approvals
 };
 
-const out = process.env.CERTIFICATION_OUTPUT ?? "evidence/phase-10/certification.json";
+const out = process.env.CERTIFICATION_OUTPUT ?? "runtime/evidence/phase-10/certification.json";
 writeFileSync(out, JSON.stringify(decision, null, 2) + "\n");
 console.log(JSON.stringify(decision, null, 2));
 if (!certified) process.exitCode = 2;

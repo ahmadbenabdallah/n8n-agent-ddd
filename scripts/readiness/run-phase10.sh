@@ -14,12 +14,12 @@ pnpm staging:smoke
 
 echo "4/7 Execute operator-provided evidence suites"
 echo "Run the required staging suites documented in docs/operations/production-certification.md."
-echo "Each suite must write evidence/phase-10/runs/<run-id>/<gate>.json"
+echo "Each suite must write runtime/evidence/phase-10/runs/<run-id>/<gate>.json"
 
 echo "5/7 Evaluate evidence"
 pnpm readiness:evaluate || true
 
 echo "6/7 Inspect certification decision"
-cat evidence/phase-10/certification.json
+cat runtime/evidence/phase-10/certification.json
 
 echo "7/7 Production remains blocked unless decision=CERTIFIED and all deployment gates pass."
