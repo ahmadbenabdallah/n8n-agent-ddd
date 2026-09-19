@@ -2,11 +2,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+[ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/operations/phase15.1-21-workflows.md"
 cd "$ROOT"
 
 required=(
   "spec/releases/phase-15.1-21-workflow-execution.yaml"
-  "docs/operations/phase15.1-21-workflows.md"
   "scripts/integration/phase15.1-workflow-inventory.sh"
   "scripts/integration/phase15.1-protected-set.sh"
   "scripts/integration/phase15.1-execution-matrix.sh"

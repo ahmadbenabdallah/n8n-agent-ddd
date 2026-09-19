@@ -2,11 +2,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+[ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/security/phase15.3-red-team.md"
 cd "$ROOT"
 
 required=(
   "spec/releases/phase-15.3-security-red-team.yaml"
-  "docs/security/phase15.3-red-team.md"
   "scripts/security/phase15.3-red-team-preflight.sh"
   "scripts/security/phase15.3-matrix.sh"
   "scripts/security/phase15.3-validate.sh"

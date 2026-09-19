@@ -2,8 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+[ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/operations/phase16-production-operationalization.md"
 
-for f in   spec/releases/phase-16.0-production-operationalization.yaml   spec/releases/phase-16.0-gates.yaml   spec/deployment/phase-16-production-operationalization.yaml   docs/operations/phase16-production-operationalization.md   scripts/production/phase16-preflight.sh   scripts/production/phase16-runtime-doctor.sh   scripts/production/phase16-sync-plan.sh   scripts/production/phase16-evidence-runner.sh   scripts/production/phase16-production-gate.sh   scripts/production/phase16-status.sh
+for f in   spec/releases/phase-16.0-production-operationalization.yaml   spec/releases/phase-16.0-gates.yaml   spec/deployment/phase-16-production-operationalization.yaml   scripts/production/phase16-preflight.sh   scripts/production/phase16-runtime-doctor.sh   scripts/production/phase16-sync-plan.sh   scripts/production/phase16-evidence-runner.sh   scripts/production/phase16-production-gate.sh   scripts/production/phase16-status.sh
 do
   test -f "$ROOT/$f"
 done

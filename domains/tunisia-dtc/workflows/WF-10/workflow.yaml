@@ -34,6 +34,7 @@ workflow:
   - contracts/platform/action.yaml
   authorization_contract:
     deny_by_default: true
+    llm_can_authorize: false
     only_authorized_branch_can_set_execution_allowed: true
     required_checks:
     - identity_assurance

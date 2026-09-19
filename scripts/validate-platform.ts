@@ -37,7 +37,13 @@ for (const rule of [
 }
 
 const domain = readFileSync(join(process.cwd(), "domains/tunisia-dtc/domain.yaml"), "utf8");
-for (const boundary of ["workflow: WF-10", "workflow: WF-20", "workflow: WF-16", "workflow: WF-17", "workflow: WF-19"]) {
+// WF-16 (renderer) is not a source of truth; its invariant is checked in validate-runtime.ts.
+for (const boundary of [
+  "authorization: WF-10",
+  "privileged_commerce_execution: WF-20",
+  "audit: WF-17",
+  "monitoring_and_reconciliation: WF-19"
+]) {
   if (!domain.includes(boundary)) {
     console.error(`✗ missing domain boundary: ${boundary}`);
     failed = true;

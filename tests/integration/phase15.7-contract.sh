@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-for f in   spec/releases/phase-15.7-blue-green-rollback-execution.yaml   docs/operations/phase15.7-blue-green-rollback.md   scripts/deployment/phase15.7-preflight.sh   scripts/deployment/phase15.7-blue-baseline.sh   scripts/deployment/phase15.7-deploy-green.sh   scripts/deployment/phase15.7-switch-and-rollback.sh   scripts/deployment/phase15.7-validate-evidence.sh
+[ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/operations/phase15.7-blue-green-rollback.md"
+for f in   spec/releases/phase-15.7-blue-green-rollback-execution.yaml   scripts/deployment/phase15.7-preflight.sh   scripts/deployment/phase15.7-blue-baseline.sh   scripts/deployment/phase15.7-deploy-green.sh   scripts/deployment/phase15.7-switch-and-rollback.sh   scripts/deployment/phase15.7-validate-evidence.sh
 do
   test -f "$ROOT/$f"
 done

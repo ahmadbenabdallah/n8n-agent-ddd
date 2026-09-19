@@ -1,35 +1,20 @@
 import { eq, and } from "drizzle-orm";
-import { customerIdentity } from "../db/schema";
+import { customerIdentities } from "../db/schema";
 
-export interface CustomerIdentityRecord {
-  id: string;
-  domainId: string;
-  channel: string;
-  channelUserRef: string;
-  assuranceLevel: string;
-}
+export type CustomerIdentityRecord = typeof customerIdentities.$inferSelect;
 
 export interface CustomerIdentityRepository {
-  findByChannelRef(
-    domainId: string,
-    channel: string,
-    channelUserRef: string,
-  ): Promise<CustomerIdentityRecord | undefined>;
+  findByChannelRef(channel: string, channelIdentity: string): Promise<CustomerIdentityRecord | undefined>;
 }
 
+// Identity is unique per (channel, channel_identity); see runtime/supabase/migrations/0001.
 export function createCustomerIdentityRepository(db: any): CustomerIdentityRepository {
   return {
-    async findByChannelRef(domainId, channel, channelUserRef) {
+    async findByChannelRef(channel, channelIdentity) {
       const rows = await db
         .select()
-        .from(customerIdentity)
-        .where(
-          and(
-            eq(customerIdentity.domainId, domainId),
-            eq(customerIdentity.channel, channel),
-            eq(customerIdentity.channelUserRef, channelUserRef),
-          ),
-        )
+        .from(customerIdentities)
+        .where(and(eq(customerIdentities.channel, channel), eq(customerIdentities.channelIdentity, channelIdentity)))
         .limit(1);
 
       return rows[0];
