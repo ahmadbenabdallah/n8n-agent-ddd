@@ -50,14 +50,16 @@ The architecture is intended to support additional domain packs such as Umrah an
 
 ## Current maturity
 
-The repository currently contains the architectural foundation through:
+The repository holds the architectural foundation: contracts, specifications, the domain model, the database schema and repository checks.
 
-- 0.17 Harness Control Plane
-- 0.18 Agent-Installable Platform
-- 0.19 Autonomous AI-SDLC & Operations
-- 0.20 Multi-Domain Platform / Ecosystem
+The runtime is not built yet:
 
-These phases establish contracts and scaffolding. They are not, by themselves, proof of live production certification.
+- 4 of the 21 workflows are real n8n workflows (WF-00, WF-01, WF-02, WF-04); the rest are placeholders
+- the WF-10 to WF-20 authorization handshake is specified but not enforced
+- inbound webhook signatures are not verified
+- deployment and operations scripts are placeholders
+
+Nothing here has been run end to end. Contracts and scaffolding are not proof of a working system, and certainly not of production certification.
 
 ## Before production
 

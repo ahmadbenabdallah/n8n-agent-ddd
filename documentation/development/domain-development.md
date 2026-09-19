@@ -6,6 +6,18 @@ order: 3
 
 # Domain Development
 
+## Start from the template
+
+```bash
+cp -r templates/domain-pack domains/<your-domain-id>
+```
+
+Then replace every `<...>` placeholder and run `pnpm validate`, which checks the pack against `spec/domains/domain-pack-contract.yaml`.
+
+Entries marked **platform-required** in the template bind the domain to the platform's safety boundaries (WF-10 authorization, WF-20 privileged execution, audit, reconciliation). Keep them.
+
+`domains/tunisia-dtc/` is the worked example of every file.
+
 A domain pack contains:
 
 ```text
