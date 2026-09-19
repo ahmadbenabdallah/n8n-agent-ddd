@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+[ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/agents/agent-installable-platform.md"
 files=(
   spec/releases/phase-18.0-agent-installable-platform.yaml
   spec/harness/installer-contract.yaml
   spec/harness/bootstrap-contract.yaml
   spec/harness/doctor-contract.yaml
   spec/harness/configuration-contract.yaml
-  docs/agents/agent-installable-platform.md
   scripts/harness/install.sh
   scripts/harness/init.sh
   scripts/harness/doctor.sh

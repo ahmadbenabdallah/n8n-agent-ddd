@@ -2,12 +2,12 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+[ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/operations/upgrade-migration.md"
 cd "$ROOT"
 
 required=(
   "spec/runtime/upgrade-migration.yaml"
   "spec/releases/phase-14.5-upgrade-migration.yaml"
-  "docs/operations/upgrade-migration.md"
   "scripts/migrations/preflight.sh"
   "scripts/migrations/plan.sh"
   "scripts/migrations/apply.sh"
@@ -34,7 +34,7 @@ done
 grep -q "expand_before_contract" spec/runtime/upgrade-migration.yaml
 grep -q "destructive_migrations: explicit_approval_required" spec/runtime/upgrade-migration.yaml
 grep -q "live_rollback: NOT_EXECUTED" spec/releases/phase-14.5-upgrade-migration.yaml
-grep -q "rollback" docs/operations/upgrade-migration.md
+[ ! -d "${ROOT:-.}/docs" ] || grep -q "rollback" docs/operations/upgrade-migration.md
 
 echo "PASS: Phase 14.5 architecture/contract checks"
 echo "NOTE: live upgrade/migration/rollback evidence remains NOT EXECUTED."

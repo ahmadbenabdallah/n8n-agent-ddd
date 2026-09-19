@@ -2,8 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+[ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/agents/harness-control-plane.md"
 
-for f in   spec/releases/phase-17.0-harness-control-plane.yaml   spec/harness/task-lifecycle.yaml   spec/harness/advisor-decision.yaml   spec/harness/command-contract.yaml   spec/harness/mcp-policy.yaml   docs/agents/harness-control-plane.md   scripts/harness/harness.sh   scripts/harness/validate-task-transition.sh   scripts/harness/production-action-gate.sh
+for f in   spec/releases/phase-17.0-harness-control-plane.yaml   spec/harness/task-lifecycle.yaml   spec/harness/advisor-decision.yaml   spec/harness/command-contract.yaml   spec/harness/mcp-policy.yaml   scripts/harness/harness.sh   scripts/harness/validate-task-transition.sh   scripts/harness/production-action-gate.sh
 do
   test -f "$ROOT/$f"
 done

@@ -11,10 +11,7 @@ let failed = false;
 
 for (const [name, script] of commands) {
   console.log(`\n== ${name} ==`);
-  const result = spawnSync("pnpm", ["exec", "tsx", script], {
-    stdio: "inherit",
-    shell: process.platform === "win32"
-  });
+  const result = spawnSync(process.execPath, ["--import", "tsx", script], { stdio: "inherit" });
   if ((result.status ?? 1) !== 0) failed = true;
 }
 

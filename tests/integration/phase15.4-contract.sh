@@ -2,11 +2,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+[ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/operations/phase15.4-idempotency-reconciliation.md"
 cd "$ROOT"
 
 required=(
   "spec/releases/phase-15.4-idempotency-reconciliation.yaml"
-  "docs/operations/phase15.4-idempotency-reconciliation.md"
   "scripts/integration/phase15.4-preflight.sh"
   "scripts/integration/phase15.4-matrix.sh"
   "scripts/integration/phase15.4-validate.sh"

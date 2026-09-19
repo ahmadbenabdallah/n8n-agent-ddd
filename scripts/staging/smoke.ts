@@ -10,7 +10,13 @@ async function check(name: string, url: string) {
   console.log(`${name}: PASS (${response.status})`);
 }
 
-await check("n8n", `${required("N8N_EDITOR_BASE_URL")}/healthz`);
-await check("woocommerce", `${required("WOOCOMMERCE_BASE_URL")}/wp-json/wc/v3/system_status`);
+async function main() {
+  await check("n8n", `${required("N8N_EDITOR_BASE_URL")}/healthz`);
+  await check("woocommerce", `${required("WOOCOMMERCE_BASE_URL")}/wp-json/wc/v3/system_status`);
+  console.log("Phase 9 smoke: PASS");
+}
 
-console.log("Phase 9 smoke: PASS");
+main().catch((error) => {
+  console.error(`Phase 9 smoke: FAIL (${error.message})`);
+  process.exit(1);
+});

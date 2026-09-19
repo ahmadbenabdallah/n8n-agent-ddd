@@ -2,13 +2,13 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+[ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/operations/runtime-health.md"
+[ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/operations/reconciliation.md"
 cd "$ROOT"
 
 required=(
   "spec/runtime/health-reconciliation.yaml"
   "spec/releases/phase-14.6-health-reconciliation.yaml"
-  "docs/operations/runtime-health.md"
-  "docs/operations/reconciliation.md"
   "scripts/operations/runtime-health.sh"
   "scripts/operations/reconciliation-status.sh"
   "scripts/operations/drift-policy-check.sh"

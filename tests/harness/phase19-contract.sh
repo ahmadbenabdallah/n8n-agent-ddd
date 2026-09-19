@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+[ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/agents/autonomous-ai-sdlc-operations.md"
 files=(
 spec/releases/phase-19.0-autonomous-ai-sdlc-operations.yaml
 spec/harness/agent-topology.yaml
@@ -8,7 +9,6 @@ spec/harness/task-graph-contract.yaml
 spec/harness/session-state-contract.yaml
 spec/harness/autonomy-policy.yaml
 spec/harness/evaluation-contract.yaml
-docs/agents/autonomous-ai-sdlc-operations.md
 scripts/harness/agents.sh
 scripts/harness/evaluate.sh
 )

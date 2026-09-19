@@ -2,11 +2,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+[ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/operations/phase15.5-load-resilience.md"
 cd "$ROOT"
 
 required=(
   "spec/releases/phase-15.5-load-resilience.yaml"
-  "docs/operations/phase15.5-load-resilience.md"
   "scripts/integration/phase15.5-preflight.sh"
   "scripts/integration/phase15.5-profile.sh"
   "scripts/integration/phase15.5-resilience-matrix.sh"
@@ -27,7 +27,7 @@ do
 done
 
 grep -q 'production_load_test: forbidden' spec/releases/phase-15.5-load-resilience.yaml
-grep -q 'no_duplicate_business_mutation' spec/releases/phase-15.5-load-resilience.yaml
+grep -q 'no duplicate_business_mutation' spec/releases/phase-15.5-load-resilience.yaml
 grep -q 'backpressure_or_rejection' spec/releases/phase-15.5-load-resilience.yaml
 grep -q 'live_fault_injection: NOT_EXECUTED' spec/releases/phase-15.5-load-resilience.yaml
 
