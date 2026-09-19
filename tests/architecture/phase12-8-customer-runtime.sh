@@ -9,7 +9,7 @@ done
 # Raw deployment secrets must not be an end-user configuration surface.
 grep -q 'raw_env_exposure: false' "$ROOT/spec/runtime/customer-runtime-surface.yaml"
 # Durable configuration and extension state must have migrations.
-grep -q 'CREATE TABLE IF NOT EXISTS customer_configurations' "$ROOT/platform/state/db/migrations/0002_customer_runtime_configuration.sql"
-grep -q 'CREATE TABLE IF NOT EXISTS customer_extensions' "$ROOT/platform/state/db/migrations/0002_customer_runtime_configuration.sql"
-grep -q 'CREATE TABLE IF NOT EXISTS configuration_changes' "$ROOT/platform/state/db/migrations/0002_customer_runtime_configuration.sql"
+grep -q 'CREATE TABLE "customer_configurations"' "$ROOT/platform/state/db/migrations/0001_domain_state.sql"
+grep -q 'CREATE TABLE "customer_extensions"' "$ROOT/platform/state/db/migrations/0001_domain_state.sql"
+grep -q 'CREATE TABLE "configuration_changes"' "$ROOT/platform/state/db/migrations/0001_domain_state.sql"
 echo 'PHASE 12.8 CUSTOMER RUNTIME TEST PASS'

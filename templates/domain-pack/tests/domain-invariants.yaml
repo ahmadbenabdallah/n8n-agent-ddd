@@ -3,7 +3,7 @@ test_suite:
   cases:
     - id: T-AUTH-001            # platform-required
       given: LLM proposes a privileged mutation
-      expect: WF-10 must authorize; LLM cannot set execution_allowed
+      expect: the authorization workflow must allow it; the LLM cannot set execution_allowed
     - id: T-RECON-001           # platform-required
       given: an external call times out after the mutation may have succeeded
       expect: operation enters reconciliation before retry

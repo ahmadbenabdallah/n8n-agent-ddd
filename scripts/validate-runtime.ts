@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { readWorkflowRoles, workflowSpecPath } from "./lib/domain-roles";
 
 const required = [
   "runtime/n8n/runtime.yaml",
@@ -8,10 +9,7 @@ const required = [
   "runtime/reverse-proxy/runtime.yaml",
   "contracts/platform/workflow.yaml",
   "spec/schemas/workflow.schema.json",
-  "infrastructure/deployment/release.yaml",
-  "domains/tunisia-dtc/workflows/WF-10/workflow.yaml",
-  "domains/tunisia-dtc/workflows/WF-20/workflow.yaml",
-  "domains/tunisia-dtc/workflows/WF-16/workflow.yaml"
+  "infrastructure/deployment/release.yaml"
 ];
 
 let failed = false;
@@ -23,34 +21,38 @@ for (const file of required) {
   }
 }
 
-const wf10 = readFileSync(join(process.cwd(), "domains/tunisia-dtc/workflows/WF-10/workflow.yaml"), "utf8");
-for (const rule of [
-  "llm_can_authorize: false",
-  "only_authorized_branch_can_set_execution_allowed: true"
-]) {
-  if (!wf10.includes(rule)) {
-    console.error(`✗ WF-10 invariant missing: ${rule}`);
-    failed = true;
-  }
-}
+// Platform invariants are stated per role. Each domain nominates its own
+// workflow for a role (see docs ADR 0001), so resolve the role first and then
+// check the invariants in whichever workflow contract the domain named.
+const roleInvariants: Record<string, string[]> = {
+  authorization: ["llm_can_authorize: false", "only_authorized_branch_can_set_execution_allowed: true"],
+  privileged_external_execution: [
+    "callable_by_llm: false",
+    "callable_without_authorization: false",
+    "arbitrary_endpoint: false",
+    "client_supplied_price: false"
+  ],
+  response_rendering: ["No unverified price, stock, order or payment claims"]
+};
 
-const wf20 = readFileSync(join(process.cwd(), "domains/tunisia-dtc/workflows/WF-20/workflow.yaml"), "utf8");
-for (const rule of [
-  "callable_by_llm: false",
-  "callable_without_wf10_authorization: false",
-  "arbitrary_endpoint: false",
-  "client_supplied_price: false"
-]) {
-  if (!wf20.includes(rule)) {
-    console.error(`✗ WF-20 invariant missing: ${rule}`);
-    failed = true;
-  }
-}
+for (const domain of readdirSync("domains")) {
+  const roles = readWorkflowRoles(domain);
 
-const wf16 = readFileSync(join(process.cwd(), "domains/tunisia-dtc/workflows/WF-16/workflow.yaml"), "utf8");
-if (!wf16.includes("No unverified price, stock, order or payment claims")) {
-  console.error("✗ WF-16 invariant missing: renderer reports verified facts only");
-  failed = true;
+  for (const [role, rules] of Object.entries(roleInvariants)) {
+    const workflowId = roles[role];
+    if (!workflowId) continue; // validate-platform reports missing required roles
+
+    const spec = workflowSpecPath(domain, workflowId);
+    if (!existsSync(spec)) continue; // reported by validate-platform
+    const contents = readFileSync(spec, "utf8");
+
+    for (const rule of rules) {
+      if (!contents.includes(rule)) {
+        console.error(`✗ ${domain} ${role} (${workflowId}) invariant missing: ${rule}`);
+        failed = true;
+      }
+    }
+  }
 }
 
 process.exit(failed ? 1 : 0);

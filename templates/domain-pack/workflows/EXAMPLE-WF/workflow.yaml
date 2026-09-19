@@ -1,11 +1,11 @@
 workflow:
-  id: WF-XX
+  id: <workflow id>
   name: <Workflow name>
   bounded_context: <context-id>
   version: 0.1.0
   purpose: <What this workflow does.>
   dependencies:
-  - WF-10                       # when it needs an authorized action
+  - <authorization workflow id>   # when it needs an authorized action
   security: <The boundary this workflow must never cross.>
   inputs:
   - correlation_id
