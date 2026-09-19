@@ -26,3 +26,11 @@ CLAUDE.local.md
 .github/workflows/dor-ingress.yml
 .github/workflows/verify-attestation.yml
 .claude/settings.local.json
+
+# generated run output and backups (never commit: may contain real data)
+artifacts/
+scripts/artifacts/
+runtime/backups/
+runtime/evidence/**/backup/
+*.env
+!*.env.example

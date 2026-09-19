@@ -1,5 +1,0 @@
-Phase 11 production preflight
-Checking repository invariants...
-PASS: Phase 11 repository preflight
-
---- STDERR ---
