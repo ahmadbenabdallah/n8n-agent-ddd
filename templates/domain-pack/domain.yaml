@@ -31,10 +31,16 @@ sources_of_truth:
   commerce: <commerce system, or none>
   orchestration: n8n
   reasoning: llm
-  authorization: WF-10                    # platform-required
-  privileged_commerce_execution: WF-20    # platform-required when the domain mutates commerce
-  audit: WF-17                            # platform-required
-  monitoring_and_reconciliation: WF-19    # platform-required
+
+# Platform roles, filled by YOUR OWN workflow ids. The platform defines the
+# roles and their invariants; the ids are yours. Tunisia DTC happens to use
+# WF-10, WF-20, WF-16, WF-17 and WF-19; your domain can name them anything.
+workflow_roles:
+  authorization: <workflow id>                 # required: the only workflow that may allow an action
+  response_rendering: <workflow id>            # required: replies use verified facts only
+  audit: <workflow id>                         # required: records what happened
+  reconciliation: <workflow id>                # required: settles unknown external outcomes before retry
+  privileged_external_execution: <workflow id> # required when the domain changes an external system
 
 runtime_invariants:             # platform-required; defined in spec/invariants/platform.yaml
   - AUTH-001

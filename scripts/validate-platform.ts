@@ -1,5 +1,13 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import {
+  EXTERNAL_EXECUTION_ROLE,
+  REQUIRED_ROLES,
+  mutatesExternalSystem,
+  readRegistryIds,
+  readWorkflowRoles,
+  workflowSpecPath
+} from "./lib/domain-roles";
 
 const required = [
   "contracts/platform/action.yaml",
@@ -36,17 +44,29 @@ for (const rule of [
   }
 }
 
-const domain = readFileSync(join(process.cwd(), "domains/tunisia-dtc/domain.yaml"), "utf8");
-// WF-16 (renderer) is not a source of truth; its invariant is checked in validate-runtime.ts.
-for (const boundary of [
-  "authorization: WF-10",
-  "privileged_commerce_execution: WF-20",
-  "audit: WF-17",
-  "monitoring_and_reconciliation: WF-19"
-]) {
-  if (!domain.includes(boundary)) {
-    console.error(`✗ missing domain boundary: ${boundary}`);
-    failed = true;
+// Each domain nominates its own workflows for the platform roles (ADR 0001).
+// The platform checks the mapping exists and resolves; it never names a
+// workflow id itself.
+for (const domain of readdirSync("domains")) {
+  const roles = readWorkflowRoles(domain);
+  const registry = readRegistryIds(domain);
+  const expected = [...REQUIRED_ROLES, ...(mutatesExternalSystem(domain) ? [EXTERNAL_EXECUTION_ROLE] : [])];
+
+  for (const role of expected) {
+    const workflowId = roles[role];
+    if (!workflowId) {
+      console.error(`✗ ${domain}: workflow_roles is missing '${role}'`);
+      failed = true;
+      continue;
+    }
+    if (!registry.includes(workflowId)) {
+      console.error(`✗ ${domain}: role '${role}' names ${workflowId}, which is not in the domain registry`);
+      failed = true;
+    }
+    if (!existsSync(workflowSpecPath(domain, workflowId))) {
+      console.error(`✗ ${domain}: role '${role}' names ${workflowId}, which has no workflow.yaml`);
+      failed = true;
+    }
   }
 }
 

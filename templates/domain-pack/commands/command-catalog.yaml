@@ -1,5 +1,5 @@
 commands:
   - ProposeAction               # platform-required: the LLM proposes, never executes
-  - AuthorizeAction             # platform-required: WF-10
-  - ReconcileExecution          # platform-required: WF-19
+  - AuthorizeAction             # platform-required: the authorization role
+  - ReconcileExecution          # platform-required: the reconciliation role
   - <DomainCommand>

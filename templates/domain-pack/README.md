@@ -19,8 +19,8 @@ A starter for a new domain agent. `domains/tunisia-dtc/` is the complete worked 
 | `entities/`, `aggregates/`, `value-objects/` | yes | the domain model |
 | `commands/`, `events/`, `projections/` | yes | what the domain does, what it records, what it reads back |
 | `policies/` | yes | who may do what (includes the platform-required policies) |
-| `workflows/` | yes | `registry.yaml`, plus one `WF-xx/workflow.yaml` contract per workflow |
-| `knowledge/` | yes | documents for the knowledge base (WF-18) |
+| `workflows/` | yes | `registry.yaml`, plus one `<workflow-id>/workflow.yaml` contract per workflow |
+| `knowledge/` | yes | documents for the knowledge base, ingested by the knowledge workflow |
 | `adapters/` | yes | which channel and commerce adapters the domain uses |
 | `tests/` | yes | domain invariant test cases |
 | `prompts/`, `contracts/`, `security/` | optional | LLM prompts, domain contracts, security policy |
