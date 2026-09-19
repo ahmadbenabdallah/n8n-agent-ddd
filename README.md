@@ -167,7 +167,9 @@ All 21 workflows are currently placeholders. The table gives each one's purpose 
 | WF-19 | Maintenance and Monitoring | operations | Placeholder |
 | WF-20 | WooCommerce Gateway | privileged execution | Placeholder |
 
-A placeholder is a valid n8n workflow of three or four Code nodes that passes data through. It has no trigger and calls nothing. Earlier, fuller versions of most workflows were produced during design and are kept as reference material under `domains/tunisia-dtc/source-material/`; [`SOURCE-MATERIAL-INDEX.md`](domains/tunisia-dtc/SOURCE-MATERIAL-INDEX.md) maps each workflow to its reference package. They are reference, not the executable set.
+A placeholder is a valid n8n workflow of three or four Code nodes that passes data through. It has no trigger and calls nothing.
+
+The design work behind each workflow is kept per workflow in [`domains/tunisia-dtc/workflow-packages/`](domains/tunisia-dtc/workflow-packages/): one folder per WF-xx with its specification, validation pipeline, n8n implementation notes, security tests, end-to-end flows and setup guides, plus the fuller workflow JSON for WF-00, WF-01, WF-02 and WF-04. Older versions and the implementation guides sit under `source-material/`; [`SOURCE-MATERIAL-INDEX.md`](domains/tunisia-dtc/SOURCE-MATERIAL-INDEX.md) explains both. All of it is reference, not the executable set.
 
 **State.** PostgreSQL holds 18 tables: identities, conversations and conversation state, carts and cart items, order scopes, orders, actions, authorizations, execution operations, transactions, escalations, audit events, idempotency keys, knowledge documents, and the operator configuration tables. Row level security is enabled everywhere with no policies, so nothing is readable without an explicit grant. Audit events are append-only, enforced by a trigger. Idempotency runs through a `private.reserve_idempotency` function rather than application code. See [`platform/state/db/migrations/`](platform/state/db/migrations/).
 
