@@ -2,6 +2,7 @@ domain: tunisia-dtc
 version: 2026.09.1
 workflows:
 - id: WF-00
+  from_library: messenger-inbound
   name: Inbound Gateway
   category: ingress
   scope: shared
@@ -9,6 +10,7 @@ workflows:
   depends_on:
   - WF-01
 - id: WF-01
+  from_library: security-gate
   protected: true
   name: Security Gate
   category: security
@@ -17,6 +19,7 @@ workflows:
   depends_on:
   - WF-02
 - id: WF-02
+  from_library: identity
   name: Customer Identity
   category: identity
   scope: shared
@@ -31,6 +34,7 @@ workflows:
   depends_on:
   - WF-04
 - id: WF-04
+  from_library: intent-router
   name: Intent Router
   category: routing
   scope: shared

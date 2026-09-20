@@ -1,0 +1,491 @@
+{
+  "name": "WF-01 — Security Gate",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst required=[\"channel\",\"message_id\",\"text\"];\nconst missing=required.filter(k=>x[k]===undefined||x[k]===null);\nif(missing.length) return [{json:{...x,security:{status:\"reject\",reason:\"missing_required_fields\",missing}}}];\nreturn [{json:{...x,security:{status:\"pending\",checks:[]}}}];"
+      },
+      "id": "validate-canonical-input",
+      "name": "Validate Canonical Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -980,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.security?.status === 'pending' }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "input-valid?",
+      "name": "Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -740,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,security:{status:\"reject\",reason:\"malformed_canonical_message\",safe_to_reply:false}}}];"
+      },
+      "id": "reject-malformed-input",
+      "name": "Reject Malformed Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -500,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const text=String(x.text??\"\");\nconst normalized=text.normalize(\"NFKC\");\nconst unicodeLength=[...normalized].length;\nconst controlChars=[...normalized].filter(c=>/\\\\p{Cc}/u.test(c)&&c!==\"\\\\n\"&&c!==\"\\\\t\").length;\nreturn [{json:{...x,security_input:{normalized,unicode_length:unicodeLength,control_chars:controlChars}}}];"
+      },
+      "id": "normalize-text-security",
+      "name": "Normalize Text Security",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -500,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.security_input?.unicode_length > 12000 || $json.security_input?.control_chars > 20 }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "input-bounds",
+      "name": "Input Bounds",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,security:{status:\"reject\",reason:\"input_bounds_exceeded\",safe_to_reply:false}}}];"
+      },
+      "id": "reject-excessive-input",
+      "name": "Reject Excessive Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const t=x.security_input.normalized;\nconst patterns=[\n [/ignore\\\\s+(all|any|previous|prior)\\\\s+instructions/i,\"instruction_override\"],\n [/reveal|show|print|dump.*(system prompt|developer message|hidden instructions)/i,\"prompt_extraction\"],\n [/(api|secret|access|page|service)[-_ ]?key/i,\"secret_request\"],\n [/(developer|system)\\\\s+(message|prompt|instructions)/i,\"privileged_instruction_probe\"],\n [/you\\\\s+are\\\\s+now\\\\s+(admin|developer|system)/i,\"role_override\"],\n [/(execute|call)\\\\s+(the\\\\s+)?tool.*without/i,\"tool_bypass\"],\n [/(disable|bypass|turn off)\\\\s+(security|validation|rules)/i,\"security_bypass\"]\n];\nconst flags=[];\nfor(const [re,name] of patterns) if(re.test(t)) flags.push(name);\nreturn [{json:{...x,security_scan:{flags,injection_suspected:flags.length>0}}}];"
+      },
+      "id": "injection-pattern-scan",
+      "name": "Injection Pattern Scan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const t=x.security_input.normalized;\nconst patterns=[\n [/\\\\b\\\\d{13,19}\\\\b/,\"possible_card_number\"],\n [/\\\\b\\\\d{3,4}\\\\b/,\"possible_otp_or_cvv\"],\n [/(password|mot de passe|كلمة السر)/i,\"password_reference\"],\n [/(cvv|cvc|otp|one[- ]time code|verification code)/i,\"authentication_secret_reference\"],\n [/(api[_ -]?key|secret key|access token)/i,\"credential_reference\"]\n];\nconst flags=[];\nfor(const [re,name] of patterns) if(re.test(t)) flags.push(name);\nreturn [{json:{...x,sensitive_scan:{flags,sensitive_suspected:flags.length>0}}}];"
+      },
+      "id": "sensitive-data-scan",
+      "name": "Sensitive Data Scan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json; const t=x.security_input.normalized.trim().toLowerCase();\nconst previous=Array.isArray(x.recent_messages)?x.recent_messages.map(String):[];\nconst repetition=previous.slice(-5).filter(m=>m.trim().toLowerCase()===t).length;\nconst velocityCount=Number(x.messages_last_minute??0);\nreturn [{json:{...x,velocity_scan:{repetition,velocity_count:velocityCount,suspicious:repetition>=3||velocityCount>=30}}}];"
+      },
+      "id": "velocity---repetition-check",
+      "name": "Velocity / Repetition Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst flags=[\n ...(x.security_scan?.flags??[]),\n ...(x.sensitive_scan?.flags??[]),\n ...(x.velocity_scan?.suspicious?[\"velocity_or_repetition\"]:[])\n];\nlet status=\"clear\";\nlet route=\"continue\";\nif(flags.includes(\"secret_request\")||flags.includes(\"credential_reference\")||flags.includes(\"possible_card_number\")||flags.includes(\"authentication_secret_reference\")){\n  status=\"reject\"; route=\"safe_refusal\";\n} else if((x.security_scan?.injection_suspected)||x.velocity_scan?.suspicious){\n  status=\"review\"; route=\"controlled_response\";\n}\nreturn [{json:{...x,security:{\n status,route,flags,\n safe_to_reply:status!==\"reject\",\n llm_allowed:status!==\"reject\",\n tools_allowed:status===\"clear\",\n customer_content_is_untrusted:true,\n policy_priority:\"system_and_business_policy\"\n}}}];"
+      },
+      "id": "security-decision",
+      "name": "Security Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.security?.route }}",
+                    "rightValue": "safe_refusal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "safe_refusal"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.security?.route }}",
+                    "rightValue": "controlled_response",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "controlled_response"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.security?.route }}",
+                    "rightValue": "continue",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "continue"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route-security-decision",
+      "name": "Route Security Decision",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,security_result:{decision:\"refuse\",reason:$json.security.flags,action_execution:false,escalation_required:true}}}];"
+      },
+      "id": "safe-security-response",
+      "name": "Safe Security Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,security_result:{decision:\"controlled\",reason:$json.security.flags,action_execution:false,escalation_required:true,require_minimal_response:true}}}];"
+      },
+      "id": "controlled-response-boundary",
+      "name": "Controlled Response Boundary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json,security_result:{decision:\"continue\",action_execution:false,escalation_required:false}}}];"
+      },
+      "id": "continue-to-identity",
+      "name": "Continue to Identity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nreturn [{json:{\n ...x,\n security_contract:{\n  status:x.security?.status,\n  route:x.security?.route,\n  flags:x.security?.flags??[],\n  safe_to_reply:x.security?.safe_to_reply??false,\n  llm_allowed:x.security?.llm_allowed??false,\n  tools_allowed:x.security?.tools_allowed??false,\n  customer_content_untrusted:true\n }\n}}];"
+      },
+      "id": "security-contract",
+      "name": "Security Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1580,
+        220
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Canonical Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Canonical Input": {
+      "main": [
+        [
+          {
+            "node": "Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Normalize Text Security",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Malformed Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Text Security": {
+      "main": [
+        [
+          {
+            "node": "Input Bounds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Bounds": {
+      "main": [
+        [
+          {
+            "node": "Reject Excessive Input",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Injection Pattern Scan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Injection Pattern Scan": {
+      "main": [
+        [
+          {
+            "node": "Sensitive Data Scan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sensitive Data Scan": {
+      "main": [
+        [
+          {
+            "node": "Velocity / Repetition Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Velocity / Repetition Check": {
+      "main": [
+        [
+          {
+            "node": "Security Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security Decision": {
+      "main": [
+        [
+          {
+            "node": "Route Security Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Security Decision": {
+      "main": [
+        [
+          {
+            "node": "Safe Security Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Controlled Response Boundary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Continue to Identity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Safe Security Response": {
+      "main": [
+        [
+          {
+            "node": "Security Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Controlled Response Boundary": {
+      "main": [
+        [
+          {
+            "node": "Security Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Continue to Identity": {
+      "main": [
+        [
+          {
+            "node": "Security Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reject Excessive Input": {
+      "main": [
+        [
+          {
+            "node": "Security Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reject Malformed Input": {
+      "main": [
+        [
+          {
+            "node": "Security Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf01-security-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
