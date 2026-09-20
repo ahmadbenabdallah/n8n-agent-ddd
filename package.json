@@ -14,7 +14,11 @@
     "validate:agents": "tsx scripts/validate-agents.ts",
     "validate:skills": "tsx scripts/validate-skills.ts",
     "test": "tsx scripts/test.ts",
+    "test:coverage": "c8 --reporter=text --reporter=lcov tsx scripts/test.ts",
     "build": "tsc --noEmit",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
     "harness": "tsx harness/cli/index.ts",
     "harness:doctor": "tsx scripts/doctor.ts",
     "harness:validate": "tsx scripts/validate.ts",
@@ -86,11 +90,13 @@
     "test:provider-runtime": "bash tests/architecture/provider-neutral-runtime.sh"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
     "@types/node": "^22.0.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0",
+    "@types/pg": "^8.15.5",
+    "c8": "^12.0.0",
     "drizzle-kit": "^0.31.0",
-    "@types/pg": "^8.15.5"
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
   },
   "dependencies": {
     "drizzle-orm": "^0.44.0",
