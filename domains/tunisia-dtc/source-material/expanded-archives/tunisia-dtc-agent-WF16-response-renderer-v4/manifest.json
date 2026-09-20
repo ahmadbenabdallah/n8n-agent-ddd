@@ -1,9 +1,0 @@
-{
-  "package": "tunisia-dtc-agent-WF16-response-renderer-v4",
-  "version": "v4.0.0",
-  "workflow": "WF-16",
-  "name": "Response Renderer",
-  "channel": "messenger",
-  "principle": "render verified facts; do not reason, authorize, execute, or invent",
-  "files": 21
-}

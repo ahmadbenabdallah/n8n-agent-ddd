@@ -1,0 +1,17 @@
+policies:
+  authorization:                # platform-required
+    owner: <authorization workflow id>
+    deny_by_default: true
+  commerce_execution:           # platform-required when the domain mutates commerce
+    owner: <privileged execution workflow id>
+    allowed_targets: [<commerce system>]
+    arbitrary_endpoint: false
+  response:                     # platform-required
+    owner: <response rendering workflow id>
+    source: verified_facts_only
+  secrets:
+    rule: secrets_never_enter_llm_or_customer_context
+  human_handoff:
+    rule: active_human_owner_blocks_conflicting_automation
+  reconciliation:
+    rule: unknown_external_outcome_must_be_reconciled_before_retry

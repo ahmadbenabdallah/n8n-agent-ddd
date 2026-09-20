@@ -1,1 +1,13 @@
-{"compilerOptions":{"target":"ES2022","module":"NodeNext","moduleResolution":"NodeNext","strict":true,"noEmit":true,"skipLibCheck":true,"resolveJsonModule":true,"esModuleInterop":true},"include":["scripts/**/*.ts","harness/**/*.ts","platform/**/*.ts","tests/**/*.ts","drizzle.config.ts"]}
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
+  },
+  "include": ["scripts/**/*.ts", "harness/**/*.ts", "platform/**/*.ts", "tests/**/*.ts", "drizzle.config.ts"]
+}

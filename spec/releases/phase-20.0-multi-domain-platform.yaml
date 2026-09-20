@@ -57,7 +57,7 @@ isolation:
   audit_scope: true
   cross_domain_calls_default: "deny"
 gates:
-  contract: "tests/platform/phase20-contract.sh"
+  contract: "tests/platform/multi-domain-contract.sh"
   live_multi_domain_execution: "NOT_EXECUTED"
   live_cross_domain_isolation_test: "NOT_EXECUTED"
 truth:

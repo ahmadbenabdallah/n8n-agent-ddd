@@ -1,0 +1,13 @@
+events:
+  - ActionProposed              # platform-required
+  - ActionAuthorized            # platform-required
+  - ActionDenied                # platform-required
+  - ExecutionReconciled         # platform-required
+  - AvailabilityChecked
+  - HoldPlaced
+  - HoldExpired
+  - BookingConfirmed
+  - BookingRescheduled
+  - BookingCancelled
+  - BookingCompleted
+  - CustomerMarkedNoShow

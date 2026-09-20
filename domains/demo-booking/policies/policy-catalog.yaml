@@ -1,0 +1,28 @@
+policies:
+  authorization:                # platform-required
+    owner: BOOK-AUTHZ
+    deny_by_default: true
+  # commerce_execution is absent: this domain declares `commerce: none` and
+  # mutates no external system of record, so no privileged execution role
+  # exists to own such a policy.
+  response:                     # platform-required
+    owner: BOOK-REPLY
+    source: verified_facts_only
+  secrets:
+    rule: secrets_never_enter_llm_or_customer_context
+  human_handoff:
+    rule: active_human_owner_blocks_conflicting_automation
+  reconciliation:
+    rule: unknown_external_outcome_must_be_reconciled_before_retry
+
+  booking:
+    hold_duration_minutes: 15
+    reschedule_notice_hours: 12
+    cancellation_notice_hours: 4
+    max_active_bookings_per_customer: 3
+    required_assurance:
+      check_availability: ANONYMOUS
+      place_hold: CHANNEL_VERIFIED
+      confirm_booking: CONTACT_VERIFIED
+      reschedule_booking: BOOKING_OWNER
+      cancel_booking: BOOKING_OWNER

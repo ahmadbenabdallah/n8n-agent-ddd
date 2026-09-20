@@ -2,7 +2,7 @@
 set -euo pipefail
 
 schema="platform/state/db/schema/core.ts"
-sql="runtime/supabase/migrations/0001_domain_state.sql"
+sql="platform/state/db/migrations/0001_domain_state.sql"
 
 for table in \
   customer_identities conversations conversation_states carts cart_items \
@@ -13,7 +13,7 @@ do
     echo "Missing Drizzle table: $table"
     exit 1
   }
-  grep -q "create table if not exists $table" "$sql" || {
+  grep -q "CREATE TABLE \"$table\"" "$sql" || {
     echo "Missing canonical SQL table: $table"
     exit 1
   }

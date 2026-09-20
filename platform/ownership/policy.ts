@@ -1,8 +1,11 @@
-import { PROTECTED_WORKFLOWS } from "../extensions/types";
+import { isProtectedWorkflow, type ProtectedWorkflows } from "../extensions/types";
 import type { Surface, RuntimeOwner, WorkflowOwnershipRecord } from "./types";
 
-export function workflowOwnership(workflowKey: string): WorkflowOwnershipRecord {
-  const protectedWorkflow = (PROTECTED_WORKFLOWS as readonly string[]).includes(workflowKey);
+export function workflowOwnership(
+  workflowKey: string,
+  protectedWorkflows: ProtectedWorkflows,
+): WorkflowOwnershipRecord {
+  const protectedWorkflow = isProtectedWorkflow(workflowKey, protectedWorkflows);
   return {
     domainId: "*",
     surface: protectedWorkflow ? "core" : "extension",

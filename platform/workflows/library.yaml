@@ -1,0 +1,87 @@
+version: "1"
+name: shared-workflow-library
+
+# Reusable n8n workflows any domain can adopt instead of writing its own.
+#
+# These are the plumbing described in ADR 0002: the parts that do not change
+# when the business changes. A domain adopts an entry by referencing it from
+# its own registry with `from_library: <id>` and giving it a domain-local id.
+#
+# An entry names no domain. Where a workflow needs to call another workflow,
+# it declares the ROLE or library entry it needs under `requires_binding`, and
+# the adopting domain supplies its own ids.
+#
+# Provenance: extracted from the reference domain's workflow packages, which
+# remain that domain's own record. See domains/tunisia-dtc/SOURCE-MATERIAL-INDEX.md.
+
+entries:
+  - id: security-gate
+    name: Prompt and input security gate
+    category: security
+    path: security-gate/workflow.json
+    nodes: 17
+    domain_agnostic: true
+    requires_binding: []
+    configure: []
+    purpose: >-
+      Screens inbound text before it reaches any reasoning step: prompt
+      injection, jailbreak patterns, oversized input, disallowed content.
+      Contains no domain, channel or provider reference.
+    provenance: domains/tunisia-dtc/workflow-packages/WF-01
+
+  - id: identity
+    name: Customer identity resolution
+    category: identity
+    path: identity/workflow.json
+    nodes: 17
+    domain_agnostic: true
+    requires_binding: []
+    configure: []
+    purpose: >-
+      Resolves a channel-scoped identity to a stable customer identity and
+      carries the actor context forward. Contains no domain, channel or
+      provider reference.
+    provenance: domains/tunisia-dtc/workflow-packages/WF-02
+
+  - id: intent-router
+    name: Intent router
+    category: routing
+    path: intent-router/workflow.json
+    nodes: 13
+    domain_agnostic: false
+    requires_binding: []
+    configure:
+      - key: languages
+        why: >-
+          The extracted copy classifies Arabic alongside the default language.
+          An adopting domain sets its own language set.
+    purpose: >-
+      Classifies an inbound message into an intent so the domain can route it.
+      Routes to intents, never to a decision: it cannot authorize.
+    provenance: domains/tunisia-dtc/workflow-packages/WF-04
+
+  - id: messenger-inbound
+    name: Meta Messenger inbound gateway
+    category: ingress
+    channel: meta-messenger
+    path: channels/messenger-inbound/workflow.json
+    nodes: 16
+    domain_agnostic: true
+    channel_specific: true
+    requires_binding:
+      - security-gate
+      - identity
+      - conversation
+      - intent-router
+    configure:
+      - key: META_VERIFY_TOKEN
+        why: Meta webhook verification handshake.
+      - key: ALLOW_UNVERIFIED_META_WEBHOOK
+        why: >-
+          Must be false outside local development. When true the gateway
+          accepts a webhook whose signature was not verified.
+    purpose: >-
+      Terminates the Meta Messenger webhook, verifies the handshake and
+      signature, and hands off to the security gate. Specific to the channel,
+      not to any business domain: any domain on Messenger can adopt it.
+    provenance: domains/tunisia-dtc/workflow-packages/WF-00

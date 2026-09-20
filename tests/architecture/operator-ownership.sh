@@ -10,8 +10,8 @@ test -f spec/operator/runtime-binding.yaml
 test -f spec/operator/upgrade-ownership.yaml
 [ ! -d "${ROOT:-.}/docs" ] || test -f docs/architecture/operator-ownership.md
 
-grep -q 'WF-01, WF-10, WF-15, WF-20' spec/ownership/operator-ownership.yaml
-grep -q 'WF-10 remains authoritative' spec/operator/runtime-binding.yaml
+grep -q 'protected_workflows_are_declared_by_the_domain' spec/ownership/operator-ownership.yaml
+grep -q 'authorization role remains authoritative' spec/operator/runtime-binding.yaml
 [ ! -d "${ROOT:-.}/docs" ] || grep -q 'No custom UI assumption' docs/architecture/operator-ownership.md
 grep -q 'Incompatible extension is quarantined' spec/operator/upgrade-ownership.yaml
 

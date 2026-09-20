@@ -13,7 +13,7 @@ deliverables:
   - scripts/migrations/verify.sh
   - scripts/upgrades/compatibility-check.sh
   - scripts/upgrades/release-preflight.sh
-  - tests/architecture/phase14.5-upgrade-migration.sh
+  - tests/architecture/upgrade-migration.sh
 
 gates:
   lifecycle_contract: PASS

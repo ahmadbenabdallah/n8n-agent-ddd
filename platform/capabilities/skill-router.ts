@@ -16,9 +16,7 @@ export function routeSkills(
   sensitive = false,
 ): SkillRoute {
   const selected = candidates
-    .filter((candidate) =>
-      candidate.capabilities.some((capability) => taskCapabilities.includes(capability)),
-    )
+    .filter((candidate) => candidate.capabilities.some((capability) => taskCapabilities.includes(capability)))
     .map((candidate) => candidate.id);
 
   return {

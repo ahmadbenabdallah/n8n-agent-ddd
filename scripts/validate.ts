@@ -4,7 +4,7 @@ const commands = [
   ["agents", "scripts/validate-agents.ts"],
   ["skills", "scripts/validate-skills.ts"],
   ["platform", "scripts/validate-platform.ts"],
-  ["runtime", "scripts/validate-runtime.ts"]
+  ["runtime", "scripts/validate-runtime.ts"],
 ];
 
 let failed = false;

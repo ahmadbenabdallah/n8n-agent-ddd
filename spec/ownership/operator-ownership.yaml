@@ -26,4 +26,6 @@ surfaces:
   infrastructure:
     editable_by_operator: false
     source_of_truth: deployment_system
-protected_workflows: [WF-01, WF-10, WF-15, WF-20]
+# protected_workflows_are_declared_by_the_domain in workflows/registry.yaml
+# (`protected: true`). Every workflow filling a platform role must be protected.
+protected_workflows: declared_by_domain_registry

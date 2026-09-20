@@ -1,0 +1,59 @@
+version: "2026.09.10"
+phase: 10
+name: production-readiness-evidence
+status: execution-foundation-ready
+
+objective:
+  - execute the Phase 9 staging validation plan in a repeatable way
+  - collect machine-readable evidence for every production gate
+  - make certification a deterministic evidence decision rather than a documentation claim
+  - preserve explicit separation between staging validation and production activation
+
+evidence_domains:
+  - integration
+  - security
+  - e2e
+  - idempotency
+  - failure_reconciliation
+  - red_team
+  - load
+  - backup_restore
+  - blue_green
+  - drift
+  - architecture_review
+  - security_review
+
+required_gate_policy:
+  all_required_evidence: true
+  no_critical_findings: true
+  no_high_findings: true
+  rollback_verified: true
+  restore_verified: true
+  approvals_required:
+    - security
+    - architecture
+
+certification_rule:
+  CERTIFIED: all required evidence is PASS and approvals exist
+  BLOCKED: anything missing, failed, expired, or unapproved
+
+evidence_expiry:
+  staging_runtime: 7d
+  security_review: 30d
+  architecture_review: 30d
+  backup_restore: 30d
+  load_test: 14d
+
+domain_isolation:
+  domain_project_model: spec/architecture/domain-project-model.yaml
+  n8n_isolation: spec/architecture/n8n-domain-isolation.yaml
+  promotion: docs/architecture/domain-promotion-flow.md
+
+commerce_fallback:
+  policy: spec/architecture/commerce-fallback-policy.yaml
+  behavior: assisted_commerce_when_live_commerce_is_unavailable
+
+execution:
+  runbook: docs/operations/phase-10-execution-runbook.md
+  runner: scripts/readiness/run-release-gate.sh
+  command_map: tests/execution/phase-10-command-map.yaml

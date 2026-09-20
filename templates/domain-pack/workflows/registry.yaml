@@ -1,0 +1,48 @@
+domain: <your-domain-id>
+version: <YYYY.MM.N>
+# Your domain's workflows. Ids are yours to choose; keep them stable.
+# Every role in domain.yaml workflow_roles must appear here.
+#
+# `scope: shared` marks a workflow taken from the platform's reusable library
+# (channel ingress, prompt-security gate, audit writer and similar);
+# `scope: domain` marks your own business logic.
+#
+# `from_library: <entry>` records that you adopted a workflow from
+# platform/workflows/library.yaml. The id stays yours; the reference lets an
+# upgrade find where the logic came from. Run
+# `bash tests/platform/shared-workflow-library.sh` to check your references.
+#
+# `protected: true` marks a workflow the operator may not edit in n8n. Every
+# workflow you name in domain.yaml workflow_roles must be protected.
+workflows:
+- id: <ID>
+  name: <Inbound gateway for your channel>
+  category: ingress
+  scope: shared
+  from_library: messenger-inbound   # if your channel is Meta Messenger
+- id: <ID>
+  name: <Security gate>
+  category: security
+  scope: shared
+  from_library: security-gate
+  protected: true
+- id: <ID>
+  name: <Action authorization>
+  category: authorization
+  scope: shared
+- id: <ID>
+  name: <Response renderer>
+  category: rendering
+  scope: shared
+- id: <ID>
+  name: <Audit>
+  category: audit
+  scope: shared
+- id: <ID>
+  name: <Reconciliation and monitoring>
+  category: operations
+  scope: shared
+- id: <ID>
+  name: <Your business workflow, e.g. booking engine>
+  category: domain
+  scope: domain

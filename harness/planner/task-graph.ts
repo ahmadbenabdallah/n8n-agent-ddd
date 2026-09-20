@@ -4,13 +4,13 @@ export type TaskNode = {
 };
 
 export function readyTasks(tasks: TaskNode[], completed: Set<string>): TaskNode[] {
-  return tasks.filter(task =>
-    !completed.has(task.id) && task.dependencies.every(dep => completed.has(dep))
+  return tasks.filter(
+    (task) => !completed.has(task.id) && task.dependencies.every((dep) => completed.has(dep)),
   );
 }
 
 export function assertAcyclic(tasks: TaskNode[]): void {
-  const byId = new Map(tasks.map(t => [t.id, t]));
+  const byId = new Map(tasks.map((t) => [t.id, t]));
   const visiting = new Set<string>();
   const visited = new Set<string>();
 

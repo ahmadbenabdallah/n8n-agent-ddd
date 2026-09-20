@@ -1,7 +1,56 @@
 # Architecture
 
-Four layers: Platform, Agent System, Runtime, Domains.
+n8n Agent DDD is a framework for building domain-driven AI business agents. n8n runs the workflows; Postgres holds the durable state; business rules live in versioned domain packs. `domains/tunisia-dtc` is the reference example.
 
-Platform is domain-agnostic. The Agent System contains skills, roles, policies and the harness. Runtime uses n8n as orchestration, Supabase as durable state and Redis as optional queue. Domains contain business logic and workflows.
+## Layers
 
-Deployment principle: compute is disposable; state is durable; business rules are versioned; execution is idempotent; deployments are reversible.
+| Layer | Folder | Holds |
+|---|---|---|
+| Specification | `spec/`, `contracts/` | Platform contracts, invariants, schemas and release specs. Nothing domain-specific. |
+| Platform | `platform/` | Reusable, domain-agnostic capabilities: state and schema, capabilities, configuration, ownership, observability. |
+| Domains | `domains/<domain>/`, `templates/domain-pack/` | Business logic as a domain pack: model, policies, workflow contracts, prompts, adapters, tests. The template is the starter for a new domain. |
+| Runtime | `runtime/`, `infrastructure/` | What actually runs: n8n workflows, the database, Redis, the reverse proxy, monitoring, deployment. |
+| Agent system | `.agents/`, `.claude/`, `.codex/`, `harness/` | Skills, roles and policies for the AI developers working on this repo, plus the harness control plane. Not part of the customer runtime. |
+
+## Runtime model
+
+Workflow ids belong to the domain; the platform defines the roles they fill. Tunisia DTC fills them with WF-00 to WF-20.
+
+```
+channel (e.g. Messenger)
+  -> inbound gateway -> security gate -> identity -> conversation state
+  -> intent router   -> LLM reasoning (proposes only)
+  -> authorization              <- the only place an action becomes allowed
+  -> execution gateway          <- the only place an external system is changed
+  -> provider verification -> response rendering (verified facts only)
+  -> audit                 -> reconciliation of unknown outcomes
+```
+
+A domain declares the mapping in `domain.yaml` under `workflow_roles`.
+
+## Shared workflows and domain workflows
+
+The plumbing is written once and configured per domain: channel ingress, security gate, identity, conversation state, intent routing, the reasoning shell, the authorization engine, rendering, audit, knowledge ingestion, reconciliation and the execution gateway. A domain writes only its business workflows, such as a sales engine or a booking engine, and supplies the policies, prompts and catalogs the shared workflows enforce.
+
+Each domain registry marks every workflow `scope: shared` or `scope: domain`.
+
+- **State:** Postgres is the source of truth for domain state (identities, conversations, carts, orders, authorizations, audit, knowledge). Supabase is one supported provider; any Postgres works. Migrations live in `platform/state/db/migrations` and are provider-neutral, with provider-specific statements in `platform/state/db/profiles/`.
+- **Commerce:** the commerce platform (WooCommerce in the reference domain) stays the source of truth for products, prices, stock and orders.
+- **Queue:** Redis is optional, for n8n queue mode with workers.
+- **Knowledge:** pgvector inside the same Postgres.
+
+## Principles
+
+- Compute is disposable; state is durable. Domain state never depends on n8n execution history.
+- The LLM proposes; it never authorizes.
+- Business rules are versioned with the domain pack.
+- External mutations are idempotent, and unknown outcomes are reconciled before any retry.
+- Deployments are reversible.
+
+## Ports and adapters
+
+Channels and commerce platforms sit behind ports (`contracts/platform/`), so a domain can change provider without changing its rules. Today `ChannelPort` and `CommercePort` are specified; Identity, Payment, Knowledge and Observability ports are planned.
+
+## Current state
+
+The layers, contracts and the database schema exist. The runtime does not yet: 17 of the 21 workflows are stubs, the WF-10 to WF-20 authorization handshake is not enforced, and the deployment scripts are placeholders. See the project status section of `README.md`.

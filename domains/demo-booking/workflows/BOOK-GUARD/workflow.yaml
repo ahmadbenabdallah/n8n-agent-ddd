@@ -1,0 +1,32 @@
+workflow:
+  id: BOOK-GUARD
+  name: Prompt and input security gate
+  bounded_context: conversation
+  version: 0.1.0
+  purpose: >
+    Screens inbound text for prompt injection, jailbreak patterns, oversized input and disallowed content before any reasoning step sees it. Adopted from the shared library entry `security-gate`.
+  security: >
+    Blocked input never reaches the reasoning shell. The gate has no authority to allow a business action.
+  dependencies:
+  - BOOK-WHO
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Postgres; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown outcomes
+  from_library: security-gate
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml

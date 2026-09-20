@@ -5,7 +5,7 @@ principles:
   - "Business configuration is durable application state stored in PostgreSQL."
   - "Secrets are managed by n8n credentials/external secrets and are never copied into business configuration."
   - "Configuration changes are schema-validated, versioned, audited, and reversible."
-  - "Configuration cannot weaken security policy, WF-10 authorization, WF-20 privilege, or identity guarantees."
+  - "Configuration cannot weaken security policy, the authorization role, the privileged_external_execution role, or identity guarantees."
 classes:
   infrastructure:
     owner: platform
@@ -24,7 +24,7 @@ classes:
     owner: customer
     storage: n8n
     editable_by_customer: true
-    protected_workflows: [WF-01, WF-10, WF-15, WF-20]
+    protected_workflows: declared_by_domain_registry
   platform_core:
     owner: platform
     storage: git_release

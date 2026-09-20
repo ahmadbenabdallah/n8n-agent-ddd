@@ -54,10 +54,15 @@ sources_of_truth:
   commerce: woocommerce
   orchestration: n8n
   reasoning: llm
+
+# Platform roles filled by this domain's own workflows. The platform defines the
+# roles and their invariants; the workflow ids belong to the domain.
+workflow_roles:
   authorization: WF-10
-  privileged_commerce_execution: WF-20
+  privileged_external_execution: WF-20
+  response_rendering: WF-16
   audit: WF-17
-  monitoring_and_reconciliation: WF-19
+  reconciliation: WF-19
 
 runtime_invariants:
   - AUTH-001

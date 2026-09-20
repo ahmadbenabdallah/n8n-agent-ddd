@@ -1,0 +1,22 @@
+domain_id: <your-domain-id>
+version: 0.1.0
+
+n8n:
+  project: domain-<your-domain-id>
+  workflow_namespace: <your-domain-id>
+  environment: configurable
+
+adapters:
+  channels:
+    - <channel adapter, e.g. meta-messenger>
+  commerce:
+    - <commerce adapter, e.g. woocommerce, or none>
+  knowledge: postgres-pgvector
+
+state:
+  postgres_profile: configurable  # supabase or any other Postgres provider
+  postgres_schema: <your_domain_id>
+  vector_namespace: <your-domain-id>
+
+security:
+  authorization_policy: <your-domain-id>-authorization   # names your authorization role

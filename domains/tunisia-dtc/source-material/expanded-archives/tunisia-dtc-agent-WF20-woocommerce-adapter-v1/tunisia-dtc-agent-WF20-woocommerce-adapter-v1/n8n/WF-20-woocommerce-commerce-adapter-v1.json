@@ -1,0 +1,519 @@
+{
+  "name": "WF-20 \u2014 WooCommerce Commerce Adapter v1",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "b7d2747ea4a57088ab3c8b6b643603a2",
+      "name": "WF20 Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst errors=[];\nif(!x || typeof x!=='object') errors.push('input_not_object');\nconst allowed=['get_product','get_variation','list_products','get_order','create_cod_order','health'];\nif(!allowed.includes(x.operation)) errors.push('unsupported_operation');\nif(['get_product','get_variation','get_order'].includes(x.operation) && !x.id) errors.push('missing_id');\nif(x.operation==='get_variation' && !x.product_id) errors.push('missing_product_id');\nif(x.operation==='create_cod_order'){\n  if(!x.idempotency_key) errors.push('missing_idempotency_key');\n  if(!Array.isArray(x.line_items) || !x.line_items.length) errors.push('missing_line_items');\n  if(!x.billing || !x.billing.first_name || !x.billing.phone) errors.push('missing_billing');\n  if(!x.billing.country) errors.push('missing_country');\n}\nreturn [{json:{...x, _valid:errors.length===0, validation_errors:errors}}];"
+      },
+      "id": "f4e58dbec53cbb49fae067ee68892d7d",
+      "name": "Validate Commerce Adapter Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json._valid}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "b3784c4943d928861e07679aff704f90",
+      "name": "Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{success:false,error_code:'INVALID_ADAPTER_REQUEST',customer_safe_message:'I could not process that request right now.',correlation_id:$execution.id}}];"
+      },
+      "id": "1bd968340d3d1ef2ab3f971872109be6",
+      "name": "Reject Invalid Adapter Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        660,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.operation}}",
+                    "operation": "equals",
+                    "value2": "get_product"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.operation}}",
+                    "operation": "equals",
+                    "value2": "get_variation"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.operation}}",
+                    "operation": "equals",
+                    "value2": "list_products"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.operation}}",
+                    "operation": "equals",
+                    "value2": "get_order"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.operation}}",
+                    "operation": "equals",
+                    "value2": "create_cod_order"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.operation}}",
+                    "operation": "equals",
+                    "value2": "health"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "id": "6c957ce9ba173824fdf8bd95137a6bb6",
+      "name": "Route Operation",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        660,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/v3/products/' + encodeURIComponent($json.id)}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "d7362c66f60d5b3ebc711390a5bcd17a",
+      "name": "Woo Get Product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        900,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/v3/products/' + encodeURIComponent($json.product_id) + '/variations/' + encodeURIComponent($json.id)}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "4e45628c01f5fabd2daaa950fd693bfe",
+      "name": "Woo Get Variation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        900,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/v3/products?status=publish&per_page=20&search=' + encodeURIComponent($json.search || '')}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "1cd3b963b113922b3a650fba68168cae",
+      "name": "Woo List Products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        900,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/v3/orders/' + encodeURIComponent($json.id)}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "8daa3aa243948aa614f50233243ccf0c",
+      "name": "Woo Get Order",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/v3/orders'}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{JSON.stringify({\n  payment_method: $env.WOOCOMMERCE_COD_PAYMENT_METHOD || 'cod',\n  payment_method_title: $env.WOOCOMMERCE_COD_PAYMENT_TITLE || 'Cash on Delivery',\n  set_paid: false,\n  status: $env.WOOCOMMERCE_INITIAL_COD_STATUS || 'processing',\n  billing: $json.billing,\n  shipping: $json.shipping || $json.billing,\n  line_items: $json.line_items.map(i => ({\n    product_id: Number(i.product_id),\n    ...(i.variation_id ? {variation_id:Number(i.variation_id)} : {}),\n    quantity: Number(i.quantity)\n  })),\n  customer_note: $json.customer_note || '',\n  created_via: 'tunisia-dtc-agent',\n  meta_data: [\n    {key:'_dtc_agent_idempotency_key', value:$json.idempotency_key},\n    {key:'_dtc_agent_channel', value:$json.channel || 'messenger'},\n    {key:'_dtc_agent_conversation_id', value:$json.conversation_id || ''}\n  ]\n})}}"
+      },
+      "id": "faec2d4260af026510c34a9f1733847a",
+      "name": "Woo Create COD Order",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        900,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.WOOCOMMERCE_BASE_URL + '/wp-json/wc/v3/system_status'}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "c2739624bcb341fd916aa35318f79353",
+      "name": "Woo Health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        900,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst op=$input.first().json.operation || x.operation || 'unknown';\nconst raw=x;\nlet result={success:true, operation:op, correlation_id:$execution.id};\nif(op==='create_cod_order'){\n  result.resource_type='order';\n  result.order={\n    id: raw.id,\n    number: raw.number,\n    status: raw.status,\n    currency: raw.currency,\n    total: raw.total,\n    payment_method: raw.payment_method,\n    payment_method_title: raw.payment_method_title,\n    date_created: raw.date_created,\n    line_items:(raw.line_items||[]).map(i=>({\n      id:i.id, product_id:i.product_id, variation_id:i.variation_id,\n      name:i.name, quantity:i.quantity, total:i.total\n    }))\n  };\n  result.verified_execution = Number.isInteger(raw.id) && !!raw.number;\n} else if(op==='get_order'){\n  result.order={\n    id:raw.id, number:raw.number, status:raw.status, currency:raw.currency,\n    total:raw.total, date_created:raw.date_created,\n    line_items:(raw.line_items||[]).map(i=>({\n      product_id:i.product_id, variation_id:i.variation_id,\n      name:i.name, quantity:i.quantity, total:i.total\n    }))\n  };\n} else if(op==='get_product' || op==='get_variation'){\n  result.product={\n    id:raw.id, sku:raw.sku, name:raw.name,\n    type:raw.type, price:raw.price, regular_price:raw.regular_price,\n    sale_price:raw.sale_price, stock_status:raw.stock_status,\n    stock_quantity:raw.stock_quantity, manage_stock:raw.manage_stock,\n    in_stock:raw.in_stock, purchasable:raw.purchasable,\n    variations:raw.variations\n  };\n  result.verified_source='woocommerce';\n} else {\n  result.data=raw;\n}\nreturn [{json:result}];"
+      },
+      "id": "6dd4da5b6739898e31dcda1f8505cce6",
+      "name": "Normalize Woo Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$json;\nconst status=x.statusCode || x.status || 0;\nreturn [{json:{\n  success:false,\n  operation:x.operation || 'unknown',\n  error_code: status===401||status===403?'WOOCOMMERCE_AUTHORIZATION_ERROR':\n             status===404?'WOOCOMMERCE_NOT_FOUND':\n             status>=500?'WOOCOMMERCE_SERVER_ERROR':'WOOCOMMERCE_API_ERROR',\n  customer_safe_message:'The commerce system could not confirm that request right now.',\n  correlation_id:$execution.id\n}}];"
+      },
+      "id": "82b099998b228616654bf4dc1916a535",
+      "name": "Woo API Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WF20 Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Commerce Adapter Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Commerce Adapter Input": {
+      "main": [
+        [
+          {
+            "node": "Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Route Operation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Adapter Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Operation": {
+      "main": [
+        [
+          {
+            "node": "Woo Get Product",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Woo Get Variation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Woo List Products",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Woo Get Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Woo Create COD Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Woo Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Woo Get Product": {
+      "main": [
+        [
+          {
+            "node": "Normalize Woo Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Woo Get Variation": {
+      "main": [
+        [
+          {
+            "node": "Normalize Woo Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Woo List Products": {
+      "main": [
+        [
+          {
+            "node": "Normalize Woo Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Woo Get Order": {
+      "main": [
+        [
+          {
+            "node": "Normalize Woo Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Woo Create COD Order": {
+      "main": [
+        [
+          {
+            "node": "Normalize Woo Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Woo Health": {
+      "main": [
+        [
+          {
+            "node": "Normalize Woo Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "wf20-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "tunisia-dtc"
+    },
+    {
+      "name": "commerce"
+    },
+    {
+      "name": "woocommerce"
+    },
+    {
+      "name": "wf-20"
+    }
+  ]
+}

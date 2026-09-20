@@ -3,11 +3,21 @@
   "type": "object",
   "required": ["correlationId", "classification", "action", "autonomous", "reason"],
   "properties": {
-    "correlationId": {"type": "string"},
-    "classification": {"enum": ["healthy", "transient", "degraded", "critical", "unknown_external_outcome"]},
-    "action": {"enum": ["none", "bounded_retry", "alert_and_reconcile", "freeze_and_escalate", "reconcile_before_retry"]},
-    "autonomous": {"type": "boolean"},
-    "reason": {"type": "string"}
+    "correlationId": { "type": "string" },
+    "classification": {
+      "enum": ["healthy", "transient", "degraded", "critical", "unknown_external_outcome"]
+    },
+    "action": {
+      "enum": [
+        "none",
+        "bounded_retry",
+        "alert_and_reconcile",
+        "freeze_and_escalate",
+        "reconcile_before_retry"
+      ]
+    },
+    "autonomous": { "type": "boolean" },
+    "reason": { "type": "string" }
   },
   "additionalProperties": false
 }

@@ -1,0 +1,27 @@
+version: "2026.09.1"
+
+rules:
+  - id: BK-001
+    statement: A resource is never double-booked for overlapping time windows.
+    severity: critical
+  - id: BK-002
+    statement: A hold expires after the configured hold duration and is never silently extended.
+    severity: critical
+  - id: BK-003
+    statement: Only the booking owner may reschedule or cancel that booking.
+    severity: critical
+  - id: BK-004
+    statement: A booking cannot start outside the resource's opening hours.
+    severity: high
+  - id: BK-005
+    statement: A change inside the notice period requires a human agent.
+    severity: high
+  - id: BK-006
+    statement: A customer holds at most three active bookings.
+    severity: medium
+  - id: BK-007
+    statement: A reply never describes a held slot as a confirmed booking.
+    severity: critical
+  - id: BK-008
+    statement: A cancelled or completed booking is terminal.
+    severity: high

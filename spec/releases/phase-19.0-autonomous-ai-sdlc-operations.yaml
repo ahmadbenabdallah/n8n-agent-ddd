@@ -30,7 +30,7 @@ controls:
   self_improvement_requires_evidence: true
   human_approval_for_high_impact_actions: true
 gates:
-  contract: "tests/harness/phase19-contract.sh"
+  contract: "tests/harness/ai-sdlc-operations-contract.sh"
   live_multi_agent_execution: "NOT_EXECUTED"
   live_autonomous_production_operations: "NOT_EXECUTED"
 truth:

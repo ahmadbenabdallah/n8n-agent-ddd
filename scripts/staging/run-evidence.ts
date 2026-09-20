@@ -22,9 +22,15 @@ const checks = [
   "workflow-drift",
 ];
 
-console.log(JSON.stringify({
-  phase: 9,
-  status: "execution-required",
-  checks,
-  production_certification: false,
-}, null, 2));
+console.log(
+  JSON.stringify(
+    {
+      phase: 9,
+      status: "execution-required",
+      checks,
+      production_certification: false,
+    },
+    null,
+    2,
+  ),
+);

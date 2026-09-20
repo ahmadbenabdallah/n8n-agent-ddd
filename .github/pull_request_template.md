@@ -9,7 +9,7 @@
 - [ ] Security-sensitive
 
 ## Validation
-- [ ] `pnpm doctor`
+- [ ] `pnpm run doctor`
 - [ ] `pnpm validate`
 - [ ] `pnpm test`
 - [ ] Security checks

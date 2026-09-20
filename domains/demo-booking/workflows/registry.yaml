@@ -1,0 +1,74 @@
+domain: demo-booking
+version: 2026.09.1
+# Ids are this domain's own. `from_library` records what was adopted from
+# platform/workflows/library.yaml; `protected: true` marks what the operator
+# may not edit in n8n. Every workflow named in domain.yaml workflow_roles
+# must be protected.
+workflows:
+- id: BOOK-IN
+  name: Messenger inbound gateway
+  category: ingress
+  scope: shared
+  from_library: messenger-inbound
+  context: conversation
+  depends_on:
+  - BOOK-GUARD
+- id: BOOK-GUARD
+  name: Prompt and input security gate
+  category: security
+  scope: shared
+  from_library: security-gate
+  protected: true
+  context: conversation
+  depends_on:
+  - BOOK-WHO
+- id: BOOK-WHO
+  name: Customer identity resolution
+  category: identity
+  scope: shared
+  from_library: identity
+  context: conversation
+  depends_on:
+  - BOOK-ROUTE
+- id: BOOK-ROUTE
+  name: Intent router
+  category: routing
+  scope: shared
+  from_library: intent-router
+  context: conversation
+- id: BOOK-AVAIL
+  name: Availability engine
+  category: domain
+  scope: domain
+  context: scheduling
+- id: BOOK-RESERVE
+  name: Reservation engine
+  category: domain
+  scope: domain
+  context: reservation
+  depends_on:
+  - BOOK-AUTHZ
+- id: BOOK-AUTHZ
+  name: Booking authorization
+  category: authorization
+  scope: shared
+  protected: true
+  context: governance
+- id: BOOK-REPLY
+  name: Response renderer
+  category: rendering
+  scope: shared
+  protected: true
+  context: governance
+- id: BOOK-AUDIT
+  name: Audit writer
+  category: audit
+  scope: shared
+  protected: true
+  context: governance
+- id: BOOK-RECON
+  name: Reconciliation and monitoring
+  category: operations
+  scope: shared
+  protected: true
+  context: governance

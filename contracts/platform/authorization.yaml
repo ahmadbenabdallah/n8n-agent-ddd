@@ -5,14 +5,17 @@ states:
   - REQUESTED
   - AUTHORIZED
   - EXECUTION_STARTED
-  - WOOCOMMERCE_MUTATION
+  - EXTERNAL_MUTATION
   - VERIFICATION
   - COMPLETED
   - REJECTED
   - RECONCILIATION_REQUIRED
 
+# Rules name platform roles, never workflow ids. A domain maps roles to its own
+# ids in domain.yaml under workflow_roles (ADR 0001).
 rules:
-  - only_wf10_can_authorize_commerce_execution
+  - only_authorization_role_can_authorize_execution
+  - only_privileged_execution_role_can_mutate_external_system
   - only_authorized_branch_can_set_execution_allowed_true
   - audit_does_not_authorize
   - llm_does_not_authorize

@@ -1,0 +1,22 @@
+domain_id: demo-booking
+version: 0.1.0
+
+n8n:
+  project: domain-demo-booking
+  workflow_namespace: demo-booking
+  environment: configurable
+
+adapters:
+  channels:
+    - meta-messenger
+  commerce:
+    - none
+  knowledge: postgres-pgvector
+
+state:
+  postgres_profile: configurable  # supabase or any other Postgres provider
+  postgres_schema: demo_booking
+  vector_namespace: demo-booking
+
+security:
+  authorization_policy: demo-booking-authorization   # the domain's authorization role

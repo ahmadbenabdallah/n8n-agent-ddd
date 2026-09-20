@@ -1,0 +1,4 @@
+entities:
+  <EntityName>:
+    key: <entity_id>
+    attributes: [<attribute>, <attribute>]

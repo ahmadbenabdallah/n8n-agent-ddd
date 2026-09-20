@@ -4,12 +4,12 @@
   "type": "object",
   "required": ["task_id", "agent", "lifecycle_state", "selected_skills"],
   "properties": {
-    "task_id": {"type": "string"},
-    "agent": {"type": "string"},
-    "lifecycle_state": {"type": "string"},
-    "selected_skills": {"type": "array", "items": {"type": "string"}},
-    "worktree": {"type": "string"},
-    "checks": {"type": "array"},
-    "artifacts": {"type": "array"}
+    "task_id": { "type": "string" },
+    "agent": { "type": "string" },
+    "lifecycle_state": { "type": "string" },
+    "selected_skills": { "type": "array", "items": { "type": "string" } },
+    "worktree": { "type": "string" },
+    "checks": { "type": "array" },
+    "artifacts": { "type": "array" }
   }
 }

@@ -1,0 +1,49 @@
+workflow:
+  id: BOOK-AUTHZ
+  name: Booking authorization
+  bounded_context: governance
+  version: 0.1.0
+  role: authorization
+  purpose: >
+    The only workflow that may allow a booking action. It evaluates the
+    proposed action against the domain's policies and the caller's identity
+    assurance, then records an authorization decision. It never contacts the
+    customer and never renders a reply.
+  security: >
+    Fail closed. An unknown action, an unknown policy version or a missing
+    identity assurance is a denial, not a default-allow.
+  dependencies:
+  - BOOK-RESERVE
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Postgres; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown outcomes
+
+  # Platform invariants for the authorization role (AUTH-001, AUTH-002).
+  llm_can_authorize: false
+  only_authorized_branch_can_set_execution_allowed: true
+
+  authorization:
+    identity_assurance_required: BOOKING_OWNER   # to change an existing booking
+    policy_source: policies/policy-catalog.yaml
+    decisions:
+    - ALLOW
+    - DENY
+    - REQUIRES_HUMAN
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml
+  - contracts/platform/action.yaml

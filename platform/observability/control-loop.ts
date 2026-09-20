@@ -1,9 +1,4 @@
-export type DecisionClass =
-  | "healthy"
-  | "transient"
-  | "degraded"
-  | "critical"
-  | "unknown_external_outcome";
+export type DecisionClass = "healthy" | "transient" | "degraded" | "critical" | "unknown_external_outcome";
 
 export type OperationalAction =
   | "none"
@@ -55,15 +50,45 @@ export function decideControlAction(o: ControlObservation): ControlDecision {
 
   switch (classification) {
     case "healthy":
-      return { correlationId: o.correlationId, classification, action: "none", autonomous: true, reason: "No operational intervention required." };
+      return {
+        correlationId: o.correlationId,
+        classification,
+        action: "none",
+        autonomous: true,
+        reason: "No operational intervention required.",
+      };
     case "transient":
-      return { correlationId: o.correlationId, classification, action: "bounded_retry", autonomous: true, reason: "Transient internal failure is eligible for bounded retry." };
+      return {
+        correlationId: o.correlationId,
+        classification,
+        action: "bounded_retry",
+        autonomous: true,
+        reason: "Transient internal failure is eligible for bounded retry.",
+      };
     case "degraded":
-      return { correlationId: o.correlationId, classification, action: "alert_and_reconcile", autonomous: true, reason: "Degraded runtime requires alerting and reconciliation." };
+      return {
+        correlationId: o.correlationId,
+        classification,
+        action: "alert_and_reconcile",
+        autonomous: true,
+        reason: "Degraded runtime requires alerting and reconciliation.",
+      };
     case "critical":
-      return { correlationId: o.correlationId, classification, action: "freeze_and_escalate", autonomous: false, reason: "Critical integrity/runtime failure requires a freeze and human escalation." };
+      return {
+        correlationId: o.correlationId,
+        classification,
+        action: "freeze_and_escalate",
+        autonomous: false,
+        reason: "Critical integrity/runtime failure requires a freeze and human escalation.",
+      };
     case "unknown_external_outcome":
-      return { correlationId: o.correlationId, classification, action: "reconcile_before_retry", autonomous: true, reason: "External outcome is unknown; reconciliation must precede any retry." };
+      return {
+        correlationId: o.correlationId,
+        classification,
+        action: "reconcile_before_retry",
+        autonomous: true,
+        reason: "External outcome is unknown; reconciliation must precede any retry.",
+      };
   }
 }
 

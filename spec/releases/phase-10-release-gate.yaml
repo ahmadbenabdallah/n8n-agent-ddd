@@ -26,5 +26,5 @@ decision:
     - security approval is present
 
 certification_artifact:
-  path: evidence/phase-10/certification.json
+  path: runtime/evidence/phase-10/certification.json
   generated_by: scripts/readiness/evaluate.ts

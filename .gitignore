@@ -7,10 +7,13 @@ dist/
 coverage/
 *.log
 
-docs/
+/docs/
 # ai-sdlc: local dev-lifecycle tooling, not part of the runtime
 .ai-sdlc/
 .worktrees/
+backlog/
+.impeccable/
+ci-proposed/
 
 # ai-sdlc:runtime-gitignore
 .ai-sdlc/state.db
@@ -26,3 +29,11 @@ CLAUDE.local.md
 .github/workflows/dor-ingress.yml
 .github/workflows/verify-attestation.yml
 .claude/settings.local.json
+
+# generated run output and backups (never commit: may contain real data)
+artifacts/
+scripts/artifacts/
+runtime/backups/
+runtime/evidence/**/backup/
+*.env
+!*.env.example

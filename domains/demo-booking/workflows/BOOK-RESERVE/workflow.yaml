@@ -1,0 +1,33 @@
+workflow:
+  id: BOOK-RESERVE
+  name: Reservation engine
+  bounded_context: reservation
+  version: 0.1.0
+  purpose: >
+    The domain's business logic: places a hold on a slot, converts a hold into a confirmed booking, reschedules and cancels, applying the domain's own rules about notice periods and double-booking.
+  security: >
+    Proposes only. It may not commit a booking without an ALLOW decision from the authorization role.
+  dependencies:
+  - BOOK-AUTHZ
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Postgres; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown outcomes
+  proposes_only: true
+  requires_authorization_from: BOOK-AUTHZ
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml

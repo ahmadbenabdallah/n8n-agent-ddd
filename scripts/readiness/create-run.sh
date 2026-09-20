@@ -2,7 +2,7 @@
 set -euo pipefail
 
 RUN_ID="${1:-$(date -u +%Y%m%dT%H%M%SZ)}"
-ROOT="evidence/phase-10/runs/${RUN_ID}"
+ROOT="runtime/evidence/phase-10/runs/${RUN_ID}"
 mkdir -p "${ROOT}"
 
 cat > "${ROOT}/run-manifest.json" <<EOF

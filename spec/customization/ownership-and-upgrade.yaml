@@ -16,7 +16,9 @@ ownership:
     source: n8n_credentials_or_external_secrets
     update: customer_or_authorized_operator
     editable_in_n8n: true
-protected_workflows: [WF-01, WF-10, WF-15, WF-20]
+# protected_workflows_are_platform_owned. The set is declared by each domain
+# in workflows/registry.yaml as `protected: true`; the platform names no id.
+protected_workflows: declared_by_domain_registry
 upgrade_strategy:
   - "Back up durable state before migration."
   - "Snapshot extension registry and customer configuration versions."

@@ -1,0 +1,5 @@
+commands:
+  - ProposeAction               # platform-required: the LLM proposes, never executes
+  - AuthorizeAction             # platform-required: the authorization role
+  - ReconcileExecution          # platform-required: the reconciliation role
+  - <DomainCommand>

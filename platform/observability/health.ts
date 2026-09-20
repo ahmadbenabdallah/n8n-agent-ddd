@@ -10,8 +10,8 @@ export interface HealthCheck {
 }
 
 export function summarizeHealth(checks: HealthCheck[]) {
-  if (checks.some(c => c.status === "unhealthy")) return "unhealthy";
-  if (checks.some(c => c.status === "unknown")) return "unknown";
-  if (checks.some(c => c.status === "degraded")) return "degraded";
+  if (checks.some((c) => c.status === "unhealthy")) return "unhealthy";
+  if (checks.some((c) => c.status === "unknown")) return "unknown";
+  if (checks.some((c) => c.status === "degraded")) return "degraded";
   return "healthy";
 }

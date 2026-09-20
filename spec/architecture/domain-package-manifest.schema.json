@@ -4,40 +4,40 @@
   "type": "object",
   "required": ["domain_id", "version", "n8n", "adapters", "state", "security"],
   "properties": {
-    "domain_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]+$"},
-    "version": {"type": "string"},
+    "domain_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]+$" },
+    "version": { "type": "string" },
     "n8n": {
       "type": "object",
       "required": ["project", "workflow_namespace"],
       "properties": {
-        "project": {"type": "string"},
-        "workflow_namespace": {"type": "string"},
-        "environment": {"type": "string"}
+        "project": { "type": "string" },
+        "workflow_namespace": { "type": "string" },
+        "environment": { "type": "string" }
       }
     },
     "adapters": {
       "type": "object",
       "required": ["channels"],
       "properties": {
-        "channels": {"type": "array", "items": {"type": "string"}},
-        "commerce": {"type": ["string", "null"]},
-        "knowledge": {"type": "string"}
+        "channels": { "type": "array", "items": { "type": "string" } },
+        "commerce": { "type": ["string", "null"] },
+        "knowledge": { "type": "string" }
       }
     },
     "state": {
       "type": "object",
       "required": ["postgres_profile", "vector_namespace"],
       "properties": {
-        "postgres_profile": {"type": "string"},
-        "postgres_schema": {"type": "string"},
-        "vector_namespace": {"type": "string"}
+        "postgres_profile": { "type": "string" },
+        "postgres_schema": { "type": "string" },
+        "vector_namespace": { "type": "string" }
       }
     },
     "security": {
       "type": "object",
       "required": ["authorization_policy"],
       "properties": {
-        "authorization_policy": {"type": "string"}
+        "authorization_policy": { "type": "string" }
       }
     }
   }

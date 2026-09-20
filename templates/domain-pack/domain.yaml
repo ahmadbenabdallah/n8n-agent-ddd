@@ -1,0 +1,54 @@
+domain:
+  id: <your-domain-id>          # stable, lowercase, e.g. tunisia-dtc
+  name: <Human-readable name>
+  version: "<YYYY.MM.N>"
+  purpose: >
+    <Who the agent serves, on which channels, doing what.>
+
+bounded_contexts:
+  - id: <context-id>
+    responsibility: <What this context owns.>
+  - id: governance              # platform-required
+    responsibility: Authorization, audit, reconciliation and monitoring.
+
+actors:
+  - customer
+  - human_agent
+  - autonomous_agent
+  - operator
+  - <external system, e.g. commerce platform or channel>
+
+identity_ladder:                # lowest to highest assurance; see domains/tunisia-dtc/domain.yaml
+  - ANONYMOUS
+  - <LEVEL>
+
+language_policy:
+  default:
+    language: <language code>
+
+sources_of_truth:
+  domain_state: postgres        # provider profile (Supabase or another Postgres) is set in domain-project.yaml
+  commerce: <commerce system, or none>
+  orchestration: n8n
+  reasoning: llm
+
+# Platform roles, filled by YOUR OWN workflow ids. The platform defines the
+# roles and their invariants; the ids are yours. Tunisia DTC happens to use
+# WF-10, WF-20, WF-16, WF-17 and WF-19; your domain can name them anything.
+workflow_roles:
+  authorization: <workflow id>                 # required: the only workflow that may allow an action
+  response_rendering: <workflow id>            # required: replies use verified facts only
+  audit: <workflow id>                         # required: records what happened
+  reconciliation: <workflow id>                # required: settles unknown external outcomes before retry
+  privileged_external_execution: <workflow id> # required when the domain changes an external system
+
+runtime_invariants:             # platform-required; defined in spec/invariants/platform.yaml
+  - AUTH-001
+  - AUTH-002
+  - EXEC-001
+  - DATA-001
+  - SECRET-001
+  - IDEMP-001
+  - RECON-001
+  - AUDIT-001
+  - HUMAN-001

@@ -1,0 +1,40 @@
+workflow:
+  id: BOOK-IN
+  name: Messenger inbound gateway
+  bounded_context: conversation
+  version: 0.1.0
+  purpose: >
+    Terminates the Meta Messenger webhook, verifies the handshake and payload signature, and hands the message to the security gate. Adopted from the shared library entry `messenger-inbound`.
+  security: >
+    A webhook whose signature cannot be verified is rejected. The gateway never reasons about content and never authorizes.
+  dependencies:
+  - BOOK-GUARD
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Postgres; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown outcomes
+  from_library: messenger-inbound
+  requires_binding:
+    security_gate: BOOK-GUARD
+    identity: BOOK-WHO
+    conversation: BOOK-ROUTE
+    intent_router: BOOK-ROUTE
+  configure:
+    META_VERIFY_TOKEN: required
+    ALLOW_UNVERIFIED_META_WEBHOOK: "false"
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml

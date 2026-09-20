@@ -33,7 +33,7 @@ workflow:
   execution_contract:
     allowed_system: WooCommerce
     callable_by_llm: false
-    callable_without_wf10_authorization: false
+    callable_without_authorization: false
     arbitrary_endpoint: false
     client_supplied_price: false
     client_supplied_credentials: false

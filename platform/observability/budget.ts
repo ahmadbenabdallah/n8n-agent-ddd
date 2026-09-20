@@ -20,6 +20,7 @@ export function evaluateBudget(spentUsd: number, policy: BudgetPolicy): BudgetEv
   }
   if (spentUsd < 0) throw new Error("spentUsd cannot be negative");
   const ratio = spentUsd / policy.dailyUsd;
-  const status: BudgetStatus = ratio >= policy.hardStopRatio ? "exceeded" : ratio >= policy.warningRatio ? "warning" : "ok";
+  const status: BudgetStatus =
+    ratio >= policy.hardStopRatio ? "exceeded" : ratio >= policy.warningRatio ? "warning" : "ok";
   return { spentUsd, budgetUsd: policy.dailyUsd, ratio, status };
 }

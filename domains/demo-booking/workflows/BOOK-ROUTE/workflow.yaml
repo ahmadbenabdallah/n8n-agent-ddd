@@ -1,0 +1,35 @@
+workflow:
+  id: BOOK-ROUTE
+  name: Intent router
+  bounded_context: conversation
+  version: 0.1.0
+  purpose: >
+    Classifies an inbound message into a booking intent: check availability, make a booking, reschedule, cancel, ask a question. Adopted from the shared library entry `intent-router`.
+  security: >
+    Routes to an intent, never to a decision. Classification cannot authorize anything.
+  dependencies:
+  - BOOK-AVAIL
+  - BOOK-RESERVE
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Postgres; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown outcomes
+  from_library: intent-router
+  configure:
+    languages: [en, fr]
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml

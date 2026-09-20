@@ -1,0 +1,7 @@
+value_objects:
+  <ValueObjectName>:
+    fields: [<field>, <field>]
+  IdempotencyKey:               # platform-required
+    fields: [key, operation, request_hash]
+  CorrelationContext:           # platform-required
+    fields: [correlation_id, causation_id, actor_id]
