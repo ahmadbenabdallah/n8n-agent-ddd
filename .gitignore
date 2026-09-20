@@ -11,6 +11,7 @@ coverage/
 # ai-sdlc: local dev-lifecycle tooling, not part of the runtime
 .ai-sdlc/
 .worktrees/
+backlog/
 
 # ai-sdlc:runtime-gitignore
 .ai-sdlc/state.db

@@ -34,7 +34,8 @@ for (const file of required) {
 
 const auth = readFileSync(join(process.cwd(), "contracts/platform/authorization.yaml"), "utf8");
 for (const rule of [
-  "only_wf10_can_authorize_commerce_execution",
+  "only_authorization_role_can_authorize_execution",
+  "only_privileged_execution_role_can_mutate_external_system",
   "llm_does_not_authorize",
   "unknown_external_outcome_requires_reconciliation"
 ]) {

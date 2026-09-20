@@ -2,15 +2,20 @@ version: "1"
 
 invariants:
   - id: AUTH-001
-    statement: LLM output cannot authorize privileged commerce execution.
+    statement: LLM output cannot authorize privileged external execution.
     severity: critical
 
   - id: AUTH-002
-    statement: Only WF-10 may authorize commerce execution.
+    statement: >-
+      Only the workflow filling the authorization role may authorize execution.
+      Each domain nominates that workflow in domain.yaml under workflow_roles;
+      the platform never names a workflow id.
     severity: critical
 
   - id: EXEC-001
-    statement: Only WF-20 may execute privileged WooCommerce mutations.
+    statement: >-
+      Only the workflow filling the privileged_external_execution role may
+      mutate an external system of record.
     severity: critical
 
   - id: DATA-001

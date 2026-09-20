@@ -24,9 +24,14 @@ Requirements, acceptance criteria, bounded context, contracts, security impact, 
 Implementation, tests, contracts, architecture invariants, security checks, documentation and migration/rollback requirements are satisfied.
 
 ## Non-negotiable runtime boundaries
-- LLM output cannot directly authorize commerce mutations.
-- Only WF-10 may authorize commerce execution.
-- Only WF-20 may execute privileged WooCommerce mutations.
+- LLM output cannot directly authorize privileged external execution.
+- Only the workflow filling the `authorization` role may authorize execution.
+- Only the workflow filling the `privileged_external_execution` role may mutate
+  an external system of record.
+- Workflow ids belong to the domain. Each domain maps the platform roles to its
+  own ids in `domains/<name>/domain.yaml` under `workflow_roles`; the reference
+  domain `tunisia-dtc` happens to use WF-10 and WF-20. Never hardcode a
+  workflow id in platform code, specs or contracts.
 - Renderer reports verified facts only.
 - Audit is not authorization.
 - Domain state must not depend on n8n execution history.
