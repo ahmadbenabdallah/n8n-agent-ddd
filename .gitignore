@@ -7,7 +7,7 @@ dist/
 coverage/
 *.log
 
-docs/
+/docs/
 # ai-sdlc: local dev-lifecycle tooling, not part of the runtime
 .ai-sdlc/
 .worktrees/
