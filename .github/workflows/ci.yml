@@ -1,21 +1,133 @@
+# Replaces .github/workflows/ci.yml
+#
+# The current ci.yml runs four `test -f`, a hardcoded `-eq 21` count of the
+# reference domain's workflows, and `bash -n` on three scripts. It runs neither
+# the test suite nor the validators, on one OS. This replaces it.
+#
+# Two things it deliberately removes:
+#   - the `-eq 21` assertion, which is the reference domain's workflow count and
+#     is already wrong now that domains/demo-booking exists with 10
+#   - `bash -n`, a parse check that cannot detect a missing interpreter, which is
+#     how an 11-script python3 dependency went unnoticed on Windows
+#
+# `pnpm run doctor`, not `pnpm doctor`: `doctor` is a pnpm built-in that
+# shadows the package script, prints nothing and exits 0.
+
 name: CI
+
 on:
   pull_request:
   push:
     branches: [main]
+
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  validate:
+  suite:
+    name: suite (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable corepack (uses the packageManager pin)
+        run: corepack enable
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Doctor
+        run: pnpm run doctor
+
+      - name: Validate
+        run: pnpm validate
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+  hygiene:
+    name: repository hygiene
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: |
-          test -f spec/releases/phase-12.5-runtime-release.yaml
-          test -f spec/runtime/n8n-control-plane.yaml
-          test -f spec/deployment/persistent-data-contract.yaml
-          test "$(find domains/tunisia-dtc/workflows -mindepth 1 -maxdepth 1 -type d -name 'WF-*' | wc -l)" -eq 21
-      - run: |
-          bash -n scripts/release/create-manifest.sh
-          bash -n scripts/release/verify-manifest.sh
-          bash -n scripts/deployment/production-gate.sh
+
+      # A .sh committed 644 passes on Git Bash, which reports every shebang
+      # file as executable, and dies with "permission denied" on Linux.
+      # This happened on 2026-09-20 with scripts/docs/validate-public-docs.sh.
+      - name: Every shell script is mode 100755
+        run: |
+          bad="$(git ls-files -s '*.sh' | grep -v '^100755' || true)"
+          if [ -n "$bad" ]; then
+            echo "::error::shell scripts not committed executable:"
+            echo "$bad"
+            exit 1
+          fi
+          echo "all $(git ls-files '*.sh' | wc -l) shell scripts are 100755"
+
+      # LF is currently clean by luck: there is no .gitattributes, so it
+      # depends on every contributor's local core.autocrlf.
+      # Single pass over the index. A per-file `git show` loop takes minutes
+      # on this repository; this takes under a second.
+      - name: No CRLF in tracked text files
+        run: |
+          CR="$(printf '\r')"
+          bad="$(git grep -I --cached -l "$CR" -- '*.sh' '*.ts' '*.yaml' '*.yml' '*.json' '*.md' || true)"
+          if [ -n "$bad" ]; then
+            echo "::error::CRLF found in committed files:"
+            echo "$bad"
+            exit 1
+          fi
+          echo "no CRLF in committed text files"
+
+      # An unanchored .gitignore rule (docs/ rather than /docs/) silently
+      # excluded 196 files including a script a test executes.
+      - name: Files a test depends on are actually tracked
+        run: |
+          missing=""
+          while IFS= read -r f; do
+            git ls-files --error-unmatch "$f" >/dev/null 2>&1 || missing="$missing$f"$'\n'
+          done < <(grep -rhoE '(scripts|tests)/[A-Za-z0-9./_-]+\.(sh|ts|py)' tests/ | sort -u)
+          if [ -n "$missing" ]; then
+            echo "::error::tests reference untracked files:"
+            echo "$missing"
+            exit 1
+          fi
+          echo "every script referenced by a test is tracked"
+
+      - name: No secrets or archives committed
+        run: |
+          bad="$(git ls-files | grep -E '\.(env|zip|pem|p12|key)$' | grep -v '\.env\.example$' || true)"
+          if [ -n "$bad" ]; then
+            echo "::error::files that must not be committed:"
+            echo "$bad"
+            exit 1
+          fi
+          echo "no env, archive or key files committed"
+
+      - name: Adopter hygiene — internal tooling must not ship
+        run: |
+          bad=""
+          for p in docs .ai-sdlc backlog CLAUDE.local.md artifacts .mcp.json ci-proposed; do
+            if git ls-files --error-unmatch "$p" >/dev/null 2>&1; then bad="$bad$p"$'\n'; fi
+          done
+          if [ -n "$bad" ]; then
+            echo "::error::internal-only paths are tracked:"
+            echo "$bad"
+            exit 1
+          fi
+          echo "no internal tooling is tracked"
