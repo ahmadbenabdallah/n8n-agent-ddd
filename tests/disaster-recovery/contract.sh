@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 test -f "$ROOT/spec/releases/phase-15.6-backup-restore-execution.yaml"
 [ ! -d "${ROOT:-.}/docs" ] || test -f "$ROOT/docs/operations/phase15.6-backup-restore.md"
 
-for f in   scripts/disaster-recovery/phase15.6-preflight.sh   scripts/disaster-recovery/phase15.6-create-backup.sh   scripts/disaster-recovery/phase15.6-restore-drill.sh   scripts/disaster-recovery/phase15.6-verify-restore.sh   scripts/disaster-recovery/phase15.6-validate-evidence.sh
+for f in   scripts/disaster-recovery/preflight.sh   scripts/disaster-recovery/create-backup.sh   scripts/disaster-recovery/restore-drill.sh   scripts/disaster-recovery/verify-restore.sh   scripts/disaster-recovery/validate-evidence.sh
 do
   test -f "$ROOT/$f"
   bash -n "$ROOT/$f"

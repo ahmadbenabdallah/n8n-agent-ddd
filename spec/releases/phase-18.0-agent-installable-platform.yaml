@@ -36,7 +36,7 @@ requirements:
     validate_routes_to_existing_validation_gates: true
     deploy_routes_to_existing_deployment_gates: true
 gates:
-  contract: "tests/harness/phase18-contract.sh"
+  contract: "tests/harness/installable-platform-contract.sh"
   live_installation: "NOT_EXECUTED"
   live_provider_deployment: "NOT_EXECUTED"
   live_production_deployment: "NOT_EXECUTED"

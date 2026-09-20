@@ -7,7 +7,7 @@ cd "$ROOT"
 
 required=(
   "spec/releases/phase-15.0-live-runtime-integration.yaml"
-  "scripts/integration/phase15-preflight.sh"
+  "scripts/integration/live-runtime-preflight.sh"
   "scripts/integration/validate-evidence.sh"
   "scripts/integration/create-evidence-template.sh"
 )
@@ -17,7 +17,7 @@ for file in "${required[@]}"; do
 done
 
 for file in \
-  scripts/integration/phase15-preflight.sh \
+  scripts/integration/live-runtime-preflight.sh \
   scripts/integration/validate-evidence.sh \
   scripts/integration/create-evidence-template.sh
 do

@@ -4,12 +4,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 [ ! -d "${ROOT:-.}/docs" ] || test -f "${ROOT:-.}/docs/operations/phase15.8-drift-self-healing.md"
 
-for f in   spec/releases/phase-15.8-drift-self-healing-execution.yaml   scripts/operations/phase15.8-preflight.sh   scripts/operations/phase15.8-inject-drift.sh   scripts/operations/phase15.8-run-control-loop.sh   scripts/operations/phase15.8-validate-safety.sh   scripts/operations/phase15.8-validate-evidence.sh
+for f in   spec/releases/phase-15.8-drift-self-healing-execution.yaml   scripts/operations/preflight.sh   scripts/operations/inject-drift.sh   scripts/operations/run-control-loop.sh   scripts/operations/validate-safety.sh   scripts/operations/validate-evidence.sh
 do
   test -f "$ROOT/$f"
 done
 
-for f in   scripts/operations/phase15.8-preflight.sh   scripts/operations/phase15.8-inject-drift.sh   scripts/operations/phase15.8-run-control-loop.sh   scripts/operations/phase15.8-validate-safety.sh   scripts/operations/phase15.8-validate-evidence.sh
+for f in   scripts/operations/preflight.sh   scripts/operations/inject-drift.sh   scripts/operations/run-control-loop.sh   scripts/operations/validate-safety.sh   scripts/operations/validate-evidence.sh
 do
   bash -n "$ROOT/$f"
 done

@@ -27,7 +27,7 @@ invariants:
   - "Compatible customer extensions survive core upgrades."
   - "MCP does not equal commerce authorization."
 validation:
-  static: "tests/architecture/phase12-8-customer-runtime.sh"
+  static: "tests/architecture/customer-runtime.sh"
 not_claimed:
   - "Live n8n MCP connection"
   - "Live customer UI"

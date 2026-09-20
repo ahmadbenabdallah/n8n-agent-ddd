@@ -7,10 +7,10 @@ cd "$ROOT"
 
 required=(
   "spec/releases/phase-15.5-load-resilience.yaml"
-  "scripts/integration/phase15.5-preflight.sh"
-  "scripts/integration/phase15.5-profile.sh"
-  "scripts/integration/phase15.5-resilience-matrix.sh"
-  "scripts/integration/phase15.5-validate.sh"
+  "scripts/integration/load-resilience-preflight.sh"
+  "scripts/integration/load-resilience-profile.sh"
+  "scripts/integration/load-resilience-matrix.sh"
+  "scripts/integration/load-resilience-validate.sh"
 )
 
 for file in "${required[@]}"; do
@@ -18,10 +18,10 @@ for file in "${required[@]}"; do
 done
 
 for file in \
-  scripts/integration/phase15.5-preflight.sh \
-  scripts/integration/phase15.5-profile.sh \
-  scripts/integration/phase15.5-resilience-matrix.sh \
-  scripts/integration/phase15.5-validate.sh
+  scripts/integration/load-resilience-preflight.sh \
+  scripts/integration/load-resilience-profile.sh \
+  scripts/integration/load-resilience-matrix.sh \
+  scripts/integration/load-resilience-validate.sh
 do
   test -x "$file" || { echo "FAIL not executable: $file"; exit 1; }
 done

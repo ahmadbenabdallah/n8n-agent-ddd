@@ -55,5 +55,5 @@ commerce_fallback:
 
 execution:
   runbook: docs/operations/phase-10-execution-runbook.md
-  runner: scripts/readiness/run-phase10.sh
+  runner: scripts/readiness/run-release-gate.sh
   command_map: tests/execution/phase-10-command-map.yaml

@@ -12,7 +12,7 @@ deliverables:
   - scripts/operations/reconciliation-status.sh
   - scripts/operations/drift-policy-check.sh
   - scripts/operations/self-healing-policy-check.sh
-  - tests/architecture/phase14.6-health-reconciliation.sh
+  - tests/architecture/health-reconciliation.sh
 
 gates:
   health_contract: PASS

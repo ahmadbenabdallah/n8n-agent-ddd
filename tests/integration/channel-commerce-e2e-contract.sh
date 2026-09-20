@@ -7,9 +7,9 @@ cd "$ROOT"
 
 required=(
   "spec/releases/phase-15.2-channel-commerce-e2e.yaml"
-  "scripts/integration/phase15.2-e2e-preflight.sh"
-  "scripts/integration/phase15.2-scenario-template.sh"
-  "scripts/integration/phase15.2-validate-evidence.sh"
+  "scripts/integration/channel-commerce-e2e-preflight.sh"
+  "scripts/integration/channel-commerce-scenario-template.sh"
+  "scripts/integration/channel-commerce-validate-evidence.sh"
 )
 
 for file in "${required[@]}"; do
@@ -17,9 +17,9 @@ for file in "${required[@]}"; do
 done
 
 for file in \
-  scripts/integration/phase15.2-e2e-preflight.sh \
-  scripts/integration/phase15.2-scenario-template.sh \
-  scripts/integration/phase15.2-validate-evidence.sh
+  scripts/integration/channel-commerce-e2e-preflight.sh \
+  scripts/integration/channel-commerce-scenario-template.sh \
+  scripts/integration/channel-commerce-validate-evidence.sh
 do
   test -x "$file" || { echo "FAIL not executable: $file"; exit 1; }
 done

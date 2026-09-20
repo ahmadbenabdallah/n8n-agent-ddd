@@ -7,9 +7,9 @@ cd "$ROOT"
 
 required=(
   "spec/releases/phase-15.4-idempotency-reconciliation.yaml"
-  "scripts/integration/phase15.4-preflight.sh"
-  "scripts/integration/phase15.4-matrix.sh"
-  "scripts/integration/phase15.4-validate.sh"
+  "scripts/integration/idempotency-preflight.sh"
+  "scripts/integration/idempotency-matrix.sh"
+  "scripts/integration/idempotency-validate.sh"
 )
 
 for file in "${required[@]}"; do
@@ -17,9 +17,9 @@ for file in "${required[@]}"; do
 done
 
 for file in \
-  scripts/integration/phase15.4-preflight.sh \
-  scripts/integration/phase15.4-matrix.sh \
-  scripts/integration/phase15.4-validate.sh
+  scripts/integration/idempotency-preflight.sh \
+  scripts/integration/idempotency-matrix.sh \
+  scripts/integration/idempotency-validate.sh
 do
   test -x "$file" || { echo "FAIL not executable: $file"; exit 1; }
 done

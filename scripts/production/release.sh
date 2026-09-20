@@ -12,7 +12,7 @@ bash scripts/production/preflight.sh
 bash scripts/readiness/run-gates.sh
 
 echo "Checking required Phase 10 staging status..."
-python3 scripts/production/check-phase10-certification.py
+python3 scripts/production/check-certification.py
 
 echo "Deploying $SLOT..."
 bash scripts/production/deploy-green.sh production "$RELEASE"

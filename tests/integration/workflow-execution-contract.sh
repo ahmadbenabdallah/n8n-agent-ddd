@@ -7,10 +7,10 @@ cd "$ROOT"
 
 required=(
   "spec/releases/phase-15.1-21-workflow-execution.yaml"
-  "scripts/integration/phase15.1-workflow-inventory.sh"
-  "scripts/integration/phase15.1-protected-set.sh"
-  "scripts/integration/phase15.1-execution-matrix.sh"
-  "scripts/integration/phase15.1-summary.sh"
+  "scripts/integration/workflow-execution-inventory.sh"
+  "scripts/integration/workflow-execution-protected-set.sh"
+  "scripts/integration/workflow-execution-matrix.sh"
+  "scripts/integration/workflow-execution-summary.sh"
 )
 
 for file in "${required[@]}"; do
@@ -18,10 +18,10 @@ for file in "${required[@]}"; do
 done
 
 for file in \
-  scripts/integration/phase15.1-workflow-inventory.sh \
-  scripts/integration/phase15.1-protected-set.sh \
-  scripts/integration/phase15.1-execution-matrix.sh \
-  scripts/integration/phase15.1-summary.sh
+  scripts/integration/workflow-execution-inventory.sh \
+  scripts/integration/workflow-execution-protected-set.sh \
+  scripts/integration/workflow-execution-matrix.sh \
+  scripts/integration/workflow-execution-summary.sh
 do
   test -x "$file" || { echo "FAIL not executable: $file"; exit 1; }
 done

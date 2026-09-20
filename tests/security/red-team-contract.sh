@@ -7,9 +7,9 @@ cd "$ROOT"
 
 required=(
   "spec/releases/phase-15.3-security-red-team.yaml"
-  "scripts/security/phase15.3-red-team-preflight.sh"
-  "scripts/security/phase15.3-matrix.sh"
-  "scripts/security/phase15.3-validate.sh"
+  "scripts/security/red-team-preflight.sh"
+  "scripts/security/red-team-matrix.sh"
+  "scripts/security/red-team-validate.sh"
 )
 
 for file in "${required[@]}"; do
@@ -17,9 +17,9 @@ for file in "${required[@]}"; do
 done
 
 for file in \
-  scripts/security/phase15.3-red-team-preflight.sh \
-  scripts/security/phase15.3-matrix.sh \
-  scripts/security/phase15.3-validate.sh
+  scripts/security/red-team-preflight.sh \
+  scripts/security/red-team-matrix.sh \
+  scripts/security/red-team-validate.sh
 do
   test -x "$file" || { echo "FAIL not executable: $file"; exit 1; }
 done
