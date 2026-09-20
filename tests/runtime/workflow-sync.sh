@@ -5,6 +5,12 @@ set -euo pipefail
 
 test -x scripts/runtime/create-workflow-sync-plan.sh
 
+# Actually generate a plan. Checking only that the file exists hid a broken
+# python3 dependency in this script for as long as nothing ran it.
+plan="$(mktemp)"
+trap 'rm -f "$plan"' EXIT
+scripts/runtime/create-workflow-sync-plan.sh "$plan" >/dev/null
+
 domains=0
 for registry in domains/*/workflows/registry.yaml; do
   [[ -f "$registry" ]] || continue
@@ -35,7 +41,14 @@ for registry in domains/*/workflows/registry.yaml; do
     exit 1
   fi
 
-  echo "  $domain: ${#declared[@]} workflows, registry and directories agree"
+  for id in "${declared[@]}"; do
+    if ! grep -q "\"canonical_key\": \"$domain/$id\"" "$plan"; then
+      echo "FAIL: sync plan has no entry for $domain/$id" >&2
+      exit 1
+    fi
+  done
+
+  echo "  $domain: ${#declared[@]} workflows, registry, directories and plan agree"
   domains=$((domains + 1))
 done
 
