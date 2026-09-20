@@ -1,9 +1,15 @@
-import { PROTECTED_WORKFLOWS } from "../extensions/types";
+import { isProtectedWorkflow, type ProtectedWorkflows } from "../extensions/types";
 
-export function canCustomerEditWorkflow(workflowKey: string): boolean {
-  return !(PROTECTED_WORKFLOWS as readonly string[]).includes(workflowKey);
+export function canCustomerEditWorkflow(
+  workflowKey: string,
+  protectedWorkflows: ProtectedWorkflows,
+): boolean {
+  return !isProtectedWorkflow(workflowKey, protectedWorkflows);
 }
 
-export function workflowOwnership(workflowKey: string): "platform_core" | "customer_extendable" {
-  return canCustomerEditWorkflow(workflowKey) ? "customer_extendable" : "platform_core";
+export function workflowOwnership(
+  workflowKey: string,
+  protectedWorkflows: ProtectedWorkflows,
+): "platform_core" | "customer_extendable" {
+  return canCustomerEditWorkflow(workflowKey, protectedWorkflows) ? "customer_extendable" : "platform_core";
 }

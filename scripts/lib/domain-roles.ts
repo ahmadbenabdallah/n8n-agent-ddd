@@ -36,6 +36,26 @@ export function readRegistryIds(domain: string): string[] {
   return [...contents.matchAll(/^-\s*id:\s*(\S+)/gm)].map((m) => m[1]);
 }
 
+/**
+ * Workflow ids the domain marks `protected: true` in its registry.
+ * Protected workflows are platform-owned: released from git, not editable by
+ * the operator in n8n. The platform never names an id (ADR 0001).
+ */
+export function readProtectedWorkflows(domain: string): string[] {
+  const contents = readFileSync(domainPath(domain, "workflows", "registry.yaml"), "utf8");
+  const protectedIds: string[] = [];
+  let current: string | null = null;
+  for (const line of contents.split(/\r?\n/)) {
+    const id = line.match(/^-\s*id:\s*(\S+)/);
+    if (id) {
+      current = id[1];
+      continue;
+    }
+    if (current && /^\s+protected:\s*true\s*$/.test(line)) protectedIds.push(current);
+  }
+  return protectedIds;
+}
+
 /** Does this domain change an external business system? */
 export function mutatesExternalSystem(domain: string): boolean {
   const contents = readFileSync(domainPath(domain, "domain.yaml"), "utf8");

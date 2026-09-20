@@ -21,7 +21,8 @@ lifecycle:
     - [ENABLED, INCOMPATIBLE]
     - [DISABLED, RETIRED]
     - [INCOMPATIBLE, RETIRED]
-protected_workflows: [WF-01, WF-10, WF-15, WF-20]
+# Declared by each domain in workflows/registry.yaml as `protected: true`.
+protected_workflows: declared_by_domain_registry
 forbidden_permissions:
   - commerce.authorization
   - commerce.payment_mutation

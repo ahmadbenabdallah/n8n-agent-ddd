@@ -9,6 +9,7 @@ workflows:
   depends_on:
   - WF-01
 - id: WF-01
+  protected: true
   name: Security Gate
   category: security
   scope: shared
@@ -88,6 +89,7 @@ workflows:
   - WF-10
   - WF-16
 - id: WF-10
+  protected: true
   name: Action Authorization
   category: authorization
   scope: shared
@@ -134,6 +136,7 @@ workflows:
   - WF-13
   - WF-15
 - id: WF-15
+  protected: true
   name: Transaction/Payment
   category: payment
   scope: domain
@@ -143,6 +146,7 @@ workflows:
   - WF-17
   - WF-19
 - id: WF-16
+  protected: true
   name: Response Renderer
   category: rendering
   scope: shared
@@ -150,6 +154,7 @@ workflows:
   depends_on:
   - WF-17
 - id: WF-17
+  protected: true
   name: Audit & Analytics
   category: audit
   scope: shared
@@ -165,6 +170,7 @@ workflows:
   - WF-06
   - WF-09
 - id: WF-19
+  protected: true
   name: Maintenance & Monitoring
   category: operations
   scope: shared
@@ -174,6 +180,7 @@ workflows:
   - WF-17
   - WF-20
 - id: WF-20
+  protected: true
   name: WooCommerce Gateway
   category: privileged-execution
   scope: shared

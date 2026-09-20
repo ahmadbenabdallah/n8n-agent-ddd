@@ -12,7 +12,7 @@ end_user_surfaces:
   workflow_customization:
     storage: n8n
     editable: true
-    protected: [WF-01, WF-10, WF-15, WF-20]
+    protected: declared_by_domain_registry
   secrets:
     storage: n8n_credentials_or_external_secrets
     raw_env_exposure: false

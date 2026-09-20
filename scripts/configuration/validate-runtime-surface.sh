@@ -12,7 +12,10 @@ required=(
   "$ROOT/platform/customization/policy.ts"
 )
 for f in "${required[@]}"; do test -f "$f" || { echo "MISSING $f"; exit 1; }; done
-for key in WF-01 WF-10 WF-15 WF-20; do grep -q "$key" "$ROOT/spec/extensions/customer-extension-contract.yaml" || exit 1; done
+# The protected set is the domain's, declared in its registry; the platform
+# contract only states where it comes from.
+grep -q 'protected_workflows: declared_by_domain_registry' "$ROOT/spec/extensions/customer-extension-contract.yaml"
+"$ROOT/scripts/security/verify-protected-set.sh" >/dev/null
 grep -q 'raw_env_exposure: false' "$ROOT/spec/runtime/customer-runtime-surface.yaml"
 grep -q 'commerce.authorization' "$ROOT/spec/extensions/customer-extension-contract.yaml"
 grep -q 'N8N_ENCRYPTION_KEY' "$ROOT/spec/configuration/customer-runtime-config.yaml"
