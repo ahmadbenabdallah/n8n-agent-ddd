@@ -23,11 +23,6 @@ CLAUDE.local.md
 .mcp.json
 .cursor/mcp.json
 .vscode/mcp.json
-.github/workflows/ai-sdlc-gate.yml
-.github/workflows/ai-sdlc-review.yml
-.github/workflows/auto-enable-auto-merge.yml
-.github/workflows/dor-ingress.yml
-.github/workflows/verify-attestation.yml
 .claude/settings.local.json
 
 # generated run output and backups (never commit: may contain real data)
