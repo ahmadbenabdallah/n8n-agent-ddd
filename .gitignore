@@ -12,6 +12,7 @@ coverage/
 .ai-sdlc/
 .worktrees/
 backlog/
+.impeccable/
 
 # ai-sdlc:runtime-gitignore
 .ai-sdlc/state.db

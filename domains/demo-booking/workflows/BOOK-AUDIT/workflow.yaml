@@ -1,0 +1,31 @@
+workflow:
+  id: BOOK-AUDIT
+  name: Audit writer
+  bounded_context: governance
+  version: 0.1.0
+  role: audit
+  purpose: >
+    Records every state-changing action and every authorization decision as append-only audit evidence.
+  security: >
+    Audit is not authorization. Writing an audit record never grants or implies permission, and records are never updated or deleted.
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Postgres; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown outcomes
+  append_only: true
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml

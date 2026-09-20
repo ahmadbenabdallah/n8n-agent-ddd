@@ -19,4 +19,4 @@ state:
   vector_namespace: <your-domain-id>
 
 security:
-  authorization_policy: <your-domain-id>-wf10
+  authorization_policy: <your-domain-id>-authorization   # names your authorization role

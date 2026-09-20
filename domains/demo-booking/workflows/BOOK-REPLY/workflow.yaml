@@ -1,0 +1,36 @@
+workflow:
+  id: BOOK-REPLY
+  name: Response renderer
+  bounded_context: governance
+  version: 0.1.0
+  role: response_rendering
+  purpose: >
+    Turns a completed decision into a customer-facing reply. It states only
+    what the domain has verified: a slot that was actually held, a booking
+    reference that exists, a time that was actually confirmed.
+  security: >
+    No unverified price, stock, order or payment claims. This domain sells
+    nothing, so a reply must never imply a charge, a refund or a payment
+    status. A proposed slot is never described as confirmed.
+  dependencies:
+  - BOOK-AUTHZ
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Postgres; n8n execution state is transient
+  idempotency: not applicable; rendering is a pure projection of verified facts
+  failure_policy: render a safe fallback rather than an unverified claim
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml

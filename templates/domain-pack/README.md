@@ -6,7 +6,7 @@ A starter for a new domain agent. `domains/tunisia-dtc/` is the complete worked 
 
 1. Copy this folder to `domains/<your-domain-id>/`.
 2. Replace every `<...>` placeholder.
-3. Keep every entry marked **platform-required**: those entries bind your domain to the platform's safety boundaries (WF-10 authorization, WF-20 privileged execution, audit, reconciliation).
+3. Keep every entry marked **platform-required**: those entries bind your domain to the platform's safety boundaries: the authorization, privileged_external_execution, response_rendering, audit and reconciliation roles.
 4. Run `pnpm validate`.
 
 ## Layout

@@ -1,0 +1,71 @@
+domain:
+  id: demo-booking
+  name: Demo Booking
+  version: "2026.09.1"
+  purpose: >
+    A second, deliberately non-commerce domain that exists to prove the
+    platform is domain-agnostic. It serves people booking appointments with a
+    small service business over Meta Messenger: checking availability, holding
+    a slot, confirming, rescheduling and cancelling. It sells nothing and
+    integrates with no external system of record, so every booking lives in
+    the platform's own Postgres.
+
+bounded_contexts:
+  - id: scheduling
+    responsibility: Services, resources, opening hours, availability and slots.
+  - id: reservation
+    responsibility: Holds, confirmations, reschedules, cancellations and no-shows.
+  - id: conversation
+    responsibility: Channel identity, conversation state and intent.
+  - id: governance              # platform-required
+    responsibility: Authorization, audit, reconciliation and monitoring.
+
+actors:
+  - customer
+  - human_agent
+  - autonomous_agent
+  - operator
+  - meta_messenger
+
+identity_ladder:                # lowest to highest assurance
+  - ANONYMOUS                   # a channel handle and nothing else
+  - CHANNEL_VERIFIED            # the channel asserts a stable user id
+  - CONTACT_VERIFIED            # a phone number or email confirmed by the customer
+  - BOOKING_OWNER               # proven control of the booking being changed
+
+language_policy:
+  default:
+    language: en
+  supported:
+    - en
+    - fr
+
+sources_of_truth:
+  domain_state: postgres        # provider profile is set in domain-project.yaml
+  commerce: none                # deliberately: this domain changes no external system
+  orchestration: n8n
+  reasoning: llm
+
+# Platform roles, filled by this domain's own workflow ids. No WF-NN here:
+# the ids are the domain's to choose (ADR 0001).
+#
+# privileged_external_execution is absent on purpose. With `commerce: none`
+# there is no external system of record to mutate, so the platform does not
+# require the role. A booking is committed in Postgres by the authorized
+# branch, under the same idempotency rules.
+workflow_roles:
+  authorization: BOOK-AUTHZ
+  response_rendering: BOOK-REPLY
+  audit: BOOK-AUDIT
+  reconciliation: BOOK-RECON
+
+runtime_invariants:             # platform-required; defined in spec/invariants/platform.yaml
+  - AUTH-001
+  - AUTH-002
+  - EXEC-001
+  - DATA-001
+  - SECRET-001
+  - IDEMP-001
+  - RECON-001
+  - AUDIT-001
+  - HUMAN-001

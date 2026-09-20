@@ -1,0 +1,34 @@
+workflow:
+  id: BOOK-AVAIL
+  name: Availability engine
+  bounded_context: scheduling
+  version: 0.1.0
+  purpose: >
+    Answers what can be booked: opening hours, service duration, resource calendars, existing holds and confirmed bookings. Read-only.
+  security: >
+    Reads scheduling state; changes nothing. An availability answer is not a hold.
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Postgres; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown outcomes
+  reads:
+  - services
+  - resources
+  - opening_hours
+  - bookings
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml

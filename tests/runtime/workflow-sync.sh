@@ -20,7 +20,9 @@ for registry in domains/*/workflows/registry.yaml; do
 
   # Registry ids, in the `- id: <ID>` form the domain-pack contract requires.
   mapfile -t declared < <(sed -n 's/^[[:space:]]*-[[:space:]]*id:[[:space:]]*\([^[:space:]#]\+\).*/\1/p' "$registry" | sort)
-  mapfile -t present < <(find "$workflows_dir" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+  # Dot-directories are tool caches (.impeccable, .git, editor state), not
+  # workflows. A stray cache must not read as an unregistered workflow.
+  mapfile -t present < <(find "$workflows_dir" -mindepth 1 -maxdepth 1 -type d -not -name '.*' -printf '%f\n' | sort)
 
   if [[ "${#declared[@]}" -eq 0 ]]; then
     echo "FAIL: $domain declares no workflows in $registry" >&2

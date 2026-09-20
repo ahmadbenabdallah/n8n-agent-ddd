@@ -1,0 +1,33 @@
+workflow:
+  id: BOOK-WHO
+  name: Customer identity resolution
+  bounded_context: conversation
+  version: 0.1.0
+  purpose: >
+    Resolves a Messenger handle to a stable customer identity and attaches the assurance level the identity ladder assigns. Adopted from the shared library entry `identity`.
+  security: >
+    Assurance is asserted, never assumed. Raising assurance requires evidence the customer supplied in this conversation.
+  dependencies:
+  - BOOK-ROUTE
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Postgres; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown outcomes
+  from_library: identity
+  identity_ladder_source: domain.yaml
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml

@@ -1,0 +1,27 @@
+# Executable intent for the domain's own rules. These are assertions the
+# domain owner writes; the platform does not supply them.
+invariants:
+  - id: BK-001
+    given: A confirmed booking on resource R from 10:00 to 11:00
+    when: A second booking is confirmed on R from 10:30 to 11:30
+    then: The second confirmation is rejected as a double-booking
+  - id: BK-002
+    given: A hold placed at 10:00 with a 15 minute hold duration
+    when: Confirmation is attempted at 10:16
+    then: The hold has expired and confirmation is rejected
+  - id: BK-003
+    given: A booking owned by customer A
+    when: Customer B attempts to cancel it
+    then: Authorization denies the action and an ActionDenied event is recorded
+  - id: BK-005
+    given: A booking starting in 2 hours and a cancellation notice of 4 hours
+    when: The customer asks to cancel
+    then: The decision is REQUIRES_HUMAN, not ALLOW
+  - id: BK-007
+    given: A slot that is held but not confirmed
+    when: The renderer produces a reply
+    then: The reply describes a hold and never states the booking is confirmed
+  - id: AUTH-002
+    given: An LLM proposal to confirm a booking
+    when: The proposal reaches the reservation engine without an ALLOW decision
+    then: The reservation engine refuses to commit

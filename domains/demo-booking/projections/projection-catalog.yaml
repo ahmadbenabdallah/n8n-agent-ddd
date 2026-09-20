@@ -1,0 +1,13 @@
+projections:
+  UpcomingBookingsForCustomer:
+    source: [Booking]
+    purpose: What the customer has coming up, so a reply never invents a booking.
+  ResourceDayView:
+    source: [Resource, OpeningHours, Hold, Booking]
+    purpose: One resource's day, used to answer availability without scanning history.
+  ExpiringHolds:
+    source: [Hold]
+    purpose: Holds approaching expiry, consumed by the reconciliation role.
+  BookingAudit:
+    source: [Booking]
+    purpose: Every state change with its authorization reference.

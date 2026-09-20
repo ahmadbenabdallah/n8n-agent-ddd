@@ -1,0 +1,23 @@
+entities:
+  Customer:
+    key: customer_id
+    attributes: [customer_id, display_name, contact_email, contact_phone, assurance_level, created_at]
+  Service:
+    key: service_id
+    attributes: [service_id, name, duration_minutes, buffer_minutes, active]
+  Resource:
+    key: resource_id
+    attributes: [resource_id, name, kind, active]
+  OpeningHours:
+    key: opening_hours_id
+    attributes: [opening_hours_id, resource_id, weekday, opens_at, closes_at, timezone]
+  Slot:
+    key: slot_id
+    attributes: [slot_id, resource_id, service_id, starts_at, ends_at, state]
+  Hold:
+    key: hold_id
+    attributes: [hold_id, slot_id, customer_id, expires_at, created_at]
+  Booking:
+    key: booking_id
+    attributes:
+      [booking_id, reference, customer_id, service_id, resource_id, starts_at, ends_at, state, created_at, updated_at]

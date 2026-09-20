@@ -1,0 +1,33 @@
+workflow:
+  id: BOOK-RECON
+  name: Reconciliation and monitoring
+  bounded_context: governance
+  version: 0.1.0
+  role: reconciliation
+  purpose: >
+    Settles bookings whose outcome is unknown, expires stale holds, and reports the domain's health.
+  security: >
+    An unknown outcome is reconciled before any retry. A hold that cannot be settled expires rather than silently becoming a booking.
+  inputs:
+  - correlation_id
+  - actor_context
+  - domain_context
+  - request_context
+  outputs:
+  - status
+  - result
+  - events
+  - audit_reference
+  state: durable domain state lives in Postgres; n8n execution state is transient
+  idempotency: required for state-changing operations
+  failure_policy: fail closed for authorization/security; reconcile unknown outcomes
+  reconciles:
+  - expired_holds
+  - unknown_booking_outcomes
+  observability:
+  - correlation_id
+  - workflow_id
+  - workflow_version
+  - policy_versions
+  contracts:
+  - contracts/platform/workflow.yaml

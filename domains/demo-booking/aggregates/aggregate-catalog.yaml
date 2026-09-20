@@ -1,0 +1,17 @@
+aggregates:
+  BookingAggregate:
+    root: Booking
+    invariants:
+      - A booking always references an existing service and resource.
+      - A confirmed booking occupies exactly one slot on one resource.
+      - A resource is never double-booked for overlapping times.
+      - State moves only HELD -> CONFIRMED -> (RESCHEDULED | CANCELLED | COMPLETED | NO_SHOW).
+      - A cancelled or completed booking is terminal and is never re-confirmed.
+    members: [Booking, Hold, Slot]
+  ScheduleAggregate:
+    root: Resource
+    invariants:
+      - Availability is derived from opening hours minus holds and confirmed bookings.
+      - A hold expires on its own; expiry never requires a customer action.
+      - Opening hours are stored with an explicit timezone and never as local time alone.
+    members: [Resource, OpeningHours, Slot]

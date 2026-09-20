@@ -1,0 +1,13 @@
+value_objects:
+  BookingReference:
+    rule: Opaque, customer-quotable, unique per booking, never reused.
+  TimeWindow:
+    rule: Half-open interval [starts_at, ends_at) in UTC, rendered in the resource's timezone.
+  Duration:
+    rule: Whole minutes, greater than zero, taken from the service, not from the customer.
+  AssuranceLevel:
+    rule: One of the domain's identity ladder levels; only ever raised with evidence.
+  NoticePeriod:
+    rule: Minimum time before starts_at in which a change is still permitted.
+  HoldExpiry:
+    rule: Absolute UTC instant; a hold is dead once passed, with no grace period.
