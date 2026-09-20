@@ -4,10 +4,7 @@ export interface McpServerManifest {
   forbidden: string[];
 }
 
-export function canUseMcpCapability(
-  server: McpServerManifest,
-  permission: string,
-): boolean {
+export function canUseMcpCapability(server: McpServerManifest, permission: string): boolean {
   if (server.forbidden.includes(permission)) return false;
   return server.permissions.includes(permission);
 }

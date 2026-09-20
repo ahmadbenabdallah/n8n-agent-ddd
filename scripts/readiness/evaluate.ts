@@ -8,12 +8,22 @@ type Evidence = {
   status: Status;
   timestamp: string;
   release: string;
-  findings?: Array<{severity?: string; status?: string}>;
+  findings?: Array<{ severity?: string; status?: string }>;
 };
 
 const required = [
-  "INT", "SEC", "E2E", "IDEMP", "RECON", "RT",
-  "LOAD", "DR", "BG", "DRIFT", "ARCH", "SECURITY"
+  "INT",
+  "SEC",
+  "E2E",
+  "IDEMP",
+  "RECON",
+  "RT",
+  "LOAD",
+  "DR",
+  "BG",
+  "DRIFT",
+  "ARCH",
+  "SECURITY",
 ];
 
 const root = process.env.EVIDENCE_ROOT ?? "runtime/evidence/phase-10/runs";
@@ -60,20 +70,20 @@ for (const item of Object.values(latest)) {
 
 const approvals = {
   architecture: latest["ARCH"]?.status === "PASS",
-  security: latest["SECURITY"]?.status === "PASS"
+  security: latest["SECURITY"]?.status === "PASS",
 };
 
-const certified = failures.length === 0 && critical === 0 && high === 0 &&
-  approvals.architecture && approvals.security;
+const certified =
+  failures.length === 0 && critical === 0 && high === 0 && approvals.architecture && approvals.security;
 
 const decision = {
   release: "0.10.0",
   decision: certified ? "CERTIFIED" : "BLOCKED",
   generated_at: new Date().toISOString(),
-  gates: Object.fromEntries(required.map(g => [g, latest[g]?.status ?? "MISSING"])),
+  gates: Object.fromEntries(required.map((g) => [g, latest[g]?.status ?? "MISSING"])),
   open_critical_findings: critical,
   open_high_findings: high,
-  approvals
+  approvals,
 };
 
 const out = process.env.CERTIFICATION_OUTPUT ?? "runtime/evidence/phase-10/certification.json";

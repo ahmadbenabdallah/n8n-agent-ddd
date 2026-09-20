@@ -1,12 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": [
-    "checkId",
-    "component",
-    "status",
-    "timestamp"
-  ],
+  "required": ["checkId", "component", "status", "timestamp"],
   "properties": {
     "checkId": {
       "type": "string"
@@ -15,12 +10,7 @@
       "type": "string"
     },
     "status": {
-      "enum": [
-        "healthy",
-        "degraded",
-        "unhealthy",
-        "unknown"
-      ]
+      "enum": ["healthy", "degraded", "unhealthy", "unknown"]
     },
     "latencyMs": {
       "type": "number"

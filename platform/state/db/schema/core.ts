@@ -86,7 +86,9 @@ export const cartItems = pgTable(
   "cart_items",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    cartId: uuid("cart_id").notNull().references(() => carts.id, { onDelete: "cascade" }),
+    cartId: uuid("cart_id")
+      .notNull()
+      .references(() => carts.id, { onDelete: "cascade" }),
     productId: bigint("product_id", { mode: "number" }).notNull(),
     variationId: bigint("variation_id", { mode: "number" }),
     quantity: integer("quantity").notNull(),
@@ -149,7 +151,9 @@ export const authorizations = pgTable(
   "authorizations",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    actionId: uuid("action_id").notNull().references(() => actions.id),
+    actionId: uuid("action_id")
+      .notNull()
+      .references(() => actions.id),
     decision: text("decision").notNull(),
     scope: jsonb("scope").notNull().default({}),
     executionAllowed: boolean("execution_allowed").notNull().default(false),
@@ -205,7 +209,9 @@ export const transactions = pgTable(
 
 export const escalations = pgTable("escalations", {
   id: uuid("id").primaryKey().defaultRandom(),
-  conversationId: uuid("conversation_id").notNull().references(() => conversations.id),
+  conversationId: uuid("conversation_id")
+    .notNull()
+    .references(() => conversations.id),
   reason: text("reason").notNull(),
   ownerId: text("owner_id"),
   status: text("status").notNull().default("OPEN"),
@@ -288,7 +294,9 @@ export const customerExtensions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => ({ domainExtensionUq: uniqueIndex("customer_extensions_domain_extension_uq").on(t.domainId, t.extensionId) }),
+  (t) => ({
+    domainExtensionUq: uniqueIndex("customer_extensions_domain_extension_uq").on(t.domainId, t.extensionId),
+  }),
 );
 
 export const configurationChanges = pgTable(

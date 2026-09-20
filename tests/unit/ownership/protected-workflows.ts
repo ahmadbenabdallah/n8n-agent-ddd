@@ -56,7 +56,11 @@ const extension = (workflows: string[], permissions: string[] = []): CustomerExt
   lifecycle: "DRAFT",
 });
 
-assert.deepEqual(validateExtension(extension(["BOOK-ENGINE"]), PROTECTED), [], "extending a domain workflow is allowed");
+assert.deepEqual(
+  validateExtension(extension(["BOOK-ENGINE"]), PROTECTED),
+  [],
+  "extending a domain workflow is allowed",
+);
 
 const replacesProtected = validateExtension(extension(["BOOK-AUTHZ"]), PROTECTED);
 assert.ok(
@@ -64,7 +68,10 @@ assert.ok(
   "extension replacing a protected workflow must be rejected",
 );
 
-const forbiddenPermission = validateExtension(extension(["BOOK-ENGINE"], ["commerce.authorization"]), PROTECTED);
+const forbiddenPermission = validateExtension(
+  extension(["BOOK-ENGINE"], ["commerce.authorization"]),
+  PROTECTED,
+);
 assert.ok(
   forbiddenPermission.some((e) => e.includes("forbidden permission")),
   "extension requesting commerce.authorization must be rejected",

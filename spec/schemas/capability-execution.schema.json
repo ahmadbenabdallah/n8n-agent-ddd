@@ -1,13 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": [
-    "executionId",
-    "agentId",
-    "capabilityId",
-    "decision",
-    "timestamp"
-  ],
+  "required": ["executionId", "agentId", "capabilityId", "decision", "timestamp"],
   "properties": {
     "executionId": {
       "type": "string"
@@ -19,18 +13,10 @@
       "type": "string"
     },
     "kind": {
-      "enum": [
-        "skill",
-        "tool",
-        "plugin",
-        "mcp"
-      ]
+      "enum": ["skill", "tool", "plugin", "mcp"]
     },
     "decision": {
-      "enum": [
-        "allowed",
-        "denied"
-      ]
+      "enum": ["allowed", "denied"]
     },
     "policyIds": {
       "type": "array",

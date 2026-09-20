@@ -38,6 +38,7 @@ for (const file of files) {
   ok ? passed++ : failed++;
 }
 
-if (!existsSync("docs")) console.log("\nnote: internal docs/ absent; docs checks inside contract tests were skipped");
+if (!existsSync("docs"))
+  console.log("\nnote: internal docs/ absent; docs checks inside contract tests were skipped");
 console.log(`\n${passed} passed, ${failed} failed, ${skipped} skipped`);
 process.exit(failed ? 1 : 0);

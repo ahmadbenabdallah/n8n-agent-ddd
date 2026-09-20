@@ -9,7 +9,7 @@ const required = [
   "runtime/reverse-proxy/runtime.yaml",
   "contracts/platform/workflow.yaml",
   "spec/schemas/workflow.schema.json",
-  "infrastructure/deployment/release.yaml"
+  "infrastructure/deployment/release.yaml",
 ];
 
 let failed = false;
@@ -30,9 +30,9 @@ const roleInvariants: Record<string, string[]> = {
     "callable_by_llm: false",
     "callable_without_authorization: false",
     "arbitrary_endpoint: false",
-    "client_supplied_price: false"
+    "client_supplied_price: false",
   ],
-  response_rendering: ["No unverified price, stock, order or payment claims"]
+  response_rendering: ["No unverified price, stock, order or payment claims"],
 };
 
 for (const domain of readdirSync("domains")) {

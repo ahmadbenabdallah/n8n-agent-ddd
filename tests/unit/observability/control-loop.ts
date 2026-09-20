@@ -4,14 +4,26 @@ import { transitionIncident } from "../../../platform/observability/incident";
 import { evaluateBudget } from "../../../platform/observability/budget";
 import { normalizedHash } from "../../../platform/observability/drift";
 
-const base = { correlationId: "c-1", component: "n8n", health: "healthy" as const, transientFailure: false, unknownExternalOutcome: false, criticalIntegrityFailure: false, humanOwnerActive: false, automationFrozen: false };
+const base = {
+  correlationId: "c-1",
+  component: "n8n",
+  health: "healthy" as const,
+  transientFailure: false,
+  unknownExternalOutcome: false,
+  criticalIntegrityFailure: false,
+  humanOwnerActive: false,
+  automationFrozen: false,
+};
 
 assert.equal(decideControlAction(base).action, "none");
 assert.equal(decideControlAction({ ...base, transientFailure: true }).action, "bounded_retry");
 assert.equal(decideControlAction({ ...base, health: "degraded" }).action, "alert_and_reconcile");
 assert.equal(decideControlAction({ ...base, unknownExternalOutcome: true }).action, "reconcile_before_retry");
 assert.equal(decideControlAction({ ...base, criticalIntegrityFailure: true }).action, "freeze_and_escalate");
-assert.equal(decideControlAction({ ...base, transientFailure: true, humanOwnerActive: true }).autonomous, false);
+assert.equal(
+  decideControlAction({ ...base, transientFailure: true, humanOwnerActive: true }).autonomous,
+  false,
+);
 assert.equal(exponentialBackoffMs(0), 1000);
 assert.equal(exponentialBackoffMs(10), 60000);
 assert.equal(transitionIncident("OPEN", "ACKNOWLEDGED"), "ACKNOWLEDGED");

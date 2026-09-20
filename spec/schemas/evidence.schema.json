@@ -4,17 +4,17 @@
   "type": "object",
   "required": ["id", "gate", "status", "timestamp", "release"],
   "properties": {
-    "id": {"type": "string", "pattern": "^[A-Z]+-[0-9]{3,}$"},
-    "gate": {"type": "string"},
-    "status": {"enum": ["PASS", "FAIL", "BLOCKED", "EXPIRED"]},
-    "timestamp": {"type": "string", "format": "date-time"},
-    "release": {"type": "string"},
-    "environment": {"type": "string"},
-    "run_id": {"type": "string"},
-    "summary": {"type": "string"},
-    "artifacts": {"type": "array", "items": {"type": "string"}},
-    "findings": {"type": "array", "items": {"type": "object"}},
-    "operator": {"type": "string"}
+    "id": { "type": "string", "pattern": "^[A-Z]+-[0-9]{3,}$" },
+    "gate": { "type": "string" },
+    "status": { "enum": ["PASS", "FAIL", "BLOCKED", "EXPIRED"] },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "release": { "type": "string" },
+    "environment": { "type": "string" },
+    "run_id": { "type": "string" },
+    "summary": { "type": "string" },
+    "artifacts": { "type": "array", "items": { "type": "string" } },
+    "findings": { "type": "array", "items": { "type": "object" } },
+    "operator": { "type": "string" }
   },
   "additionalProperties": true
 }

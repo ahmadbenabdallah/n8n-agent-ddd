@@ -1,16 +1,30 @@
 import type { ConfigDecision, ConfigurationClass } from "./types";
 
 const FORBIDDEN = new Set([
-  "DATABASE_URL", "N8N_ENCRYPTION_KEY", "N8N_USER_MANAGEMENT_JWT_SECRET",
-  "OPENAI_API_KEY", "WOO_COMMERCE_CONSUMER_SECRET", "WOO_COMMERCE_CONSUMER_KEY",
-  "payment_status", "execution_allowed", "authorization_decision", "verified_unit_price",
+  "DATABASE_URL",
+  "N8N_ENCRYPTION_KEY",
+  "N8N_USER_MANAGEMENT_JWT_SECRET",
+  "OPENAI_API_KEY",
+  "WOO_COMMERCE_CONSUMER_SECRET",
+  "WOO_COMMERCE_CONSUMER_KEY",
+  "payment_status",
+  "execution_allowed",
+  "authorization_decision",
+  "verified_unit_price",
   "stock_quantity",
 ]);
 
 const BUSINESS_KEYS = new Set([
-  "business.name", "business.currency", "business.timezone", "business.cod_enabled",
-  "business.support_hours", "business.max_discount_percent", "features.sales_enabled",
-  "features.support_enabled", "features.human_handoff_enabled", "language.default",
+  "business.name",
+  "business.currency",
+  "business.timezone",
+  "business.cod_enabled",
+  "business.support_hours",
+  "business.max_discount_percent",
+  "features.sales_enabled",
+  "features.support_enabled",
+  "features.human_handoff_enabled",
+  "language.default",
 ]);
 
 export function classifyConfigurationKey(key: string): ConfigurationClass | null {
@@ -29,7 +43,11 @@ export function validateConfigChange(key: string): ConfigDecision {
   }
   const classification = classifyConfigurationKey(key);
   if (!classification) {
-    return { allowed: false, reason: "Unknown configuration key; schema declaration required.", classification: null };
+    return {
+      allowed: false,
+      reason: "Unknown configuration key; schema declaration required.",
+      classification: null,
+    };
   }
   if (classification === "infrastructure" || classification === "platform_core") {
     return { allowed: false, reason: `${classification} configuration is platform-owned.`, classification };

@@ -14,7 +14,12 @@ export function createCustomerIdentityRepository(db: any): CustomerIdentityRepos
       const rows = await db
         .select()
         .from(customerIdentities)
-        .where(and(eq(customerIdentities.channel, channel), eq(customerIdentities.channelIdentity, channelIdentity)))
+        .where(
+          and(
+            eq(customerIdentities.channel, channel),
+            eq(customerIdentities.channelIdentity, channelIdentity),
+          ),
+        )
         .limit(1);
 
       return rows[0];

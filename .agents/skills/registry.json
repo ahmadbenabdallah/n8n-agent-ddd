@@ -28,24 +28,8 @@
       "license_review_required": true,
       "version_pin_required": true,
       "attribution_required": true,
-      "capabilities": [
-        "postgres",
-        "migrations",
-        "rls",
-        "indexes",
-        "pgvector",
-        "restore",
-        "queues"
-      ]
+      "capabilities": ["postgres", "migrations", "rls", "indexes", "pgvector", "restore", "queues"]
     }
   ],
-  "local_namespaces": [
-    "core",
-    "domain",
-    "n8n",
-    "database",
-    "security",
-    "testing",
-    "deployment"
-  ]
+  "local_namespaces": ["core", "domain", "n8n", "database", "security", "testing", "deployment"]
 }

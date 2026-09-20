@@ -4,12 +4,12 @@
   "type": "object",
   "required": ["release", "decision", "generated_at", "gates"],
   "properties": {
-    "release": {"type": "string"},
-    "decision": {"enum": ["CERTIFIED", "BLOCKED"]},
-    "generated_at": {"type": "string", "format": "date-time"},
-    "gates": {"type": "object"},
-    "open_critical_findings": {"type": "integer", "minimum": 0},
-    "open_high_findings": {"type": "integer", "minimum": 0},
-    "approvals": {"type": "object"}
+    "release": { "type": "string" },
+    "decision": { "enum": ["CERTIFIED", "BLOCKED"] },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "gates": { "type": "object" },
+    "open_critical_findings": { "type": "integer", "minimum": 0 },
+    "open_high_findings": { "type": "integer", "minimum": 0 },
+    "approvals": { "type": "object" }
   }
 }

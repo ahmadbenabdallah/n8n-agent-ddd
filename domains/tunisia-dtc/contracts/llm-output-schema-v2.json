@@ -21,58 +21,33 @@
     },
     "language": {
       "type": "string",
-      "enum": [
-        "tn",
-        "ar",
-        "fr",
-        "en",
-        "mixed"
-      ]
+      "enum": ["tn", "ar", "fr", "en", "mixed"]
     },
     "script": {
       "type": "string",
-      "enum": [
-        "latin",
-        "arabic",
-        "mixed"
-      ]
+      "enum": ["latin", "arabic", "mixed"]
     },
     "register": {
       "type": "string",
-      "enum": [
-        "casual",
-        "neutral",
-        "formal"
-      ]
+      "enum": ["casual", "neutral", "formal"]
     },
     "intent": {
       "type": "string"
     },
     "decision": {
       "type": "string",
-      "enum": [
-        "answer",
-        "clarification",
-        "escalation",
-        "proposed_action"
-      ]
+      "enum": ["answer", "clarification", "escalation", "proposed_action"]
     },
     "escalation": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "required",
-        "reason"
-      ],
+      "required": ["required", "reason"],
       "properties": {
         "required": {
           "type": "boolean"
         },
         "reason": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         }
       }
     },
@@ -87,10 +62,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "source_id",
-          "claim"
-        ],
+        "required": ["source_id", "claim"],
         "properties": {
           "source_id": {
             "type": "string"
@@ -102,10 +74,7 @@
       }
     },
     "state_suggestion": {
-      "type": [
-        "object",
-        "null"
-      ]
+      "type": ["object", "null"]
     }
   }
 }

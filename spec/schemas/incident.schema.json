@@ -3,14 +3,14 @@
   "type": "object",
   "required": ["incidentId", "state", "severity", "correlationId", "createdAt"],
   "properties": {
-    "incidentId": {"type": "string"},
-    "state": {"enum": ["OPEN", "ACKNOWLEDGED", "MITIGATING", "RESOLVED", "ESCALATED", "FROZEN"]},
-    "severity": {"enum": ["low", "medium", "high", "critical"]},
-    "correlationId": {"type": "string"},
-    "component": {"type": "string"},
-    "reason": {"type": "string"},
-    "createdAt": {"type": "string", "format": "date-time"},
-    "resolvedAt": {"type": ["string", "null"], "format": "date-time"}
+    "incidentId": { "type": "string" },
+    "state": { "enum": ["OPEN", "ACKNOWLEDGED", "MITIGATING", "RESOLVED", "ESCALATED", "FROZEN"] },
+    "severity": { "enum": ["low", "medium", "high", "critical"] },
+    "correlationId": { "type": "string" },
+    "component": { "type": "string" },
+    "reason": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "resolvedAt": { "type": ["string", "null"], "format": "date-time" }
   },
   "additionalProperties": false
 }

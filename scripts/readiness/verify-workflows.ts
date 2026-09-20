@@ -1,9 +1,9 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 
 const dir = "runtime/n8n/workflows";
-const expected = Array.from({length: 21}, (_, i) => `WF-${String(i).padStart(2, "0")}.json`);
+const expected = Array.from({ length: 21 }, (_, i) => `WF-${String(i).padStart(2, "0")}.json`);
 const actual = existsSync(dir) ? readdirSync(dir) : [];
-const missing = expected.filter(x => !actual.includes(x));
+const missing = expected.filter((x) => !actual.includes(x));
 const invalid: string[] = [];
 
 for (const file of expected) {
@@ -17,7 +17,7 @@ for (const file of expected) {
 }
 
 if (missing.length || invalid.length) {
-  console.error(JSON.stringify({status:"FAIL", missing, invalid}, null, 2));
+  console.error(JSON.stringify({ status: "FAIL", missing, invalid }, null, 2));
   process.exit(1);
 }
-console.log(JSON.stringify({status:"PASS", workflows:21}, null, 2));
+console.log(JSON.stringify({ status: "PASS", workflows: 21 }, null, 2));

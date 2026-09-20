@@ -16,7 +16,9 @@ async function applyProfile(db: { execute: (query: ReturnType<typeof sql.raw>) =
     throw new Error(`Unknown DATABASE_PROFILE '${profile}': ${dir} does not exist`);
   }
 
-  for (const file of readdirSync(dir).filter((f) => f.endsWith(".sql")).sort()) {
+  for (const file of readdirSync(dir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort()) {
     await db.execute(sql.raw(readFileSync(join(dir, file), "utf8")));
     console.log(`Applied ${profile} profile: ${file}`);
   }

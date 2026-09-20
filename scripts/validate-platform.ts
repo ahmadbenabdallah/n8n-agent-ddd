@@ -6,7 +6,7 @@ import {
   mutatesExternalSystem,
   readRegistryIds,
   readWorkflowRoles,
-  workflowSpecPath
+  workflowSpecPath,
 } from "./lib/domain-roles";
 
 const required = [
@@ -18,7 +18,7 @@ const required = [
   "contracts/platform/event.yaml",
   "spec/invariants/platform.yaml",
   "domains/tunisia-dtc/workflows/registry.yaml",
-  "domains/tunisia-dtc/domain.yaml"
+  "domains/tunisia-dtc/domain.yaml",
 ];
 
 let failed = false;
@@ -37,7 +37,7 @@ for (const rule of [
   "only_authorization_role_can_authorize_execution",
   "only_privileged_execution_role_can_mutate_external_system",
   "llm_does_not_authorize",
-  "unknown_external_outcome_requires_reconciliation"
+  "unknown_external_outcome_requires_reconciliation",
 ]) {
   if (!auth.includes(rule)) {
     console.error(`✗ missing authorization invariant: ${rule}`);

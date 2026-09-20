@@ -1,10 +1,24 @@
 export const lifecycleStates = [
-  "DISCOVER", "DEFINE", "DOMAIN", "SPECIFY", "ARCHITECT", "DESIGN", "DECOMPOSE",
-  "PLAN", "IMPLEMENT", "TEST", "SECURITY", "REVIEW", "INTEGRATE", "DEPLOY",
-  "VERIFY", "OPERATE", "LEARN"
+  "DISCOVER",
+  "DEFINE",
+  "DOMAIN",
+  "SPECIFY",
+  "ARCHITECT",
+  "DESIGN",
+  "DECOMPOSE",
+  "PLAN",
+  "IMPLEMENT",
+  "TEST",
+  "SECURITY",
+  "REVIEW",
+  "INTEGRATE",
+  "DEPLOY",
+  "VERIFY",
+  "OPERATE",
+  "LEARN",
 ] as const;
 
-export type LifecycleState = typeof lifecycleStates[number];
+export type LifecycleState = (typeof lifecycleStates)[number];
 
 const transitions: Record<LifecycleState, LifecycleState[]> = {
   DISCOVER: ["DEFINE"],
@@ -23,7 +37,7 @@ const transitions: Record<LifecycleState, LifecycleState[]> = {
   DEPLOY: ["VERIFY", "INTEGRATE"],
   VERIFY: ["OPERATE", "DEPLOY"],
   OPERATE: ["LEARN", "VERIFY"],
-  LEARN: ["DEFINE", "OPERATE"]
+  LEARN: ["DEFINE", "OPERATE"],
 };
 
 export function canTransition(from: LifecycleState, to: LifecycleState): boolean {

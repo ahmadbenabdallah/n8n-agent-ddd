@@ -15,7 +15,8 @@ export function evaluateToolPolicy(
   if (DENY_BY_DEFAULT.has(requestedPermission)) {
     return {
       allowed: false,
-      reason: "Protected capability requires an explicit policy and, where applicable, runtime authorization.",
+      reason:
+        "Protected capability requires an explicit policy and, where applicable, runtime authorization.",
       matchedPolicyIds: ["TOOL-DENY-DEFAULT"],
     };
   }

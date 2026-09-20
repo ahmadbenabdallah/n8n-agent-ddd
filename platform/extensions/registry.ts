@@ -10,9 +10,20 @@ export function validateExtension(
   if (extension.workflows.some((wf) => isProtectedWorkflow(wf, protectedWorkflows))) {
     errors.push("Extension cannot own or replace a protected workflow.");
   }
-  if (extension.permissions.some((p) => ["commerce.authorization", "commerce.payment_mutation", "secret.export", "credential.export", "arbitrary_http.production"].includes(p))) {
+  if (
+    extension.permissions.some((p) =>
+      [
+        "commerce.authorization",
+        "commerce.payment_mutation",
+        "secret.export",
+        "credential.export",
+        "arbitrary_http.production",
+      ].includes(p),
+    )
+  ) {
     errors.push("Extension requests forbidden permission.");
   }
-  if (!extension.compatibility.runtime || !extension.compatibility.domain) errors.push("Compatibility declaration is required.");
+  if (!extension.compatibility.runtime || !extension.compatibility.domain)
+    errors.push("Compatibility declaration is required.");
   return errors;
 }

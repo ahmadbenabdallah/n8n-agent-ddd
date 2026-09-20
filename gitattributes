@@ -1,0 +1,25 @@
+# Copy this to the repository root as `.gitattributes` (no leading "ci-proposed/").
+#
+# Today every committed file is LF, verified across all 177 shell scripts.
+# That is luck, not policy: it depends on each contributor's local
+# core.autocrlf. One contributor on Windows with core.autocrlf=false commits
+# CRLF and every shell script breaks on Linux and macOS.
+#
+# This is a no-op for the current content, because the blobs are already LF.
+
+* text=auto eol=lf
+
+# Executable scripts must never gain CRLF: a CRLF shebang line fails with
+# "bad interpreter: /usr/bin/env bash^M".
+*.sh text eol=lf
+
+# Binary, never touched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.woff binary
+*.woff2 binary

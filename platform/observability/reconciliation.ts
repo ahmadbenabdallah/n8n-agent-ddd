@@ -1,6 +1,10 @@
 export type ReconciliationState =
-  | "UNKNOWN" | "RECONCILING" | "VERIFIED_NOT_EXECUTED"
-  | "VERIFIED_EXECUTED" | "CONFLICT" | "ESCALATED";
+  | "UNKNOWN"
+  | "RECONCILING"
+  | "VERIFIED_NOT_EXECUTED"
+  | "VERIFIED_EXECUTED"
+  | "CONFLICT"
+  | "ESCALATED";
 
 export interface ReconciliationRecord {
   reconciliationId: string;
