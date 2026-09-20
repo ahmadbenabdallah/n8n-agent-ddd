@@ -11,6 +11,11 @@ export function canEditExtension(identity: OperatorIdentity): boolean {
   return EXTENSION_ROLES.has(identity.role);
 }
 
-export function canChangeInfrastructure(identity: OperatorIdentity): boolean {
+/**
+ * Infrastructure is never operator-changeable, whoever is asking. The
+ * parameter is kept so this reads like its siblings and so the answer can
+ * become role-dependent later without changing every call site.
+ */
+export function canChangeInfrastructure(_identity: OperatorIdentity): boolean {
   return false;
 }
