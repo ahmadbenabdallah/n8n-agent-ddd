@@ -17,7 +17,8 @@
       "!platform/workflows",
       "!runtime/n8n/workflows",
       "!runtime/evidence",
-      "!pnpm-lock.yaml"
+      "!pnpm-lock.yaml",
+      "!.ai-sdlc"
     ]
   },
   "formatter": {

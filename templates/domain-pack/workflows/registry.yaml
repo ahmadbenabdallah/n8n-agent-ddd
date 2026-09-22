@@ -7,7 +7,7 @@ version: <YYYY.MM.N>
 # (channel ingress, prompt-security gate, audit writer and similar);
 # `scope: domain` marks your own business logic.
 #
-# `from_library: <entry>` records that you adopted a workflow from
+# `from_library: ENTRY` records that you adopted a workflow from
 # platform/workflows/library.yaml. The id stays yours; the reference lets an
 # upgrade find where the logic came from. Run
 # `bash tests/platform/shared-workflow-library.sh` to check your references.
@@ -30,18 +30,22 @@ workflows:
   name: <Action authorization>
   category: authorization
   scope: shared
+  protected: true
 - id: <ID>
   name: <Response renderer>
   category: rendering
   scope: shared
+  protected: true
 - id: <ID>
   name: <Audit>
   category: audit
   scope: shared
+  protected: true
 - id: <ID>
   name: <Reconciliation and monitoring>
   category: operations
   scope: shared
+  protected: true
 - id: <ID>
   name: <Your business workflow, e.g. booking engine>
   category: domain

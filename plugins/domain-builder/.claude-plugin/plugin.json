@@ -1,0 +1,13 @@
+{
+  "name": "domain-builder",
+  "description": "Build a domain pack for the n8n-agent-ddd framework: scaffold one from the template, adopt shared workflows, and validate it against the platform contract.",
+  "version": "0.1.0",
+  "author": {
+    "name": "ahmadbenabdallah",
+    "url": "https://github.com/ahmadbenabdallah"
+  },
+  "homepage": "https://github.com/ahmadbenabdallah/n8n-agent-ddd/tree/main/plugins/domain-builder",
+  "repository": "https://github.com/ahmadbenabdallah/n8n-agent-ddd",
+  "license": "Apache-2.0",
+  "keywords": ["n8n", "ddd", "domain-driven-design", "scaffold", "agent"]
+}
