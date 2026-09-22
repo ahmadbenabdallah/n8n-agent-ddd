@@ -33,8 +33,8 @@ sources_of_truth:
   reasoning: llm
 
 # Platform roles, filled by YOUR OWN workflow ids. The platform defines the
-# roles and their invariants; the ids are yours. Tunisia DTC happens to use
-# WF-10, WF-20, WF-16, WF-17 and WF-19; your domain can name them anything.
+# roles and their invariants; the ids are yours to choose and to keep stable.
+# No platform artifact ever names one of them.
 workflow_roles:
   authorization: <workflow id>                 # required: the only workflow that may allow an action
   response_rendering: <workflow id>            # required: replies use verified facts only

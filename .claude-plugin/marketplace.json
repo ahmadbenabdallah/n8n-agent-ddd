@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "n8n-agent-ddd",
+  "owner": {
+    "name": "ahmadbenabdallah",
+    "url": "https://github.com/ahmadbenabdallah"
+  },
+  "metadata": {
+    "description": "Plugins for adopters building domain packs on the n8n-agent-ddd framework.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "domain-builder",
+      "source": "./plugins/domain-builder",
+      "description": "Scaffold, adopt into and validate a domain pack for the n8n-agent-ddd framework.",
+      "version": "0.1.0",
+      "author": {
+        "name": "ahmadbenabdallah"
+      },
+      "homepage": "https://github.com/ahmadbenabdallah/n8n-agent-ddd/tree/main/plugins/domain-builder",
+      "license": "Apache-2.0",
+      "category": "workflow",
+      "keywords": ["n8n", "ddd", "domain-driven-design", "scaffold", "agent"]
+    }
+  ]
+}
