@@ -32,3 +32,6 @@ runtime/backups/
 runtime/evidence/**/backup/
 *.env
 !*.env.example
+
+# Claude Code conversation exports (dated transcripts dropped at repo root)
+/20??-??-??-*.txt
