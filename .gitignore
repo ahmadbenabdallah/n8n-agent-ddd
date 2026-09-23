@@ -8,6 +8,11 @@ coverage/
 *.log
 
 /docs/
+
+# OpenWiki: generated repository wiki. Local-only, never pushed.
+/wiki/
+/openwiki/
+/.openwiki/
 # ai-sdlc: local dev-lifecycle tooling, not part of the runtime
 .worktrees/
 backlog/
