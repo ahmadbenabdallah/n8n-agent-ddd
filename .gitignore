@@ -11,23 +11,25 @@ coverage/
 # ai-sdlc: local dev-lifecycle tooling, not part of the runtime
 .worktrees/
 backlog/
+
+# ai-sdlc: local tooling stays local; only the audit trail ships.
+# attestations/ + transcript-leaves/ + reviews/ are written AND COMMITTED by the
+# pre-push signing hook - ignoring them breaks `git push` (NAD-004 hit this).
+.ai-sdlc/*
+!.ai-sdlc/attestations/
+!.ai-sdlc/transcript-leaves/
+!.ai-sdlc/reviews/
+!.ai-sdlc/trusted-reviewers.yaml
+
 .impeccable/
 
 
-# ai-sdlc:runtime-gitignore
-.ai-sdlc/state.db
-.ai-sdlc/state.db-shm
-.ai-sdlc/state.db-wal
-.ai-sdlc/state/
-.ai-sdlc/audit.jsonl
-# ai-sdlc execute runtime (mirrors ai-sdlc-framework/ai-sdlc .gitignore)
 .worktrees/
 .active-task
-.ai-sdlc/locks/
-.ai-sdlc/dispatch/
-.ai-sdlc/transcripts/
-.ai-sdlc/subagent-sessions/
-.ai-sdlc/memory/
+
+
+# Claude Code /export conversation dumps (e.g. 2026-09-11-214337-<slug>.txt)
+/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]-*.txt
 
 
 CLAUDE.local.md
@@ -45,4 +47,3 @@ runtime/evidence/**/backup/
 !*.env.example
 
 # Claude Code conversation exports (dated transcripts dropped at repo root)
-/20??-??-??-*.txt
