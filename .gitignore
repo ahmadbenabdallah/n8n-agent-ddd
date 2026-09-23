@@ -9,16 +9,27 @@ coverage/
 
 /docs/
 # ai-sdlc: local dev-lifecycle tooling, not part of the runtime
-.ai-sdlc/
 .worktrees/
 backlog/
 .impeccable/
-ci-proposed/
+
 
 # ai-sdlc:runtime-gitignore
 .ai-sdlc/state.db
+.ai-sdlc/state.db-shm
+.ai-sdlc/state.db-wal
 .ai-sdlc/state/
 .ai-sdlc/audit.jsonl
+# ai-sdlc execute runtime (mirrors ai-sdlc-framework/ai-sdlc .gitignore)
+.worktrees/
+.active-task
+.ai-sdlc/locks/
+.ai-sdlc/dispatch/
+.ai-sdlc/transcripts/
+.ai-sdlc/subagent-sessions/
+.ai-sdlc/memory/
+
+
 CLAUDE.local.md
 .mcp.json
 .cursor/mcp.json
