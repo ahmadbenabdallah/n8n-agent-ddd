@@ -80,10 +80,10 @@
     },
     {
       "parameters": {
-        "jsCode": "/*\nProduction note:\nMeta signs the raw HTTP body with the Page/App secret.\nThis node deliberately FAILS CLOSED if signature material is unavailable.\n\nFor the final production implementation, connect the raw-body signature\nverification step here (Crypto/HMAC-SHA256 or an upstream verified proxy).\nDo not bypass this check merely to make the workflow pass.\n\nThe current workflow can be tested in development with signature verification\ndisabled only by explicitly setting ALLOW_UNVERIFIED_META_WEBHOOK=true.\n*/\nconst sig = String($json.request?.signature ?? '');\nconst allowDev = String($env.ALLOW_UNVERIFIED_META_WEBHOOK ?? '').toLowerCase() === 'true';\n\nif (!sig && !allowDev) {\n  return [{json:{...$json, security:{signature_valid:false, decision:'reject', reason:'missing_meta_signature'}}}];\n}\n\nreturn [{\n  json:{\n    ...$json,\n    security:{\n      signature_valid: allowDev ? null : 'PENDING_HMAC_VALIDATION',\n      decision: allowDev ? 'development_only_accept' : 'pending'\n    }\n  }\n}];"
+        "jsCode": "/*\nMeta signs the raw HTTP body with the App Secret and sends the digest in\nX-Hub-Signature-256. This node is the channel port's 'verify' operation: it\nruns before normalisation and before any domain, identity or LLM step, and it\nfails closed. Nothing downstream ever sees an unverified body.\n\nThe algorithm is the one in platform/channels/meta-signature.ts\n(verifyMetaSignature), kept equivalent on purpose. The Code-node route needs\nNODE_FUNCTION_ALLOW_BUILTIN=crypto, which the compose files under\ninfrastructure/docker/ set; without it this require throws and the gateway\nrejects, which is the correct failure direction.\n*/\nconst crypto = require('crypto');\n\nfunction verifyMetaSignature(rawBody, header, appSecret) {\n  if (!Buffer.isBuffer(rawBody)) return false;\n  if (typeof appSecret !== 'string' || appSecret.length === 0) return false;\n  if (typeof header !== 'string' || !header.startsWith('sha256=')) return false;\n  const provided = Buffer.from(header.slice('sha256='.length), 'utf8');\n  const expected = Buffer.from(crypto.createHmac('sha256', appSecret).update(rawBody).digest('hex'), 'utf8');\n  return provided.length === expected.length && crypto.timingSafeEqual(provided, expected);\n}\n\nconst item = $input.first();\nconst request = item.json.request ?? {};\nconst headers = request.headers ?? {};\nconst header = headers['x-hub-signature-256'] ?? headers['X-Hub-Signature-256'];\nconst base64 = item.binary?.data?.data;\nconst rawBody = base64 ? Buffer.from(base64, 'base64') : null;\nconst appSecret = String($env.META_APP_SECRET ?? '');\nconst allowUnverified = String($env.ALLOW_UNVERIFIED_META_WEBHOOK ?? '').toLowerCase() === 'true';\n\n// Page id and event id only: identifying the event is not normalising it.\nconst body = request.body ?? {};\nconst entry = body.entry?.[0] ?? {};\nconst messaging = entry.messaging?.[0] ?? {};\nconst pageId = String(messaging.recipient?.id ?? entry.id ?? 'unknown');\nconst mid = messaging.message?.mid ?? messaging.postback?.mid ?? null;\n\n// Page id and reason only. Never the body, never the header value.\nfunction reject(reason) {\n  console.log(JSON.stringify({ event: 'meta_webhook_rejected', page_id: pageId, reason }));\n  return [{ json: { security: { decision: 'reject', reason }, page_id: pageId } }];\n}\n\nconst signed = verifyMetaSignature(rawBody, header, appSecret);\n\nif (!signed && !allowUnverified) {\n  if (!rawBody) return reject('missing_raw_body');\n  if (!appSecret) return reject('missing_app_secret');\n  return reject('invalid_meta_signature');\n}\n\nif (!mid) return reject('missing_event_id');\n\nif (!signed) {\n  // Local development only. scripts/staging/preflight.ts refuses any deployed\n  // environment with ALLOW_UNVERIFIED_META_WEBHOOK set.\n  console.log(JSON.stringify({ event: 'meta_webhook_unverified_accept', page_id: pageId, reason: 'allow_unverified_development_bypass' }));\n}\n\nreturn [{\n  json: {\n    security: {\n      decision: signed ? 'accept' : 'development_only_accept',\n      reason: signed ? 'signature_verified' : 'allow_unverified_development_bypass'\n    },\n    event: {\n      page_id: pageId,\n      message_id: String(mid),\n      idempotency_key: 'meta:' + pageId + ':' + mid,\n      operation: 'meta_webhook_event',\n      request_hash: rawBody ? crypto.createHash('sha256').update(rawBody).digest('hex') : 'unverified'\n    },\n    request\n  },\n  binary: item.binary\n}];"
       },
       "id": "wf00-signature-gate",
-      "name": "Meta Signature Security Gate",
+      "name": "Verify Meta Signature",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -130,6 +130,74 @@
     },
     {
       "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT status FROM private.reserve_idempotency($1, $2, $3);",
+        "options": {
+          "queryReplacement": "={{ $json.event.idempotency_key }},{{ $json.event.operation }},{{ $json.event.request_hash }}"
+        }
+      },
+      "id": "wf00-reserve-event",
+      "name": "Reserve Meta Event",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -180,
+        280
+      ],
+      "notes": "Durable event deduplication. Bind the adopting deployment's Postgres credential; the library entry declares it."
+    },
+    {
+      "parameters": {
+        "jsCode": "/*\nMeta's signature covers the body only: no timestamp, no nonce, so a captured\nvalid request replays forever. Replay defence is deduplication of the event id\nagainst durable state, which happens here, before normalisation.\n\nprivate.reserve_idempotency returns CREATED for the first caller of a key.\nAnything else means Meta is retrying a delivery we already hold: acknowledge\n200 so it stops retrying, and drop it.\n*/\nconst reserved = $input.first().json ?? {};\nconst verified = $('Verify Meta Signature').first();\nconst status = String(reserved.status ?? '');\nconst duplicate = status !== 'CREATED';\n\nif (duplicate) {\n  console.log(JSON.stringify({\n    event: 'meta_webhook_duplicate',\n    page_id: verified.json.event?.page_id,\n    reason: 'event_already_reserved'\n  }));\n}\n\nreturn [{\n  json: { ...verified.json, idempotency: { status, duplicate } },\n  binary: verified.binary\n}];"
+      },
+      "id": "wf00-dedupe-decision",
+      "name": "Classify Event Delivery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.idempotency?.duplicate === true }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "wf00-duplicate-check",
+      "name": "Duplicate Delivery?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        320,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"received\":true,\"duplicate\":true}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "wf00-duplicate-response",
+      "name": "200 Duplicate ACK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        560,
+        140
+      ]
+    },
+    {
+      "parameters": {
         "jsCode": "const event = $json.request?.body ?? {};\nconst entry = event.entry?.[0] ?? {};\nconst messaging = entry.messaging?.[0] ?? {};\nconst message = messaging.message ?? {};\n\nconst senderId = messaging.sender?.id ?? null;\nconst recipientId = messaging.recipient?.id ?? entry.id ?? null;\nconst messageId = message.mid ?? null;\nconst text = typeof message.text === 'string' ? message.text : '';\n\nconst messageType =\n  message.text ? 'text' :\n  message.attachments ? 'attachment' :\n  messaging.postback ? 'postback' :\n  messaging.reaction ? 'reaction' :\n  'unknown';\n\nif (!senderId || !messageId) {\n  return [{\n    json: {\n      accepted: false,\n      reject_reason: 'missing_sender_or_message_id',\n      channel: 'facebook_messenger',\n      raw_event: event\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    accepted: true,\n    channel: 'facebook_messenger',\n    channel_user_id: String(senderId),\n    page_id: String(recipientId),\n    message_id: String(messageId),\n    conversation_id: `facebook_messenger:${senderId}`,\n    text,\n    message_type: messageType,\n    timestamp: messaging.timestamp ?? Date.now(),\n    is_echo: Boolean(message.is_echo),\n    postback: messaging.postback ?? null,\n    attachments: message.attachments ?? [],\n    raw_event: event,\n    source_trust: 'untrusted',\n    received_at: new Date().toISOString()\n  }\n}];"
       },
       "id": "wf00-normalize",
@@ -137,7 +205,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
+        540,
         280
       ]
     },
@@ -157,7 +225,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        100,
+        800,
         280
       ]
     },
@@ -170,7 +238,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        360,
+        1060,
         280
       ]
     },
@@ -190,7 +258,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        620,
+        1320,
         280
       ]
     },
@@ -203,7 +271,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        880,
+        1580,
         180
       ]
     },
@@ -216,7 +284,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        880,
+        1580,
         380
       ]
     },
@@ -233,7 +301,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        1140,
+        1840,
         280
       ]
     }
@@ -277,18 +345,7 @@
       "main": [
         [
           {
-            "node": "Meta Signature Security Gate",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Meta Signature Security Gate": {
-      "main": [
-        [
-          {
-            "node": "Reject Invalid Signature",
+            "node": "Verify Meta Signature",
             "type": "main",
             "index": 0
           }
@@ -306,7 +363,7 @@
         ],
         [
           {
-            "node": "Normalize Messenger Event",
+            "node": "Reserve Meta Event",
             "type": "main",
             "index": 0
           }
@@ -387,6 +444,57 @@
         [
           {
             "node": "Messenger ACK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Meta Signature": {
+      "main": [
+        [
+          {
+            "node": "Reject Invalid Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Meta Event": {
+      "main": [
+        [
+          {
+            "node": "Classify Event Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Event Delivery": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Delivery?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Delivery?": {
+      "main": [
+        [
+          {
+            "node": "200 Duplicate ACK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normalize Messenger Event",
             "type": "main",
             "index": 0
           }

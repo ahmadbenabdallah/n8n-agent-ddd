@@ -1,9 +1,9 @@
 {
-  "name": "WF-01 \u2014 Security Gate",
+  "name": "WF-01 — Security Gate",
   "nodes": [
     {
       "parameters": {
-        "jsCode": "if(!$json.signature_valid)throw new Error('invalid_signature');if($json.replay_detected)throw new Error('replay_detected');return items;"
+        "jsCode": "/* Signature verification and event deduplication happen at the channel ingress, before normalisation (see platform/channels/meta-signature.ts and the messenger-inbound library workflow). A flag in the payload is not evidence of either, so this node no longer reads one: whoever posts the payload would be deciding. It checks only what it can check, that the canonical message it was handed is complete. */ const j=$json; if(!j.message_id||!j.channel_user_id)throw new Error('incomplete_canonical_message'); return items;"
       },
       "id": "security",
       "name": "Validate Security Context",

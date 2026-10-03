@@ -65,7 +65,7 @@ entries:
     category: ingress
     channel: meta-messenger
     path: channels/messenger-inbound/workflow.json
-    nodes: 16
+    nodes: 19
     domain_agnostic: true
     channel_specific: true
     requires_binding:
@@ -76,12 +76,43 @@ entries:
     configure:
       - key: META_VERIFY_TOKEN
         why: Meta webhook verification handshake.
+      - key: META_APP_SECRET
+        why: >-
+          Key for the HMAC-SHA256 over the raw request body that
+          X-Hub-Signature-256 carries. Without it the gateway rejects every
+          POST with reason missing_app_secret. Lives in the runtime secret
+          store, never in source.
       - key: ALLOW_UNVERIFIED_META_WEBHOOK
         why: >-
           Must be false outside local development. When true the gateway
-          accepts a webhook whose signature was not verified.
+          accepts a webhook whose signature did not verify. Staging preflight
+          (scripts/staging/preflight.ts) fails when it is set to anything but
+          false.
+      - key: postgres_credential
+        why: >-
+          The "Reserve Meta Event" node calls private.reserve_idempotency to
+          drop replayed deliveries. Bind the deployment's own Postgres
+          credential; the library names none.
+    decisions:
+      # NAD-016. Both routes were available: n8n's native Crypto node, or a
+      # Code node requiring node:crypto.
+      - decision: signature_verification_runs_in_a_code_node
+        over: n8n_crypto_node
+        why: >-
+          The Crypto node hashes a string field and offers no constant-time
+          comparison, so it cannot verify a digest over raw bytes without a
+          Code node doing the compare anyway. One Code node running the same
+          algorithm as platform/channels/meta-signature.ts is the smaller and
+          auditable option.
+        requires: >-
+          NODE_FUNCTION_ALLOW_BUILTIN=crypto on every n8n container, set in
+          the four compose files under infrastructure/docker/. Without it the
+          require throws and the gateway rejects, which is the correct
+          failure direction.
     purpose: >-
-      Terminates the Meta Messenger webhook, verifies the handshake and
-      signature, and hands off to the security gate. Specific to the channel,
-      not to any business domain: any domain on Messenger can adopt it.
+      Terminates the Meta Messenger webhook, verifies the handshake, verifies
+      the X-Hub-Signature-256 HMAC over the raw body before anything is
+      normalised, deduplicates the event, and hands off to the security gate.
+      Specific to the channel, not to any business domain: any domain on
+      Messenger can adopt it.
     provenance: domains/tunisia-dtc/workflow-packages/WF-00

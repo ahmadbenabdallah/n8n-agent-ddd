@@ -14,6 +14,8 @@ services:
       N8N_DIAGNOSTICS_ENABLED: "false"
       N8N_PERSONALIZATION_ENABLED: "false"
       N8N_SECURE_COOKIE: "true"
+      # Required by the inbound webhook signature check (Code node, node:crypto).
+      NODE_FUNCTION_ALLOW_BUILTIN: crypto
     depends_on:
       redis:
         condition: service_healthy

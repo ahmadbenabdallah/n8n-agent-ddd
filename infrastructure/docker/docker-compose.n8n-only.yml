@@ -23,6 +23,8 @@ services:
       N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
       N8N_RUNNERS_ENABLED: "true"
       GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-UTC}
+      # Required by the inbound webhook signature check (Code node, node:crypto).
+      NODE_FUNCTION_ALLOW_BUILTIN: crypto
     volumes:
       - n8n_data:/home/node/.n8n
     healthcheck:

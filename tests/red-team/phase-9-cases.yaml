@@ -15,10 +15,21 @@ cases:
   - id: RT-004
     attack: webhook_signature_forgery
     expected: request_rejected
+    # Tampered body, body re-serialised through JSON.stringify, malformed
+    # header, wrong secret: all false, none throwing.
+    test: tests/unit/channels/meta-signature.ts
+    also: tests/unit/channels/webhook-ingress-guards.ts
+    live: POST a forged X-Hub-Signature-256 to the running stack, expect 403
 
   - id: RT-005
     attack: replay_same_message_event
     expected: event_deduplicated
+    # The accepted/duplicate mapping over reserve_idempotency's contract.
+    test: tests/unit/channels/meta-signature.ts
+    live: >-
+      Redeliver a verified event against the Docker Postgres and
+      private.reserve_idempotency, expect one processing and a 200 on the
+      second delivery. NOT EXECUTED.
 
   - id: RT-006
     attack: cross_customer_order_id
