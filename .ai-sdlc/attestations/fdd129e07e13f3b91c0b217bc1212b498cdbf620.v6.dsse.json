@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "v6",
+  "subject": {
+    "digest": {
+      "sha1": "02f0afb0c72e7157e8329a203809e65c69b9f60f"
+    }
+  },
+  "transcriptLeaves": [
+    {
+      "leafIndex": 0,
+      "reviewerName": "security-reviewer",
+      "transcriptHash": "f34f0d3194be4da8174d8b19cddd591a92f4a386ab55e6595355cddb622ef4c8",
+      "verdictClass": "self-authored",
+      "harnessTranscriptHash": null
+    },
+    {
+      "leafIndex": 1,
+      "reviewerName": "code-reviewer",
+      "transcriptHash": "f1e7769edbd7df774b718728a029f1f191928b2edee84ce39efb23bb4f19450e",
+      "verdictClass": "self-authored",
+      "harnessTranscriptHash": null
+    },
+    {
+      "leafIndex": 2,
+      "reviewerName": "test-reviewer",
+      "transcriptHash": "019b1ab6079a03074f71f6abfbf1a5ff9bd21b286080df94bae488e091ce5119",
+      "verdictClass": "self-authored",
+      "harnessTranscriptHash": null
+    }
+  ],
+  "merkleProofs": [
+    {
+      "leafIndex": 0,
+      "proof": [
+        "c0e7c0cba9d3275fa15632caee9c0ebf6e353a684394a765c91705977a8f9ce8",
+        "c73e2e85aeb506a8bcf9641d2e3138f7fed766a3f85dc18b61a30f21d41351c7"
+      ]
+    },
+    {
+      "leafIndex": 1,
+      "proof": [
+        "b9c0623f756f216a9a5a93f720635d810b5b2d28bf6226d7e0d5eb7f2f6e21f6",
+        "c73e2e85aeb506a8bcf9641d2e3138f7fed766a3f85dc18b61a30f21d41351c7"
+      ]
+    },
+    {
+      "leafIndex": 2,
+      "proof": [
+        "96644e9c7154a1bcf9931ed96b17dac47bb36986766efeb0bfd37c3f6af1e141",
+        "9ae21bd33ccf6774e50749a5381912c5d319410bb321c3af2c963a72d572c03e"
+      ]
+    }
+  ],
+  "rootHash": "5c4eefb09c1e6da42288635e6e597661f76f2a50bc40e55ede4297a0cdcd24b0",
+  "rootSignature": "wDZRsLzW66i6sQXBzv+yCM1lgvZwmYjETgs9KXvXr46P+uQyM43Ko+FHETGokUjj69H0UYOhTSgOAQOI6ee4Bw==",
+  "nonce": "675db197beff2850371d9e2ceaf6da5c22e464c5577f11d6f4314db895c5f91f",
+  "leafCount": 3,
+  "signedAt": "2026-10-03T16:16:49.542Z",
+  "signerIdentity": "BI Consulting@local:DESKTOP-252S9KI"
+}
