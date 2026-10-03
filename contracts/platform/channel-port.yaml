@@ -22,14 +22,20 @@ verify:
     - rejected:missing_raw_body
     - rejected:missing_app_secret
     - rejected:invalid_meta_signature
-    - rejected:missing_event_id
     - duplicate
+    # Verified, but there is nothing to deduplicate or process: delivery and
+    # read receipts, opt-ins and some reactions carry no provider event id.
+    # Acknowledged, not rejected. A 403 would claim the signature was missing,
+    # which is false, and a provider disables a subscription whose deliveries
+    # keep failing.
+    - acknowledged:no_event_id
   rejected_response:
     http_status: 403
     body: fixed
     echoes_request: false
     logs: [page_id, reason]
-  duplicate_response:
+  # Shared by `duplicate` and `acknowledged:no_event_id`.
+  acknowledged_not_processed_response:
     http_status: 200
     body: fixed
     processed: false

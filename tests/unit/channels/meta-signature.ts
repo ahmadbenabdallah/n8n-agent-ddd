@@ -69,6 +69,13 @@ for (const [label, header] of [
   ["header empty", ""],
   ["no prefix", hex],
   ["sha1 prefix", `sha1=${hex}`],
+  // Right total length, wrong prefix. Without these the prefix check is
+  // shadowed by the digest-length check and never exercised: dropping
+  // startsWith(PREFIX) while keeping slice(PREFIX.length) survived everything
+  // else in this file.
+  ["upper-case prefix", `SHA256=${hex}`],
+  ["near-miss prefix", `sha255=${hex}`],
+  ["prefix without the equals", `sha256${hex}`],
   ["prefix only", "sha256="],
   ["truncated hex", `sha256=${hex.slice(0, 32)}`],
   ["over-long hex", `sha256=${hex}00`],
