@@ -168,7 +168,7 @@ All 21 of the reference domain's workflows are currently placeholders. The table
 | WF-19 | Maintenance and Monitoring | operations | Placeholder |
 | WF-20 | WooCommerce Gateway | privileged execution | Placeholder |
 
-A placeholder is a valid n8n workflow of three or four Code nodes that passes data through. It has no trigger and calls nothing.
+A placeholder is a valid n8n workflow of three or four Code nodes that passes data through. It has no trigger and calls nothing. WF-10 and WF-20 are the exception to "passes through": they refuse a payload that carries its own authorization, because that is the one thing they must not forward (the decision itself is [`platform/authorization/port.ts`](platform/authorization/port.ts)).
 
 The design work behind each workflow is kept per workflow in [`domains/tunisia-dtc/workflow-packages/`](domains/tunisia-dtc/workflow-packages/): one folder per WF-xx with its specification, validation pipeline, n8n implementation notes, security tests, end-to-end flows and setup guides, plus the fuller workflow JSON for WF-00, WF-01, WF-02 and WF-04. Older versions and the implementation guides sit under `source-material/`; [`SOURCE-MATERIAL-INDEX.md`](domains/tunisia-dtc/SOURCE-MATERIAL-INDEX.md) explains both. All of it is reference, not the executable set.
 
@@ -224,9 +224,9 @@ The boundaries the framework is built around, and how far each one has got. **De
 
 | Boundary | State |
 |---|---|
-| LLM output cannot authorize business actions | Contracted ([`contracts/platform/authorization.yaml`](contracts/platform/authorization.yaml)) |
-| Only WF-10 may authorize execution | Contracted |
-| Only WF-20 may perform privileged mutations | Contracted |
+| LLM output cannot authorize business actions | Implemented ([`platform/authorization/port.ts`](platform/authorization/port.ts): the proposal type has no `execution_allowed` member, a supplied one is stripped and the request denied) |
+| Only the workflow filling the `authorization` role may authorize execution | Implemented (`authorizeAction` is the only writer of `execution_allowed`, and it writes it to `public.authorizations`) |
+| Only the workflow filling the `privileged_external_execution` role may perform privileged mutations | Implemented (`requireAuthorizedExecution` resolves the role from the domain's `workflow_roles` and refuses any other caller) |
 | The renderer reports verified facts only | Contracted |
 | Audit is a record, never a permission | Implemented in the database (append-only trigger) |
 | Domain state does not depend on n8n execution history | Implemented as schema |
@@ -239,7 +239,8 @@ The boundaries the framework is built around, and how far each one has got. **De
 
 **Not enforced yet, and worth being blunt about:**
 
-- WF-10 does not store an authorization record, and WF-20 does not verify one. Authorization is currently a flag in the payload, which a caller can set.
+- Authorization is a stored record, not a payload flag: the port writes a row to `public.authorizations` and the executor loads it back by `authorization_id`, requiring `AUTHORIZED`, `execution_allowed`, an unexpired window and a matching action. What is **not** done: the n8n graphs do not call it. WF-10 and WF-20 are still placeholders that only refuse to contradict the code, so the boundary holds wherever the platform code runs and nowhere else yet. Nine of the eleven business gates in [`01-WF-10-AUTHORIZATION-SPEC.md`](domains/tunisia-dtc/workflow-packages/WF-10/01-WF-10-AUTHORIZATION-SPEC.md) (ownership, freshness, business policy, parameter constraints) are still domain policy to come; identity assurance and the action allowlist are in.
+- The authorization record has never been written to a real PostgreSQL. The decision and the gate are unit-tested against a store double and an in-memory `private.reserve_idempotency`; the live path needs Docker and has not been run.
 - Webhook signature verification is implemented and unit-tested, but like everything else here it has never run against Meta's own requests. The n8n-level check (forged header to the live stack, expect 403) is still unexecuted.
 - The reconciliation path exists in the database and in specification, but nothing calls it.
 
@@ -416,12 +417,12 @@ In order, because each step depends on the one before it:
 | Domain model, contracts, specifications | Complete for the reference domain, and validated |
 | Database schema and migrations | Implemented, provider-neutral, verifiable with Docker |
 | Workflows | All 21 of the reference domain's are placeholders; earlier full versions are reference material only |
-| Authorization boundary | Specified, not enforced |
+| Authorization boundary | Enforced in platform code ([`platform/authorization/port.ts`](platform/authorization/port.ts), behaviourally tested); not yet wired into the n8n graphs |
 | Webhook signature verification | Implemented (HMAC-SHA256 over the raw body, verified before normalisation; not yet exercised against Meta) |
 | Adapters (Messenger, WooCommerce) | Contracts only |
 | Deployment and operations | Placeholder scripts |
 | Harness control plane | Three working commands; the rest is specified |
-| Tests | Repository contract checks, not behavioural tests |
+| Tests | Mostly repository contract checks; the webhook and authorization boundaries have behavioural unit tests |
 | End-to-end run | Never performed |
 
 The release line is being reconciled: `package.json` says 0.13.3 while parts of the documentation and the archived releases refer to 0.20.3. The badge above follows `package.json` until that is settled.

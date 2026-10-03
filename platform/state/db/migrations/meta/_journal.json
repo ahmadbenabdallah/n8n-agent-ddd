@@ -43,6 +43,13 @@
       "when": 1789851885155,
       "tag": "0005_knowledge_vector_index",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791057772625,
+      "tag": "0006_authorization_record_fields",
+      "breakpoints": true
     }
   ]
 }

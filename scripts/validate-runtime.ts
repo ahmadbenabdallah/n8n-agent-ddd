@@ -24,6 +24,13 @@ for (const file of required) {
 // Platform invariants are stated per role. Each domain nominates its own
 // workflow for a role (see docs ADR 0001), so resolve the role first and then
 // check the invariants in whichever workflow contract the domain named.
+//
+// This is a spec-consistency check, not enforcement: it only confirms that a
+// domain's workflow contract still states the invariants it is required to
+// state. A substring of a YAML file stops nothing. The authorization boundary
+// is enforced in platform/authorization/port.ts and tested behaviourally in
+// tests/unit/authorization/boundary.ts; deleting a line below breaks this
+// check, and deleting the boundary breaks that one.
 const roleInvariants: Record<string, string[]> = {
   authorization: ["llm_can_authorize: false", "only_authorized_branch_can_set_execution_allowed: true"],
   privileged_external_execution: [
