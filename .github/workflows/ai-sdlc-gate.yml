@@ -69,7 +69,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        # package.json engines declares `>=22 <23`. Node 20 violated it, so this
+        # leg failed permanently and sank `ai-sdlc/pr-ready`, which aggregates it.
+        node-version: [22]
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -96,6 +98,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm test:coverage
+
+      # NAD-014 #5: the coverage number has to be published, not just computed.
+      # c8 writes lcov to coverage/ (see package.json test:coverage).
+      - name: Publish coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-node22
+          path: coverage/
+          if-no-files-found: error
+          retention-days: 30
 
   pr-ready:
     name: ai-sdlc/pr-ready
