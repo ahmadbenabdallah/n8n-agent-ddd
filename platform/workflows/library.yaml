@@ -19,7 +19,7 @@ entries:
     name: Prompt and input security gate
     category: security
     path: security-gate/workflow.json
-    nodes: 17
+    nodes: 16
     domain_agnostic: true
     requires_binding: []
     configure: []
@@ -33,7 +33,7 @@ entries:
     name: Customer identity resolution
     category: identity
     path: identity/workflow.json
-    nodes: 17
+    nodes: 16
     domain_agnostic: true
     requires_binding: []
     configure: []
@@ -47,7 +47,7 @@ entries:
     name: Intent router
     category: routing
     path: intent-router/workflow.json
-    nodes: 13
+    nodes: 12
     domain_agnostic: false
     requires_binding: []
     configure:
@@ -65,7 +65,7 @@ entries:
     category: ingress
     channel: meta-messenger
     path: channels/messenger-inbound/workflow.json
-    nodes: 16
+    nodes: 20
     domain_agnostic: true
     channel_specific: true
     requires_binding:
@@ -76,12 +76,82 @@ entries:
     configure:
       - key: META_VERIFY_TOKEN
         why: Meta webhook verification handshake.
+      - key: META_APP_SECRET
+        why: >-
+          Key for the HMAC-SHA256 over the raw request body that
+          X-Hub-Signature-256 carries. Without it the gateway rejects every
+          POST with reason missing_app_secret. Lives in the runtime secret
+          store, never in source.
       - key: ALLOW_UNVERIFIED_META_WEBHOOK
         why: >-
           Must be false outside local development. When true the gateway
-          accepts a webhook whose signature was not verified.
+          accepts a webhook whose signature did not verify. Staging preflight
+          (scripts/staging/preflight.ts) fails when it is set to anything but
+          false.
+      - key: postgres_credential
+        why: >-
+          The "Reserve Meta Event" node calls private.reserve_idempotency to
+          drop replayed deliveries. Bind the deployment's own Postgres
+          credential; the library names none.
+    decisions:
+      # NAD-016. Both routes were available: n8n's native Crypto node, or a
+      # Code node requiring node:crypto.
+      - decision: signature_verification_runs_in_a_code_node
+        over: n8n_crypto_node
+        why: >-
+          The Crypto node hashes a string field and offers no constant-time
+          comparison, so it cannot verify a digest over raw bytes without a
+          Code node doing the compare anyway. One Code node running the same
+          algorithm as platform/channels/meta-signature.ts is the smaller and
+          auditable option.
+        requires: >-
+          NODE_FUNCTION_ALLOW_BUILTIN=crypto on every n8n container, set in
+          the four compose files under infrastructure/docker/. Without it the
+          require throws and the gateway rejects, which is the correct
+          failure direction.
+      - decision: idempotency_key_conflict_is_treated_as_a_duplicate
+        over: http_409
+        why: >-
+          private.reserve_idempotency raises idempotency_key_conflict when the
+          same event id arrives with a different request hash. The only ways
+          to reach it are a provider-side re-encoding of a delivery already
+          held and a caller who already has a valid signature over a different
+          body for the same event id. Both are better acknowledged 200 and
+          dropped than retried forever, so the Reserve node continues on error
+          and the conflict is classified as a duplicate and logged.
+      - decision: reservation_failure_other_than_a_key_conflict_rethrows
+        over: acknowledging_every_reserve_error_as_a_duplicate
+        why: >-
+          A Postgres outage, timeout, pool exhaustion or unbound credential
+          arrives on the same continue-on-error path as the key conflict, with
+          no status. Treating that as a duplicate would acknowledge 200 and
+          lose a verified first-time message permanently, because the provider
+          saw success and never retries - and it would record an availability
+          failure as a replay. Only a recognised idempotency_key_conflict is
+          dropped; everything else rethrows so the provider retries with
+          backoff.
+      - decision: node_ids_carry_no_workflow_id
+        over: inheriting_the_provenance_package_ids
+        why: >-
+          ADR 0001: the shared library names no domain. Every node id in this
+          entry's workflow carried the reference domain's WF-00 id. Nothing in
+          the repository referenced them, so they are now neutral
+          (capture-request, signature-gate, reserve-event, ...) in both this
+          copy and the provenance package's, which are held byte for byte
+          identical by tests/unit/channels/webhook-ingress-guards.ts - the
+          drift platform/workflows/README.md warns about now fails a test.
+      - decision: an_event_with_no_id_is_acknowledged_not_rejected
+        over: http_403
+        why: >-
+          Delivery and read receipts, opt-ins and some reactions verify but
+          carry no event id. 403 would claim the signature was missing, which
+          is false, and Meta disables a page subscription whose deliveries
+          keep failing. They are acknowledged 200 and dropped before
+          normalisation.
     purpose: >-
-      Terminates the Meta Messenger webhook, verifies the handshake and
-      signature, and hands off to the security gate. Specific to the channel,
-      not to any business domain: any domain on Messenger can adopt it.
+      Terminates the Meta Messenger webhook, verifies the handshake, verifies
+      the X-Hub-Signature-256 HMAC over the raw body before anything is
+      normalised, deduplicates the event, and hands off to the security gate.
+      Specific to the channel, not to any business domain: any domain on
+      Messenger can adopt it.
     provenance: domains/tunisia-dtc/workflow-packages/WF-00

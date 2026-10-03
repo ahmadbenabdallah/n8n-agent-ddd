@@ -25,6 +25,15 @@ for (const name of required) {
   }
 }
 
+// The messenger gateway's local-development bypass accepts a webhook whose
+// signature did not verify. It must not reach a deployed environment: absent
+// or "false", nothing else.
+const bypass = process.env.ALLOW_UNVERIFIED_META_WEBHOOK;
+if (bypass && bypass.toLowerCase() !== "false") {
+  console.error("UNVERIFIED_META_WEBHOOK_NOT_ALLOWED=ALLOW_UNVERIFIED_META_WEBHOOK");
+  failed = true;
+}
+
 const repo = process.cwd();
 const requiredFiles = [
   "domains/tunisia-dtc/specs/phase-9.yaml",

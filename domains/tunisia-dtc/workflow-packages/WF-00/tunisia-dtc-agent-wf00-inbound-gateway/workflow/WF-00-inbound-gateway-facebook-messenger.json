@@ -8,7 +8,7 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "wf00-get-webhook",
+      "id": "get-webhook",
       "name": "META Verify — GET",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -22,7 +22,7 @@
       "parameters": {
         "jsCode": "const q = $json.query ?? {};\nconst mode = String(q['hub.mode'] ?? '');\nconst token = String(q['hub.verify_token'] ?? '');\nconst challenge = String(q['hub.challenge'] ?? '');\n\nconst expected = String($env.META_VERIFY_TOKEN ?? '');\n\nif (mode !== 'subscribe') {\n  return [{ json: { ok: false, http_status: 400, reason: 'invalid_mode' } }];\n}\n\nif (!expected || token !== expected) {\n  return [{ json: { ok: false, http_status: 403, reason: 'invalid_verify_token' } }];\n}\n\nreturn [{ json: { ok: true, http_status: 200, challenge } }];"
       },
-      "id": "wf00-verify-token",
+      "id": "verify-token",
       "name": "Validate Meta Verify Token",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -37,7 +37,7 @@
         "responseBody": "={{ $json.ok ? $json.challenge : $json.reason }}",
         "options": {}
       },
-      "id": "wf00-get-response",
+      "id": "get-response",
       "name": "Meta Verification Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
@@ -55,7 +55,7 @@
           "rawBody": true
         }
       },
-      "id": "wf00-post-webhook",
+      "id": "post-webhook",
       "name": "META Events — POST",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -69,7 +69,7 @@
       "parameters": {
         "jsCode": "const headers = $json.headers ?? {};\nconst body = $json.body ?? {};\nconst signature = String(\n  headers['x-hub-signature-256'] ??\n  headers['X-Hub-Signature-256'] ??\n  ''\n);\n\nreturn [{\n  json: {\n    request: {\n      headers,\n      signature,\n      body,\n      received_at: new Date().toISOString()\n    },\n    binary_present: !!$binary?.data\n  },\n  binary: $binary\n}];"
       },
-      "id": "wf00-capture-request",
+      "id": "capture-request",
       "name": "Capture Meta Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -80,10 +80,10 @@
     },
     {
       "parameters": {
-        "jsCode": "/*\nProduction note:\nMeta signs the raw HTTP body with the Page/App secret.\nThis node deliberately FAILS CLOSED if signature material is unavailable.\n\nFor the final production implementation, connect the raw-body signature\nverification step here (Crypto/HMAC-SHA256 or an upstream verified proxy).\nDo not bypass this check merely to make the workflow pass.\n\nThe current workflow can be tested in development with signature verification\ndisabled only by explicitly setting ALLOW_UNVERIFIED_META_WEBHOOK=true.\n*/\nconst sig = String($json.request?.signature ?? '');\nconst allowDev = String($env.ALLOW_UNVERIFIED_META_WEBHOOK ?? '').toLowerCase() === 'true';\n\nif (!sig && !allowDev) {\n  return [{json:{...$json, security:{signature_valid:false, decision:'reject', reason:'missing_meta_signature'}}}];\n}\n\nreturn [{\n  json:{\n    ...$json,\n    security:{\n      signature_valid: allowDev ? null : 'PENDING_HMAC_VALIDATION',\n      decision: allowDev ? 'development_only_accept' : 'pending'\n    }\n  }\n}];"
+        "jsCode": "/*\nMeta signs the raw HTTP body with the App Secret and sends the digest in\nX-Hub-Signature-256. This node is the channel port's 'verify' operation: it\nruns before normalisation and before any domain, identity or LLM step, and it\nfails closed. Nothing downstream ever sees an unverified body.\n\nThe algorithm is the one in platform/channels/meta-signature.ts\n(verifyMetaSignature), kept equivalent on purpose. The Code-node route needs\nNODE_FUNCTION_ALLOW_BUILTIN=crypto, which the compose files under\ninfrastructure/docker/ set; without it this require throws and the gateway\nrejects, which is the correct failure direction.\n*/\nconst crypto = require('crypto');\n\nfunction verifyMetaSignature(rawBody, header, appSecret) {\n  if (!Buffer.isBuffer(rawBody)) return false;\n  if (typeof appSecret !== 'string' || appSecret.length === 0) return false;\n  if (typeof header !== 'string' || !header.startsWith('sha256=')) return false;\n  const provided = Buffer.from(header.slice('sha256='.length), 'utf8');\n  const expected = Buffer.from(crypto.createHmac('sha256', appSecret).update(rawBody).digest('hex'), 'utf8');\n  return provided.length === expected.length && crypto.timingSafeEqual(provided, expected);\n}\n\nconst item = $input.first();\nconst request = item.json.request ?? {};\nconst headers = request.headers ?? {};\nconst header = headers['x-hub-signature-256'] ?? headers['X-Hub-Signature-256'];\nconst base64 = item.binary?.data?.data;\nconst rawBody = base64 ? Buffer.from(base64, 'base64') : null;\nconst appSecret = String($env.META_APP_SECRET ?? '');\nconst allowUnverified = String($env.ALLOW_UNVERIFIED_META_WEBHOOK ?? '').toLowerCase() === 'true';\n\n// Page id and event id only: identifying the event is not normalising it.\nconst body = request.body ?? {};\nconst entry = body.entry?.[0] ?? {};\nconst messaging = entry.messaging?.[0] ?? {};\nconst pageId = String(messaging.recipient?.id ?? entry.id ?? 'unknown');\nconst mid = messaging.message?.mid ?? messaging.postback?.mid ?? messaging.reaction?.mid ?? null;\n\n// Page id and reason only. Never the body, never the header value.\nfunction reject(reason) {\n  console.log(JSON.stringify({ event: 'meta_webhook_rejected', page_id: pageId, reason }));\n  return [{ json: { security: { decision: 'reject', reason }, page_id: pageId } }];\n}\n\nconst signed = verifyMetaSignature(rawBody, header, appSecret);\n\nif (!signed && !allowUnverified) {\n  if (!rawBody) return reject('missing_raw_body');\n  if (!appSecret) return reject('missing_app_secret');\n  return reject('invalid_meta_signature');\n}\n\nif (!signed) {\n  // Local development only. scripts/staging/preflight.ts refuses any deployed\n  // environment with ALLOW_UNVERIFIED_META_WEBHOOK set.\n  console.log(JSON.stringify({ event: 'meta_webhook_unverified_accept', page_id: pageId, reason: 'allow_unverified_development_bypass' }));\n}\n\n/*\nmessage_reads, message_deliveries, messaging_optins and some reactions carry\nno event id. The request verified; there is simply nothing to deduplicate and\nnothing to process, so it is acknowledged 200 and dropped (see the\n'Event Has Id?' branch). A 403 here would claim the signature was missing,\nwhich is false, and Meta disables a subscription whose deliveries keep\nfailing - taking real inbound messages down with it.\n*/\nif (!mid) {\n  console.log(JSON.stringify({ event: 'meta_webhook_no_event_id', page_id: pageId, reason: 'nothing_to_process' }));\n}\n\nreturn [{\n  json: {\n    security: {\n      decision: signed ? 'accept' : 'development_only_accept',\n      reason: signed ? 'signature_verified' : 'allow_unverified_development_bypass'\n    },\n    event: {\n      page_id: pageId,\n      message_id: mid ? String(mid) : null,\n      idempotency_key: mid ? 'meta:' + pageId + ':' + mid : null,\n      operation: 'meta_webhook_event',\n      request_hash: rawBody ? crypto.createHash('sha256').update(rawBody).digest('hex') : 'unverified'\n    },\n    request\n  },\n  binary: item.binary\n}];"
       },
-      "id": "wf00-signature-gate",
-      "name": "Meta Signature Security Gate",
+      "id": "signature-gate",
+      "name": "Verify Meta Signature",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -102,7 +102,7 @@
           ]
         }
       },
-      "id": "wf00-reject-signature",
+      "id": "reject-signature",
       "name": "Reject Invalid Signature",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
@@ -119,7 +119,7 @@
           "responseCode": 403
         }
       },
-      "id": "wf00-reject-response",
+      "id": "reject-response",
       "name": "403 Signature Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
@@ -130,14 +130,104 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ Boolean($json.event?.message_id) }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "event-id-check",
+      "name": "Event Has Id?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        420
+      ],
+      "notes": "An event with no id verified but has nothing to deduplicate or process: 200 and drop, never 403."
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT status FROM private.reserve_idempotency($1, $2, $3);",
+        "options": {
+          "queryReplacement": "={{ $json.event.idempotency_key }},{{ $json.event.operation }},{{ $json.event.request_hash }}"
+        }
+      },
+      "id": "reserve-event",
+      "name": "Reserve Meta Event",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        80,
+        280
+      ],
+      "notes": "Durable event deduplication. Bind the adopting deployment's Postgres credential; the library entry declares it. Continues on error so idempotency_key_conflict is classified rather than thrown.",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "/*\nMeta's signature covers the body only: no timestamp, no nonce, so a captured\nvalid request replays forever. Replay defence is deduplication of the event id\nagainst durable state, which happens here, before normalisation.\n\nprivate.reserve_idempotency returns CREATED for the first caller of a key.\nAny other status means Meta is retrying a delivery we already hold:\nacknowledge 200 so it stops retrying, and drop it.\n\nIt raises idempotency_key_conflict when the same key arrives with a different\nrequest hash. The Reserve node continues on error so that arrives here as an\nitem instead of a 500, and NAD-016 decided to treat it as a duplicate: the\nonly ways to reach it are a provider-side re-encoding of a delivery already\nheld and a caller who already has a valid signature over a different body for\nthe same event id, and both are better dropped than retried forever.\n\nEvery OTHER error - outage, timeout, pool exhaustion, an unbound credential,\npermission denied - means the reservation did not happen. That must not be\nacknowledged: a verified first-time message would be lost permanently because\nMeta saw success, and an availability failure would be recorded as a replay.\nThose rethrow, so Meta sees a 500 and retries with backoff.\n\nThe conflict is read from the item's MESSAGE fields only, and the error object\nis read field by field rather than stringified. Two wrong ways to do this,\nboth tried: reading reserved.error first and stringifying it gives\n\"[object Object]\", because the node's error is an object, and the conflict is\nnever seen; stringifying the WHOLE item sees far too much, because the node\nputs its own definition on the error (including the notes field below, which\nnames this very string), so an unrelated outage reads as a conflict and the\nmessage is acknowledged and lost. The false-positive surface of a whole-item\nscan is whatever n8n decides to attach, not what reserve_idempotency raises.\n\nponytail: the reservation is never completed or released. A failure after\nCREATED leaves the key IN_PROGRESS, so Meta's retry looks like a duplicate and\nthat delivery is dropped: at-most-once. Upgrade path when the domain side\nexists - mark the key COMPLETED once the domain acknowledges, or expire\nIN_PROGRESS rows through idempotency_keys.expires_at.\n*/\nconst reserved = $input.first().json ?? {};\nconst verified = $('Verify Meta Signature').first();\nconst status = String(reserved.status ?? '');\nconst conflict = [reserved.message, reserved.error?.message, reserved.error?.description]\n  .some((m) => typeof m === 'string' && m.includes('idempotency_key_conflict'));\n\nif (!status && !conflict) {\n  throw new Error('reserve_idempotency failed: ' + (reserved.message ?? 'unknown'));\n}\n\nconst duplicate = conflict || status !== 'CREATED';\n\nif (duplicate) {\n  console.log(JSON.stringify({\n    event: conflict ? 'meta_webhook_idempotency_conflict' : 'meta_webhook_duplicate',\n    page_id: verified.json.event?.page_id,\n    reason: conflict ? 'same_event_id_different_body' : 'event_already_reserved:' + status\n  }));\n}\n\nreturn [{\n  json: { ...verified.json, idempotency: { status, duplicate, conflict } },\n  binary: verified.binary\n}];"
+      },
+      "id": "dedupe-decision",
+      "name": "Classify Event Delivery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.idempotency?.duplicate === true }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "duplicate-check",
+      "name": "Duplicate Delivery?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        560,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"received\":true,\"processed\":false}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "duplicate-response",
+      "name": "200 Acknowledged Not Processed",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        800,
+        120
+      ]
+    },
+    {
+      "parameters": {
         "jsCode": "const event = $json.request?.body ?? {};\nconst entry = event.entry?.[0] ?? {};\nconst messaging = entry.messaging?.[0] ?? {};\nconst message = messaging.message ?? {};\n\nconst senderId = messaging.sender?.id ?? null;\nconst recipientId = messaging.recipient?.id ?? entry.id ?? null;\nconst messageId = message.mid ?? null;\nconst text = typeof message.text === 'string' ? message.text : '';\n\nconst messageType =\n  message.text ? 'text' :\n  message.attachments ? 'attachment' :\n  messaging.postback ? 'postback' :\n  messaging.reaction ? 'reaction' :\n  'unknown';\n\nif (!senderId || !messageId) {\n  return [{\n    json: {\n      accepted: false,\n      reject_reason: 'missing_sender_or_message_id',\n      channel: 'facebook_messenger',\n      raw_event: event\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    accepted: true,\n    channel: 'facebook_messenger',\n    channel_user_id: String(senderId),\n    page_id: String(recipientId),\n    message_id: String(messageId),\n    conversation_id: `facebook_messenger:${senderId}`,\n    text,\n    message_type: messageType,\n    timestamp: messaging.timestamp ?? Date.now(),\n    is_echo: Boolean(message.is_echo),\n    postback: messaging.postback ?? null,\n    attachments: message.attachments ?? [],\n    raw_event: event,\n    source_trust: 'untrusted',\n    received_at: new Date().toISOString()\n  }\n}];"
       },
-      "id": "wf00-normalize",
+      "id": "normalize",
       "name": "Normalize Messenger Event",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
+        780,
         280
       ]
     },
@@ -152,12 +242,12 @@
           ]
         }
       },
-      "id": "wf00-accepted",
+      "id": "accepted",
       "name": "Accepted Customer Event?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        100,
+        1040,
         280
       ]
     },
@@ -165,12 +255,12 @@
       "parameters": {
         "jsCode": "const x = $json;\nreturn [{\n  json: {\n    ...x,\n    idempotency_key: `${x.channel}:${x.message_id}`,\n    processing: {\n      stage: 'INBOUND_NORMALIZED',\n      idempotency_required: true,\n      language_detection: 'WF-03-or-language-detector',\n      security_classification: 'WF-01',\n      identity_resolution: 'WF-02',\n      state_resolution: 'WF-03',\n      intent_resolution: 'WF-04'\n    }\n  }\n}];"
       },
-      "id": "wf00-canonical",
+      "id": "canonical",
       "name": "Build Canonical Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        360,
+        1300,
         280
       ]
     },
@@ -185,12 +275,12 @@
           ]
         }
       },
-      "id": "wf00-text-check",
+      "id": "text-check",
       "name": "Text Message?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        620,
+        1560,
         280
       ]
     },
@@ -198,12 +288,12 @@
       "parameters": {
         "jsCode": "return [{\n  json: {\n    ...$json,\n    next_workflow: 'WF-01-security-gate',\n    route_type: 'customer_message'\n  }\n}];"
       },
-      "id": "wf00-route-security",
+      "id": "route-security",
       "name": "Route to Security Gate",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        880,
+        1820,
         180
       ]
     },
@@ -211,12 +301,12 @@
       "parameters": {
         "jsCode": "return [{\n  json: {\n    ...$json,\n    next_workflow: 'WF-01-security-gate',\n    route_type: 'non_text_event'\n  }\n}];"
       },
-      "id": "wf00-route-nontext",
+      "id": "route-nontext",
       "name": "Route Non-Text Event",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        880,
+        1820,
         380
       ]
     },
@@ -228,12 +318,12 @@
           "responseCode": 200
         }
       },
-      "id": "wf00-post-response",
+      "id": "post-response",
       "name": "Messenger ACK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        1140,
+        2080,
         280
       ]
     }
@@ -277,18 +367,7 @@
       "main": [
         [
           {
-            "node": "Meta Signature Security Gate",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Meta Signature Security Gate": {
-      "main": [
-        [
-          {
-            "node": "Reject Invalid Signature",
+            "node": "Verify Meta Signature",
             "type": "main",
             "index": 0
           }
@@ -306,7 +385,7 @@
         ],
         [
           {
-            "node": "Normalize Messenger Event",
+            "node": "Event Has Id?",
             "type": "main",
             "index": 0
           }
@@ -392,13 +471,81 @@
           }
         ]
       ]
+    },
+    "Verify Meta Signature": {
+      "main": [
+        [
+          {
+            "node": "Reject Invalid Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Meta Event": {
+      "main": [
+        [
+          {
+            "node": "Classify Event Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Event Delivery": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Delivery?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Delivery?": {
+      "main": [
+        [
+          {
+            "node": "200 Acknowledged Not Processed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normalize Messenger Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Event Has Id?": {
+      "main": [
+        [
+          {
+            "node": "Reserve Meta Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "200 Acknowledged Not Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "wf00-inbound-v1",
   "meta": {
     "templateCredsSetupCompleted": false
   },

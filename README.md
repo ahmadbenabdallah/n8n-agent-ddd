@@ -8,7 +8,7 @@
 
 Repository: [github.com/ahmadbenabdallah/n8n-agent-ddd](https://github.com/ahmadbenabdallah/n8n-agent-ddd) · Documentation: [`documentation/`](documentation/) · Licence: [Apache-2.0](LICENSE)
 
-> **Status: the architecture and contracts are in place; the runtime is not.** Every workflow in `runtime/n8n/workflows/` is a placeholder, the authorization and execution boundary is not enforced yet, webhook signatures are not verified, and the deployment scripts print rather than deploy. The system has never run end to end. See [Project status](#project-status) before planning anything on top of it.
+> **Status: the architecture and contracts are in place; the runtime is not.** Every workflow in `runtime/n8n/workflows/` is a placeholder, the authorization and execution boundary is not enforced yet, and the deployment scripts print rather than deploy. The system has never run end to end. See [Project status](#project-status) before planning anything on top of it.
 
 ---
 
@@ -235,11 +235,12 @@ The boundaries the framework is built around, and how far each one has got. **De
 | Order creation is not payment | Designed |
 | Human ownership blocks conflicting automation | Contracted |
 | Durable idempotency for external mutations | Implemented in the database (`private.reserve_idempotency`) |
+| Inbound webhook signatures are verified before anything is processed | Implemented ([`platform/channels/meta-signature.ts`](platform/channels/meta-signature.ts) and the `messenger-inbound` gateway: HMAC-SHA256 over the raw body, constant-time, before normalisation; a replayed event id is dropped) |
 
 **Not enforced yet, and worth being blunt about:**
 
 - WF-10 does not store an authorization record, and WF-20 does not verify one. Authorization is currently a flag in the payload, which a caller can set.
-- Inbound webhook signatures are not verified, so a forged message would be accepted.
+- Webhook signature verification is implemented and unit-tested, but like everything else here it has never run against Meta's own requests. The n8n-level check (forged header to the live stack, expect 403) is still unexecuted.
 - The reconciliation path exists in the database and in specification, but nothing calls it.
 
 Reporting a vulnerability: [`SECURITY.md`](SECURITY.md).
@@ -416,7 +417,7 @@ In order, because each step depends on the one before it:
 | Database schema and migrations | Implemented, provider-neutral, verifiable with Docker |
 | Workflows | All 21 of the reference domain's are placeholders; earlier full versions are reference material only |
 | Authorization boundary | Specified, not enforced |
-| Webhook signature verification | Not implemented |
+| Webhook signature verification | Implemented (HMAC-SHA256 over the raw body, verified before normalisation; not yet exercised against Meta) |
 | Adapters (Messenger, WooCommerce) | Contracts only |
 | Deployment and operations | Placeholder scripts |
 | Harness control plane | Three working commands; the rest is specified |

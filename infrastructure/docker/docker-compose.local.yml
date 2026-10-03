@@ -37,6 +37,11 @@ services:
       WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678/}
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change-me-local-encryption-key}
       N8N_DIAGNOSTICS_ENABLED: "false"
+      # The messenger-inbound gateway verifies X-Hub-Signature-256 in a Code
+      # node, so node:crypto must be reachable from Code nodes. Remove this and
+      # the require throws and the gateway rejects every POST, which is the
+      # correct failure direction (see platform/workflows/library.yaml).
+      NODE_FUNCTION_ALLOW_BUILTIN: crypto
     volumes:
       - n8n_data:/home/node/.n8n
     networks: [agent]

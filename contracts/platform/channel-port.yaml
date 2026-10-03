@@ -10,6 +10,44 @@ operations:
     - send_media
     - send_interactive
 
+# `verify` runs before `normalize`, and before any domain, identity or LLM
+# step. Nothing downstream ever sees an unverified body.
+verify:
+  inputs:
+    - raw_request_body_bytes
+    - request_headers
+    - provider_secret_reference
+  outcomes:
+    - verified
+    - rejected:missing_raw_body
+    - rejected:missing_app_secret
+    - rejected:invalid_meta_signature
+    - duplicate
+    # Verified, but there is nothing to deduplicate or process: delivery and
+    # read receipts, opt-ins and some reactions carry no provider event id.
+    # Acknowledged, not rejected. A 403 would claim the signature was missing,
+    # which is false, and a provider disables a subscription whose deliveries
+    # keep failing.
+    - acknowledged:no_event_id
+  rejected_response:
+    http_status: 403
+    body: fixed
+    echoes_request: false
+    logs: [page_id, reason]
+  # Shared by `duplicate` and `acknowledged:no_event_id`.
+  acknowledged_not_processed_response:
+    http_status: 200
+    body: fixed
+    processed: false
+  # The provider signature covers the body only, with no timestamp or nonce, so
+  # a captured valid request replays indefinitely. Replay defence is
+  # deduplication of the provider event id against durable state
+  # (`private.reserve_idempotency`), after verification and before
+  # normalisation. Key format decided in NAD-016:
+  event_idempotency_key: "meta:<page_id>:<mid>"
+  event_idempotency_operation: meta_webhook_event
+  implementation: platform/channels/meta-signature.ts
+
 normalization:
   input: provider_event
   output: CanonicalMessage
