@@ -60,6 +60,13 @@ assert.deepEqual(offenders, [], `workflow trusts a caller-supplied verdict:\n${o
 // requires the call to be INSIDE the returned expression, because a mutant
 // that calls timingSafeEqual, drops the result and returns
 // provided.equals(expected) satisfies any pin on the call text alone.
+//
+// The trade: an early length return stays green, but an honest
+// assign-then-return (`const same = ... && timingSafeEqual(...); return same;`)
+// goes red, because the call is then outside the return. Accepted while the
+// module has no require seam to assert through. If you are refactoring and
+// this fires on honest code, rewrite the pin - do not contort the module
+// around it.
 const moduleSource = readFileSync("platform/channels/meta-signature.ts", "utf8");
 assert.match(
   moduleSource,
@@ -73,7 +80,7 @@ type NodeParameters = {
   options?: { rawBody?: boolean; responseCode?: number; queryReplacement?: string };
   conditions?: { boolean?: { value1?: string; operation?: string }[] };
 };
-type Node = { name: string; parameters: NodeParameters; onError?: string };
+type Node = { name: string; parameters: NodeParameters; onError?: string; notes?: string };
 type Workflow = { nodes: Node[]; connections: Record<string, { main: { node: string }[][] }> };
 
 /** What the two Code nodes under test put on the item. */
@@ -427,6 +434,14 @@ for (const file of GATEWAYS) {
       },
     },
   ]) {
+    // That last fixture only reproduces the defect while the node it carries
+    // actually contains the literal. Rewrite the notes and the fixture becomes
+    // a clean item that every predicate passes, including a whole-item scan.
+    assert.match(
+      String(node("Reserve Meta Event").notes),
+      /idempotency_key_conflict/,
+      `${file}: the ECONNREFUSED fixture has teeth only while the Reserve node's notes carry the literal`,
+    );
     assert.throws(
       () => runClassify(broken),
       /reserve_idempotency failed/,
