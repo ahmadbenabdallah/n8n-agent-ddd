@@ -497,14 +497,20 @@ for (const file of GATEWAYS) {
   assert.equal(node("200 Acknowledged Not Processed").parameters.options?.responseCode, 200);
 }
 
-// The two copies must verify and deduplicate identically, or the reference
-// domain's gateway can be weakened on its own.
+// The shared-library gateway and the reference domain's package copy must not
+// drift, or the domain's gateway can be weakened on its own. Three assertions,
+// narrowest first, so the failure message names the kind of drift:
+//   1-2. the two Code node bodies, the case that matters and the common one;
+//   3.   the whole file, byte for byte - everything the bodies cannot see:
+//        notes, positions, response bodies, node options, an added node.
+// platform/workflows/library.yaml cites this as the enforcement of the
+// byte-identity it claims, so do not weaken it to a bodies-only check.
 assert.equal(verifiers[0], verifiers[1], "both gateway copies run the same verification code");
 assert.equal(classifiers[0], classifiers[1], "both gateway copies run the same deduplication code");
 assert.equal(
   readFileSync(GATEWAYS[0], "utf8"),
   readFileSync(GATEWAYS[1], "utf8"),
-  "the library copy and the reference domain's package copy are one file, byte for byte",
+  "the shared-library gateway and the provenance package copy must stay byte identical",
 );
 
 // The gate runs inside n8n and cannot import the module, so the algorithm is
