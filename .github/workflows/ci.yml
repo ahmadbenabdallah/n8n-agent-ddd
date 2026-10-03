@@ -122,12 +122,22 @@ jobs:
       - name: Adopter hygiene — internal tooling must not ship
         run: |
           bad=""
-          for p in docs .ai-sdlc backlog CLAUDE.local.md artifacts .mcp.json ci-proposed; do
+          for p in docs backlog CLAUDE.local.md artifacts .mcp.json ci-proposed; do
             if git ls-files --error-unmatch "$p" >/dev/null 2>&1; then bad="$bad$p"$'\n'; fi
           done
+          # .ai-sdlc/ is partly shippable. The signed audit trail IS the point of
+          # the attestation, and the pre-push signing hook requires these paths
+          # committed — ignoring them breaks `git push` (NAD-004 hit this).
+          # Everything else under .ai-sdlc/ is local operator config and must not
+          # ship. Anchored so neither a suffix (trusted-reviewers.yaml.bak) nor a
+          # prefix (attestations-evil/) slips through.
+          leaked="$(git ls-files '.ai-sdlc' \
+            | grep -vE '^\.ai-sdlc/(attestations|transcript-leaves|reviews)/|^\.ai-sdlc/trusted-reviewers\.yaml$' \
+            || true)"
+          if [ -n "$leaked" ]; then bad="$bad$leaked"$'\n'; fi
           if [ -n "$bad" ]; then
             echo "::error::internal-only paths are tracked:"
             echo "$bad"
             exit 1
           fi
-          echo "no internal tooling is tracked"
+          echo "no internal tooling is tracked (audit trail under .ai-sdlc/ is allowed)"
