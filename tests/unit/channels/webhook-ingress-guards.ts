@@ -18,7 +18,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import crypto, { createHash, createHmac } from "node:crypto";
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { verifyMetaSignature } from "../../../platform/channels/meta-signature";
 
@@ -52,14 +52,19 @@ for (const file of files) {
 }
 assert.deepEqual(offenders, [], `workflow trusts a caller-supplied verdict:\n${offenders.join("\n")}`);
 
-// Constant-time comparison is the one property no behavioural test can see:
-// `provided.equals(expected)` returns the same booleans and leaks timing. It
-// has to be read in the source, in the module and in the node's copy below.
+// The timing property itself is invisible to a behavioural test:
+// `provided.equals(expected)` returns the same booleans and leaks timing. The
+// node's copy is taken through the require seam, so the gate's dependence on
+// the answer is asserted by execution below. The module imports node:crypto
+// directly and has no seam, so it is read in the source - and the match
+// requires the call to be INSIDE the returned expression, because a mutant
+// that calls timingSafeEqual, drops the result and returns
+// provided.equals(expected) satisfies any pin on the call text alone.
 const moduleSource = readFileSync("platform/channels/meta-signature.ts", "utf8");
 assert.match(
   moduleSource,
-  /timingSafeEqual\(provided, expected\)/,
-  "the module compares the digests in constant time",
+  /return [^;]*timingSafeEqual\(provided, expected\)[^;]*;/,
+  "the module must RETURN timingSafeEqual's answer, not merely call it",
 );
 
 type NodeParameters = {
@@ -102,27 +107,48 @@ const TEXT = messaging({ message: { mid: "m_1", text: "bonjour" } });
 const READ_RECEIPT = messaging({ read: { watermark: 1758578999000 } });
 const REACTION = messaging({ reaction: { mid: "m_r", action: "react", emoji: "❤" } });
 
-const bytes = (body: unknown) => Buffer.from(JSON.stringify(body), "utf8");
+// Indented on purpose: the raw bytes must NOT be reproducible by
+// re-serialising the parsed body, or a digest taken over the reparse passes.
+const bytes = (body: unknown) => Buffer.from(JSON.stringify(body, null, 1), "utf8");
 const sign = (body: unknown, secret = SECRET) =>
   `sha256=${createHmac("sha256", secret).update(bytes(body)).digest("hex")}`;
 
-/** What the Capture Meta Request node hands the gate. */
-const delivery = (body: unknown, header?: string, rawBodyPresent = true): Item => ({
-  json: { request: { headers: header === undefined ? {} : { "x-hub-signature-256": header }, body } },
-  binary: rawBodyPresent ? { data: { data: bytes(body).toString("base64") } } : undefined,
-});
+/**
+ * The Capture Meta Request node, executed. Its output is exactly what the gate
+ * reads, so the whole POST path runs here rather than a hand-made
+ * approximation of it - and dropping `binary: $binary` from it, which leaves
+ * the gate nothing to hash, fails these tests instead of needing a source pin.
+ */
+const runCapture = (jsCode: string, body: unknown, header?: string, rawBodyPresent = true): Item => {
+  const out = new Function("$json", "$binary", jsCode)(
+    { headers: header === undefined ? {} : { "x-hub-signature-256": header }, body },
+    rawBodyPresent ? { data: { data: bytes(body).toString("base64") } } : undefined,
+  ) as Item[];
+  return out[0];
+};
 
-const stubRequire = (name: string) => {
+const stubRequire = (name: string): unknown => {
   if (name === "crypto") return crypto;
   throw new Error(`the gate must not require '${name}'`);
 };
 
-const runVerify = (jsCode: string, item: Item, env: Record<string, string>) => {
+/** node:crypto with a rigged comparison, to prove the verdict depends on it. */
+const sayingTimingSafeEqual =
+  (answer: boolean) =>
+  (name: string): unknown =>
+    name === "crypto" ? { ...crypto, timingSafeEqual: () => answer } : stubRequire(name);
+
+const runVerify = (
+  jsCode: string,
+  item: Item,
+  env: Record<string, string>,
+  requireStub: (name: string) => unknown = stubRequire,
+) => {
   const logs: string[] = [];
   const out = new Function("$input", "$env", "require", "console", jsCode)(
     { first: () => item },
     env,
-    stubRequire,
+    requireStub,
     { log: (line: string) => logs.push(String(line)) },
   ) as { json: GatewayJson }[];
   return { json: out[0].json, logs: logs.join("\n") };
@@ -149,10 +175,15 @@ for (const file of GATEWAYS) {
     return jsCode as string;
   };
 
-  // --- structural: the raw bytes have to survive the webhook node ---
+  // --- the raw bytes have to survive the webhook node and the capture node ---
   assert.equal(node(POST).parameters.options?.rawBody, true, `${file}: the POST webhook keeps the raw body`);
-  assert.ok(
-    code("Capture Meta Request").includes("binary: $binary"),
+
+  const delivery = (body: unknown, header?: string, rawBodyPresent = true) =>
+    runCapture(code("Capture Meta Request"), body, header, rawBodyPresent);
+
+  assert.equal(
+    delivery(TEXT, sign(TEXT)).binary?.data?.data,
+    bytes(TEXT).toString("base64"),
     `${file}: the capture node carries the raw body forward, or the gate has nothing to hash`,
   );
 
@@ -227,6 +258,37 @@ for (const file of GATEWAYS) {
     runVerify(verify, delivery(TEXT, sign(TEXT)), {}).json.security?.reason,
     "missing_app_secret",
     `${file}: without the app secret there is nothing to verify with`,
+  );
+  // Signed under the EMPTY key with the secret unset. Every other
+  // missing-secret vector signs with the real secret and so fails on the digest
+  // first, which left the empty-secret guard unexercised: dropping it made an
+  // unset META_APP_SECRET accept anything signed with the empty key.
+  assert.equal(
+    runVerify(verify, delivery(TEXT, sign(TEXT, "")), {}).json.security?.reason,
+    "missing_app_secret",
+    `${file}: an unset app secret is not an empty HMAC key`,
+  );
+
+  // The timing property itself is invisible to a behavioural test, but the
+  // verdict's dependence on timingSafeEqual's ANSWER is not, and the gate takes
+  // crypto through the require seam. This kills the mutant that calls
+  // timingSafeEqual, discards the result and returns provided.equals(expected),
+  // which no regex on the call text can see.
+  assert.equal(
+    runVerify(verify, delivery(TEXT, sign(TEXT)), { META_APP_SECRET: SECRET }, sayingTimingSafeEqual(false))
+      .json.security?.decision,
+    "reject",
+    `${file}: a valid digest that timingSafeEqual rejects must be rejected`,
+  );
+  assert.equal(
+    runVerify(
+      verify,
+      delivery(TEXT, `sha256=${"0".repeat(64)}`),
+      { META_APP_SECRET: SECRET },
+      sayingTimingSafeEqual(true),
+    ).json.security?.decision,
+    "accept",
+    `${file}: and a forged digest it accepts must be accepted - the comparison is not decorative`,
   );
 
   // The development bypass, and nothing wider than it.
@@ -308,33 +370,67 @@ for (const file of GATEWAYS) {
   }
 
   // The Postgres node's continue-on-error item is { message, error: {...} }
-  // with error an OBJECT. Reading error first and stringifying it yields
-  // "[object Object]" and the conflict is never seen.
-  const conflicted = runClassify({
-    message: "idempotency_key_conflict",
-    error: { message: "idempotency_key_conflict", code: "P0001" },
-  });
-  assert.equal(conflicted.json.idempotency?.conflict, true, `${file}: the key conflict is recognised`);
-  assert.equal(
-    conflicted.json.idempotency?.duplicate,
-    true,
-    `${file}: and dropped rather than retried forever`,
-  );
-  assert.match(conflicted.logs, /same_event_id_different_body/, `${file}: and logged as what it is`);
+  // with error an OBJECT, so reading error first and stringifying it yields
+  // "[object Object]" and the conflict is never seen. The conflict can arrive
+  // in any one of the three message fields, so each fixture carries it in
+  // exactly one: a fixture carrying it twice would let the read be narrowed to
+  // either field alone and still pass.
+  for (const [where, item] of [
+    ["the top-level message", { message: "idempotency_key_conflict" }],
+    [
+      "error.message",
+      { message: "Internal error", error: { message: "idempotency_key_conflict", code: "P0001" } },
+    ],
+    [
+      "error.description",
+      {
+        message: "Internal error",
+        error: { description: "idempotency_key_conflict was raised", code: "P0001" },
+      },
+    ],
+  ] as const) {
+    const conflicted = runClassify(item);
+    assert.equal(
+      conflicted.json.idempotency?.conflict,
+      true,
+      `${file}: a key conflict in ${where} is recognised`,
+    );
+    assert.equal(
+      conflicted.json.idempotency?.duplicate,
+      true,
+      `${file}: and dropped rather than retried forever`,
+    );
+    assert.match(conflicted.logs, /same_event_id_different_body/, `${file}: and logged as what it is`);
+  }
 
   // Every other reservation failure means the reservation did not happen.
   // Acknowledging it would lose a verified first-time message permanently,
   // because Meta saw success, and would record an outage as a replay.
+  //
+  // The last fixture is the one that matters: n8n puts the failing NODE on the
+  // error, and this node's own notes name idempotency_key_conflict, so a
+  // predicate that scans the whole item reads a refused connection as a
+  // conflict and acknowledges it. The false-positive surface of a whole-item
+  // scan is whatever n8n chooses to attach, not what reserve_idempotency
+  // raises.
   for (const broken of [
     { message: "connection terminated unexpectedly", error: { code: "ECONNRESET" } },
     { message: "timeout exceeded when trying to connect", error: {} },
     { error: { code: "42501", message: "permission denied for function reserve_idempotency" } },
     {},
+    {
+      message: "connect ECONNREFUSED 127.0.0.1:5432",
+      error: {
+        node: node("Reserve Meta Event"),
+        description: "The connection was refused",
+        code: "ECONNREFUSED",
+      },
+    },
   ]) {
     assert.throws(
       () => runClassify(broken),
       /reserve_idempotency failed/,
-      `${file}: a reservation that did not happen must not be acknowledged: ${JSON.stringify(broken)}`,
+      `${file}: a reservation that did not happen must not be acknowledged: ${JSON.stringify(broken).slice(0, 80)}`,
     );
   }
 
@@ -405,6 +501,11 @@ for (const file of GATEWAYS) {
 // domain's gateway can be weakened on its own.
 assert.equal(verifiers[0], verifiers[1], "both gateway copies run the same verification code");
 assert.equal(classifiers[0], classifiers[1], "both gateway copies run the same deduplication code");
+assert.equal(
+  readFileSync(GATEWAYS[0], "utf8"),
+  readFileSync(GATEWAYS[1], "utf8"),
+  "the library copy and the reference domain's package copy are one file, byte for byte",
+);
 
 // The gate runs inside n8n and cannot import the module, so the algorithm is
 // written twice. Lift the copy out of the workflow and hold it to the module's

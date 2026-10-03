@@ -88,6 +88,15 @@ for (const [label, header] of [
 
 // 3b. Missing signing material is a rejection, not a crash and not a pass.
 assert.equal(verifyMetaSignature(RAW, valid, ""), false, "an empty app secret cannot verify anything");
+// Signed under the EMPTY key. The line above cannot see the empty-secret guard
+// at all - its digest was made with the real secret, so it fails on the digest
+// first - and dropping the guard let an unset META_APP_SECRET accept anything
+// an attacker signed with the empty key.
+assert.equal(
+  verifyMetaSignature(RAW, sign(RAW, ""), ""),
+  false,
+  "an unset app secret is not an empty HMAC key",
+);
 assert.equal(
   verifyMetaSignature(undefined as unknown as Buffer, valid, SECRET),
   false,

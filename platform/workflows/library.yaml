@@ -137,7 +137,9 @@ entries:
           entry's workflow carried the reference domain's WF-00 id. Nothing in
           the repository referenced them, so they are now neutral
           (capture-request, signature-gate, reserve-event, ...) in both this
-          copy and the provenance package's, which stay identical.
+          copy and the provenance package's, which are held byte for byte
+          identical by tests/unit/channels/webhook-ingress-guards.ts - the
+          drift platform/workflows/README.md warns about now fails a test.
       - decision: an_event_with_no_id_is_acknowledged_not_rejected
         over: http_403
         why: >-
