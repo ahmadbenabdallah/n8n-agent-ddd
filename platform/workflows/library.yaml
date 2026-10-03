@@ -119,6 +119,25 @@ entries:
           body for the same event id. Both are better acknowledged 200 and
           dropped than retried forever, so the Reserve node continues on error
           and the conflict is classified as a duplicate and logged.
+      - decision: reservation_failure_other_than_a_key_conflict_rethrows
+        over: acknowledging_every_reserve_error_as_a_duplicate
+        why: >-
+          A Postgres outage, timeout, pool exhaustion or unbound credential
+          arrives on the same continue-on-error path as the key conflict, with
+          no status. Treating that as a duplicate would acknowledge 200 and
+          lose a verified first-time message permanently, because the provider
+          saw success and never retries - and it would record an availability
+          failure as a replay. Only a recognised idempotency_key_conflict is
+          dropped; everything else rethrows so the provider retries with
+          backoff.
+      - decision: node_ids_carry_no_workflow_id
+        over: inheriting_the_provenance_package_ids
+        why: >-
+          ADR 0001: the shared library names no domain. Every node id in this
+          entry's workflow carried the reference domain's WF-00 id. Nothing in
+          the repository referenced them, so they are now neutral
+          (capture-request, signature-gate, reserve-event, ...) in both this
+          copy and the provenance package's, which stay identical.
       - decision: an_event_with_no_id_is_acknowledged_not_rejected
         over: http_403
         why: >-
