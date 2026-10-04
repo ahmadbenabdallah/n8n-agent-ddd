@@ -12,6 +12,26 @@
 # section 5) holding the real pre-NAD-008.1 sentences and the mutations that
 # survived the first version of this guard. A pattern tuned to a sentence that
 # no longer exists therefore fails the self-test instead of passing silently.
+#
+# Two known ceilings, both accepted rather than bugs to rediscover:
+#
+#   1. A sentence asserting X and not-X survives - "The boundary is fully
+#      enforced in the graphs, though no n8n graph calls it directly" carries
+#      the required limit and contradicts it in the same breath. grep cannot
+#      resolve that, and the only grep-shaped defence is pinning more literal
+#      prose, which makes ordinary copy-editing fail the gate.
+#   2. "Twenty-one workflows are production ready" survives: the extractor
+#      reads digits, and the spelled-out form escapes it unless it also uses
+#      the fractional framing the status patterns cover.
+#
+# A third limit is a design choice, not a ceiling: patterns are narrow on
+# purpose. An earlier revision preferred over-matching and flagged 13 of 20
+# honest sentences, including "the boundary is enforced only in platform code,
+# not yet in the graphs" - the exact hedge these documents need to be able to
+# make. A guard that rejects the most accurate available description of the
+# system teaches people to route around it, which is worse than the drift it
+# prevents. Those sentences are now in the accurate corpus, so narrowing a
+# pattern later is a corpus edit with a test behind it.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
@@ -25,31 +45,34 @@ fail() {
   exit 1
 }
 
-# Forbidden claims. "any" patterns apply to every shipped document; "count"
-# patterns only to the four status documents, where a workflow count means
-# something. Over-matching is intended: a false positive here is loud and cheap
-# to fix, a false negative is how three contradictory counts shipped.
+# Forbidden claims. "any" patterns apply to every shipped document; "status"
+# patterns only to the four status documents, where a workflow count or a
+# claim about where enforcement happens means something - the last one would
+# hit eight lines of correct reference-domain design prose under domains/
+# ("Checkout freshness is enforced by WF-14") if it were applied tree-wide.
+# Each pattern is as narrow as its corpus line allows, and the liveness check
+# in section 5 fails the test if one stops earning its place.
 #
 # The boundary is enforced in platform/authorization/port.ts and the inbound
 # signature in platform/channels/meta-signature.ts, both behaviourally tested.
 # A document saying otherwise is stale, however it phrases it.
 patterns=(
   "any@@(boundary|handshake|authorization port|execution gate)[^.]{0,80}(\bnot\b|n't|\bnever\b|\bun)[a-z ]{0,20}(enforce|implement)"
-  "any@@enforce[a-z]* only"
   "any@@(nothing|nobody|no code|no component) enforces[^.]{0,60}(boundar|authoriz|execution|signature)"
-  "any@@(is|are|remains|stays) unenforced"
-  "any@@signatur[a-z-]*[^.]{0,40}\b(are|is)[^.]{0,6}(\bnot\b|n't|\bun)[a-z ]{0,16}(verif|check|implement)"
+  "any@@signatur[a-z-]*[^.]{0,40}\b(are|is|was|were|has|have|had)[^.]{0,20}(\bnot\b|n't|\bnever\b|\bun)[a-z ]{0,16}(verif|check|implement)"
+  "any@@(does|do|will|would|can|could|shall) ?not (yet )?(verify|check|validate)[^.]{0,30}signatur"
+  "any@@cannot[^.]{0,20}(verif|enforce)[^.]{0,30}\b(yet|currently|today|still)\b"
   "any@@(skip|ignor)[a-z]*[^.]{0,30}(signature|verification)"
   "any@@signatur[a-z-]*[^.]{0,40}(is|are) (ignored|skipped|bypassed|optional)"
   "any@@(boundary|handshake|authorization port|execution gate|signature (verification|checking|check))[^.]{0,30}\b(is|are|remains|stays)\b[^.]{0,20}(absent|missing|unimplemented|aspirational|todo|planned|notional|theoretical)"
-  "any@@(boundary|handshake|authoriz[a-z]*|execution gate|signature)[^.]{0,30}(exists?|lives?|holds?|remains?) only (in|on)\b"
   "any@@only (in|on) (specification|spec|paper)\b"
   "any@@specified only"
-  "count@@[0-9]+ ?(of|out of|/) ?(the )?[0-9]+[a-z'’ -]{0,40}workflow"
-  "count@@[0-9]+ ?(of|out of|/) ?(the )?21\b"
-  "count@@(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)[a-z-]* of (the )?(twenty|[0-9]+)[a-z'’ -]{0,40}workflow"
-  "count@@workflows?( [a-z'’-]+){0,3} (are|is) (now )?(implemented|real|active|functional|complete|executable|working|live|genuine)"
-  "count@@\bnot all\b[^.]{0,40}(21|workflow)"
+  "status@@[0-9]+ ?(of|out of|/) ?(the )?[0-9]+[a-z'’ -]{0,40}workflow"
+  "status@@[0-9]+ ?(of|out of|/) ?(the )?21\b"
+  "status@@(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)[a-z-]* of (the )?(twenty|[0-9]+)[a-z'’ -]{0,40}workflow"
+  "status@@workflows?( [a-z'’-]+){0,3} (are|is) (now )?(implemented|real|active)"
+  "status@@\bnot all\b[^.]{0,40}(21|workflow)"
+  "status@@(enforced|verified|validated|implemented) (in|by|within|inside) (the |every |all |its |each )?(n8n )?(graphs?|workflows?|WF-[0-9])"
 )
 
 # pattern_args <scope|all> - fills PAT_ARGS with grep -e arguments.
@@ -124,7 +147,7 @@ inactive="$(grep -l -- '"active": false' runtime/n8n/workflows/*.json | wc -l | 
 offenders="$(bad_counts "${targets[@]}")"
 [ -z "$offenders" ] || fail "contradicting workflow count(s) $(echo "$offenders" | tr '\n' ' ')in the status documents (on disk: $on_disk)"
 
-if scan count "${targets[@]}"; then
+if scan status "${targets[@]}"; then
   fail "a status document splits or flips the workflow count (above); all $on_disk are placeholders"
 fi
 
@@ -154,11 +177,33 @@ fi
 # required text, one canonical clause in all four documents, exactly as the
 # count is. The object varies with the subject (calls it / calls them), so the
 # pinned string stops at the verb.
+#
+# The clause has to sit in the SAME sentence as the enforcement claim. A
+# file-wide grep is satisfied by text no reader sees (`<!-- no n8n graph calls
+# it -->`) or by the clause parked in an unrelated sentence while the
+# enforcement sentence loses its limit, so each document pins the pair.
 limit="no n8n graph calls"
-for f in "${targets[@]}"; do
-  grep -qF "$limit" "$f" ||
-    fail "$f drops the canonical limiting clause \"$limit it/them\", leaving the boundary claim overstated"
+# `([^.|]|\.[^ ])*` is "anything up to the end of the sentence": a period
+# followed by a space ends it, a period inside `port.ts` does not. Without
+# that, parking the clause in a trailing sentence ("... are placeholders.
+# Separately, no n8n graph calls the deployment scripts") satisfies the pin
+# while the enforcement sentence itself reads as unlimited.
+limit_pins=(
+  "README.md@@enforced in platform code([^.|]|\.[^ ])*$limit"
+  "ARCHITECTURE.md@@enforced in platform code([^.|]|\.[^ ])*$limit"
+  "documentation/getting-started/index.md@@enforced in platform code([^.|]|\.[^ ])*$limit"
+  "ROADMAP.md@@in place, but $limit"
+)
+for entry in "${limit_pins[@]}"; do
+  f="${entry%%@@*}"
+  if ! grep -qE -- "${entry#*@@}" "$f"; then
+    fail "$f must state the enforcement claim and its limit in one sentence (/${entry#*@@}/), or the boundary claim reads as unlimited"
+  fi
 done
+
+if grep -nE -- "<!--[^>]*$limit" "${targets[@]}"; then
+  fail "the canonical limiting clause is parked in an HTML comment, where no reader sees it (above)"
+fi
 
 # AC #1: the leading blockquote and the Project status table must agree, so
 # both halves of both are pinned. A target-wide grep is not enough - README
@@ -184,10 +229,18 @@ head -n 1 ROADMAP.md | grep -qx '# Roadmap' || fail "ROADMAP.md must open with t
 # --- 5. self-test: the patterns must catch what they were written for -------
 stale="$(mktemp)"
 accurate="$(mktemp)"
+domain_only="$(mktemp)"
 one="$(mktemp)"
-trap 'rm -f "$stale" "$accurate" "$one"' EXIT
+trap 'rm -f "$stale" "$accurate" "$domain_only" "$one"' EXIT
 
-# Real pre-NAD-008.1 sentences, and mutations that survived version 1.
+# The corpus is a RATCHET: it only ever grows. It holds the real
+# pre-NAD-008.1 sentences, every mutation that survived an earlier version of
+# this guard, AND every sentence an earlier version caught - the last group is
+# the one that matters. Version 2 rewrote the signature pattern and silently
+# dropped `never` from the negation set, so "signatures are never verified",
+# which version 1 caught, walked through versions 2 and 3 unnoticed. A
+# sentence absent from this corpus is a regression waiting to happen, so a
+# hardening round that narrows coverage now fails here instead of shipping.
 cat > "$stale" <<'STALE'
 the authorization and execution boundary is not enforced yet
 17 of the 21 workflows are stubs, the WF-10 to WF-20 authorization handshake is not enforced
@@ -225,6 +278,19 @@ Signature checking is TODO.
 The boundary exists only in specification.
 The authorization handshake exists only on paper.
 The boundary is specified only, never built.
+Inbound webhook signatures are never verified.
+Inbound webhook signatures are still not verified.
+The gateway does not verify signatures.
+Webhook signature verification has not been implemented.
+The gateway cannot verify signatures yet.
+The authorization boundary cannot be enforced yet.
+The boundary is fully enforced in the graphs, though no n8n graph calls it directly.
+The authorization boundary is enforced in the n8n workflows.
+The authorization boundary is unenforced.
+17 of the 21 are real workflows
+17 of the runtime workflows are stubs.
+19 workflows are implemented.
+Only 4 real workflows exist.
 STALE
 
 # True sentences the patterns must leave alone.
@@ -242,7 +308,23 @@ A placeholder is a valid n8n workflow of three or four Code nodes that passes da
 - Credentials live only in n8n credentials/environment secret storage.
 Critical business state must not live only in n8n execution history.
 Identity, Payment, Knowledge and Observability ports are planned.
+- Webhook signature verification is implemented and unit-tested, but like everything else here it has never run against Meta's own requests. The n8n-level check (forged header to the live stack, expect 403) is still unexecuted.
+Webhook signature verification | Implemented (HMAC-SHA256 over the raw body, verified before normalisation; not yet exercised against Meta)
+The boundary is enforced only in platform code, not yet in the graphs.
+The authorization decision exists only in TypeScript today; no graph calls it.
+Authorization records live only in Postgres; nothing is cached.
+Rate limiting is enforced only on the inbound channel.
+Workflow contracts are complete for the reference domain.
 ACCURATE
+
+# Scope-dependent: correct where the reference domain designs its own graphs,
+# forbidden in the four platform status documents. Asserted both ways, so the
+# scope boundary itself is testable rather than a comment.
+cat > "$domain_only" <<'DOMAIN'
+- [ ] Checkout freshness is enforced by WF-14.
+The exact Store API session mechanism is implemented in WF-20, not in WF-12.
+Those facts must already be verified by WF-11/WF-12/WF-13/WF-14/WF-15/WF-20.
+DOMAIN
 
 hits=" $(flagged_lines all "$stale" | tr '\n' ' ') "
 total="$(grep -c '' "$stale")"
@@ -259,10 +341,26 @@ while [ "$i" -le "$total" ]; do
   i=$((i + 1))
 done
 
+# The dual of the ratchet: the corpus proves no stale claim is uncovered, this
+# proves no pattern is decoration. A pattern that catches nothing is either
+# dead (its target is already covered by a broader pattern, so it only adds
+# false-positive surface) or misspelt, and both are invisible without this.
+# Consequence, deliberately: a new pattern must earn a corpus line.
+for entry in "${patterns[@]}"; do
+  grep -qEi -e "${entry#*@@}" "$stale" ||
+    fail "self-test: pattern /${entry#*@@}/ catches nothing in the stale corpus - delete it or add the sentence it is for"
+done
+
 if scan all "$accurate"; then
   fail "self-test: a pattern false-positives on an accurate sentence (above)"
 fi
 [ -z "$(bad_counts "$accurate")" ] || fail "self-test: the count extractor false-positives on an accurate sentence"
 
+if scan any "$domain_only"; then
+  fail "self-test: a tree-wide pattern false-positives on correct reference-domain prose (above)"
+fi
+scan status "$domain_only" > /dev/null ||
+  fail "self-test: the status-scoped patterns no longer catch 'enforced by WF-NN' framing in a status document"
+
 echo "PASS: documentation status claims agree across ${#targets[@]} documents"
-echo "      ${#shipped[@]} shipped documents scanned, ${#patterns[@]} claim patterns self-tested against $total stale and $(grep -c '' "$accurate") accurate sentences"
+echo "      ${#shipped[@]} shipped documents scanned, ${#patterns[@]} claim patterns self-tested against $total stale, $(grep -c "" "$accurate") accurate and $(grep -c "" "$domain_only") scope-dependent sentences"
