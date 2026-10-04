@@ -34,12 +34,17 @@ port:
     operation: authorizeAction
     input:
       action_request: contracts/platform/action.yaml   # fields, untrusted
-      context: durable                                 # identity level, action allowlist, policy version
+      # Durable: the established identity level, the levels the domain's
+      # identity_ladder makes sufficient for this action, the action allowlist,
+      # the policy version. The platform names no level except ANONYMOUS
+      # (contracts/platform/identity.yaml), which is never sufficient.
+      context: durable
     output: a record persisted to public.authorizations
-    # Deny-by-default. NAD-015 ships two of the gates in
-    # 01-WF-10-AUTHORIZATION-SPEC.md:9-20; the rest are domain policy.
+    # Deny-by-default, and an empty list permits nothing. NAD-015 ships two of
+    # the gates in 01-WF-10-AUTHORIZATION-SPEC.md:9-20; the rest are domain
+    # policy.
     gates:
-      - identity_assurance_sufficient
+      - identity_assurance_sufficient   # against the domain's ladder, not a platform constant
       - action_allowlisted
   verify:
     operation: requireAuthorizedExecution
@@ -50,8 +55,14 @@ port:
       - expires_at in the future
       - action_id == the action being executed
       - idempotency_key == the key the authorization was issued against
-      - caller fills the privileged_external_execution role of its domain
+      - request_hash present, so a replay with another body conflicts
+      # Configuration consistency, not caller identity: workflow_id is a string
+      # the caller supplies about itself. Restricting who may call at all is
+      # runtime credential scoping.
+      - workflow_id == the id the domain nominated for privileged_external_execution
+      - domain is a plain name, validated before it resolves to a path
     on_failure: throws
+    then: reserves the idempotency key, so one authorized operation executes once
 
 # The record: 04-WF-10-AUTHORIZATION-RECORD.md, stored in public.authorizations
 # (0001_domain_state.sql:22-31 plus the nullable fields of 0006).

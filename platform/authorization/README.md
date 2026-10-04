@@ -29,7 +29,20 @@ caller-supplied authority instead of computing it, and WF-20's gate requires an
 Roles, never workflow ids: the executing workflow is resolved through
 `readWorkflowRoles` from the domain's own `workflow_roles` block (ADR 0001), so
 a domain that declares no `privileged_external_execution` role has no workflow
-that may execute.
+that may execute. Be precise about what that check is worth: `workflow_id` is a
+string the caller supplies about itself, so matching it against the domain's
+nomination catches a workflow that was never nominated and a domain that
+nominated none - configuration consistency, not caller identity. Likewise the
+record's `authorized_by_role` is written by the port about itself. Which
+component may call either function is a runtime credential-scoping question and
+is not answerable here.
+
+The domain's vocabulary stays the domain's: the levels that clear the identity
+gate arrive in the context, read from the domain's `identity_ladder`
+(`tunisia-dtc` spells one `CHANNEL-LINKED`, `demo-booking` spells its own
+`CHANNEL_VERIFIED`). The only level the platform names is `ANONYMOUS`, from
+`contracts/platform/identity.yaml`, which is refused even if a domain lists it
+as sufficient.
 
 In scope today: deny-by-default with the identity gate and the action
 allowlist. The other gates of

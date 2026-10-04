@@ -44,8 +44,18 @@ export const AUTHORIZATION_ROLE = "authorization";
 /** Operation name this port reserves in `idempotency_keys` for a privileged execution. */
 export const EXECUTION_OPERATION = "privileged_external_execution";
 
-/** Identity levels that satisfy the identity gate. Anything else, including an absent or model-invented level, does not. */
-export const SUFFICIENT_IDENTITY_LEVELS: readonly string[] = ["CHANNEL_LINKED", "VERIFIED"];
+/**
+ * The one identity level the platform itself rules out, from
+ * `contracts/platform/identity.yaml:5`. Every other level is a domain's own
+ * vocabulary - `tunisia-dtc` says `CHANNEL-LINKED`, `demo-booking` says
+ * `CHANNEL_VERIFIED` - so which levels are *sufficient* arrives in the
+ * context, from the domain's `identity_ladder`, and never as a constant here
+ * (ADR 0001: the platform does not know a domain's words).
+ */
+export const ANONYMOUS_IDENTITY = "ANONYMOUS";
+
+/** A domain directory name. Validated before it reaches a path. */
+const DOMAIN_NAME = /^[a-z0-9-]+$/;
 
 /** Default authorization lifetime. ponytail: one constant; make it domain policy when a domain needs another. */
 export const DEFAULT_TTL_SECONDS = 300;
@@ -101,13 +111,17 @@ export interface ActionProposal {
 export type UntrustedActionRequest = Partial<ActionRequest> & Record<string, unknown>;
 
 /**
- * Durable context. These values come from stored state, never from the
- * request: `identity_assurance` is the level the identity port established and
- * `allowlisted_actions` is the domain's action catalog.
+ * Durable context. These values come from stored state and domain policy,
+ * never from the request: `identity_assurance` is the level the identity port
+ * established, `allowlisted_actions` is the domain's action catalog, and
+ * `sufficient_identity_levels` are the levels of the domain's own
+ * `identity_ladder` that clear the gate for this action. All three deny by
+ * default: an empty list permits nothing.
  */
 export interface AuthorizationContext {
   domain: string;
   identity_assurance: string;
+  sufficient_identity_levels: readonly string[];
   allowlisted_actions: readonly string[];
   policy_version: string;
   request_id?: string | null;
@@ -152,8 +166,13 @@ export type ReserveIdempotency = (
   requestHash: string,
 ) => Promise<{ status: string }>;
 
-/** The domain's workflow id for a platform role, or undefined when the domain declares none. */
+/**
+ * The domain's workflow id for a platform role, or undefined when the domain
+ * declares none. The name is validated first: it becomes a path segment under
+ * `domains/` inside `readWorkflowRoles`, and `../../x` would read outside it.
+ */
 export function workflowForRole(domain: string, role: string): string | undefined {
+  if (typeof domain !== "string" || !DOMAIN_NAME.test(domain)) throw new Error("domain_invalid");
   return readWorkflowRoles(domain)[role];
 }
 
@@ -191,9 +210,14 @@ export async function authorizeAction(
     if (!isNonEmptyString(normalized[field])) reasons.push(`action_request_incomplete:${field}`);
   }
 
-  // The identity level is the stored one. A request that claims a different
-  // level is a promotion attempt, not a disagreement to resolve.
-  if (!SUFFICIENT_IDENTITY_LEVELS.includes(context.identity_assurance))
+  // The identity level is the stored one, and which levels are sufficient is
+  // the domain's policy - except ANONYMOUS, which the platform refuses even if
+  // a domain lists it. A request that CLAIMS a different level than the context
+  // holds is a promotion attempt, not a disagreement to resolve.
+  if (
+    context.identity_assurance === ANONYMOUS_IDENTITY ||
+    !context.sufficient_identity_levels.includes(context.identity_assurance)
+  )
     reasons.push("identity_assurance_insufficient");
   else if (normalized.identity_assurance && normalized.identity_assurance !== context.identity_assurance)
     reasons.push("identity_claim_mismatch");
@@ -257,10 +281,18 @@ export interface ExecutionGateDeps {
 
 /**
  * The gate every privileged external mutation passes. Loads the stored record
- * by id and requires: AUTHORIZED, `execution_allowed` true, unexpired, bound
- * to this action, and a caller that fills the domain's
- * `privileged_external_execution` role. Then it reserves the idempotency key,
- * so a replay of an authorized execution is refused rather than repeated.
+ * by id and requires: AUTHORIZED, `execution_allowed` true, unexpired, and
+ * bound to this action and idempotency key. Then it reserves that key under
+ * this operation, so a replay of an authorized execution is refused rather
+ * than repeated.
+ *
+ * `workflow_id` is checked against the id the domain declared for the
+ * `privileged_external_execution` role, which catches a workflow that was
+ * never nominated and a domain that nominated none. It does NOT establish who
+ * is calling: the id is a string the caller supplies about itself, so this is
+ * configuration consistency, not caller identity. Caller identity belongs to
+ * runtime credential scoping (which n8n instance holds which credential) and
+ * is not knowable at this layer.
  *
  * Every failure throws. There is no falsy return a caller could ignore, and no
  * payload flag is consulted anywhere in it.
@@ -272,6 +304,10 @@ export async function requireAuthorizedExecution(
   if (!isNonEmptyString(request?.authorization_id)) throw new Error("authorization_id_required");
   if (!isNonEmptyString(request.action_id)) throw new Error("action_id_required");
   if (!isNonEmptyString(request.idempotency_key)) throw new Error("idempotency_key_required");
+  // `idempotency_keys.request_hash` is NOT NULL, and `request_hash <> NULL` is
+  // never true, so a missing hash would both break the insert and stop a
+  // replay with a different body from ever conflicting.
+  if (!isNonEmptyString(request.request_hash)) throw new Error("request_hash_required");
 
   const resolveRole = deps.resolveRole ?? workflowForRole;
   const executor = resolveRole(request.domain, EXTERNAL_EXECUTION_ROLE);

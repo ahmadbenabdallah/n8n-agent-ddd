@@ -4,19 +4,19 @@
  * Every case here fails against the checkout before this task: there was no
  * decision port and no execution gate at all, WF-10 computed
  * `execution_allowed` from fields of its own input, and WF-20's gate was
- * `if ($json.execution_allowed !== true) throw`. The last section re-runs the
- * pre-change gate out of `git show origin/main:` to prove exactly that, so the
- * regression this file pins is demonstrated rather than asserted.
+ * `if ($json.execution_allowed !== true) throw`. Section 5b executes that
+ * pre-change body, inlined as a string, so the regression is demonstrated
+ * rather than asserted - and without depending on a git ref.
  *
  * Nothing here pins source text. The port and the gate are called, the n8n
  * Code nodes are EXECUTED under stubs for `$json` and `items`, and the
- * assertions are on what came back. The store double mirrors the
- * `authorizations` table and the reserve double mirrors
- * `private.reserve_idempotency` (migration 0003), so the records are read back
- * from storage rather than from the object the port happened to return.
+ * assertions are on what came back. The store double has the `authorizations`
+ * table's uuid and foreign-key constraints on its write path and the reserve
+ * double has `private.reserve_idempotency`'s contract (migration 0003), so the
+ * records are read back from storage rather than from the object the port
+ * happened to return.
  */
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -42,15 +42,32 @@ import { createAuthorizationRepository } from "../../../platform/state/repositor
 
 // --- doubles -----------------------------------------------------------------
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * The `authorizations` table. `id` and `created_at` are the database's
  * (0001_domain_state.sql:23,30), and rows are cloned in and out so a test
  * reads what was stored, not the caller's object.
+ *
+ * `action_id` is `uuid NOT NULL REFERENCES actions(id)` (`:24`), so `insert` -
+ * the production path - rejects a non-uuid with Postgres's 22P02 and an
+ * unknown action with 23503. Rows written through `put` deliberately bypass
+ * that: it exists to put the gate in front of storage the port would never
+ * have produced (tampered, or migrated from a laxer schema - 0006 made the
+ * correlation columns nullable, so a null `idempotency_key` is a real state).
  */
 function createStoreDouble() {
   const rows = new Map<string, AuthorizationRecord>();
+  const checkUuid = (value: unknown, column: string) => {
+    if (typeof value !== "string" || !UUID.test(value))
+      throw new Error(`22P02: invalid input syntax for type uuid: ${column}=${String(value)}`);
+  };
   const store: AuthorizationStore = {
     async insert(record: NewAuthorizationRecord) {
+      checkUuid(record.action_id, "action_id");
+      if (!ACTIONS.has(record.action_id))
+        throw new Error("23503: insert on authorizations violates authorizations_action_id_fkey");
+
       const row: AuthorizationRecord = {
         ...record,
         authorization_id: randomUUID(),
@@ -60,21 +77,22 @@ function createStoreDouble() {
       return structuredClone(row);
     },
     async findById(id: string) {
+      checkUuid(id, "id");
       const row = rows.get(id);
       return row && structuredClone(row);
     },
   };
-  /** Write a row the port would never write, to test the gate against hostile storage. */
+  /** A row the port would never write, to test the gate against hostile or legacy storage. */
   const put = (record: Partial<AuthorizationRecord>): string => {
     const id = randomUUID();
     rows.set(id, {
       authorization_id: id,
-      action_id: REQUEST.action_id,
+      action_id: ACTION_ID,
       request_id: null,
       conversation_id: null,
-      identity_level: "CHANNEL_LINKED",
+      identity_level: SUFFICIENT_LEVEL,
       state_version: null,
-      idempotency_key: REQUEST.idempotency_key,
+      idempotency_key: IDEMPOTENCY_KEY,
       decision: "AUTHORIZED",
       execution_allowed: true,
       policy_version: "wf10-v4.1",
@@ -89,6 +107,27 @@ function createStoreDouble() {
 }
 
 /**
+ * A store that refuses every write the way the real table refuses a row whose
+ * `action_id` is not a uuid referencing `actions.id`, and keeps what the port
+ * tried to write. For the cases where the decision is what matters and the row
+ * cannot exist at all: an incomplete request has no action to bind to. Nothing
+ * is authorized; the audit row is what is lost (see the NAD-006 follow-up).
+ */
+function createCaptureStore() {
+  let attempted: NewAuthorizationRecord | undefined;
+  const store: AuthorizationStore = {
+    async insert(record) {
+      attempted = record;
+      throw new Error("22P02: invalid input syntax for type uuid: action_id=");
+    },
+    async findById() {
+      return undefined;
+    },
+  };
+  return { store, attempted: () => attempted };
+}
+
+/**
  * `private.reserve_idempotency(key, operation, request_hash)`: the first caller
  * for a key gets CREATED, later callers get the stored status, a different
  * request hash for the same key raises. Semantics read off
@@ -98,6 +137,10 @@ function createStoreDouble() {
 function createReserveDouble() {
   const keys = new Map<string, { status: string; hash: string }>();
   const reserve: ReserveIdempotency = async (key, operation, requestHash) => {
+    // The real function stores `p_operation` on insert and never reads it on
+    // lookup, so a "wrong operation name" kill here is this double's contract,
+    // not production behaviour. The assertion stays because the operation name
+    // is what makes the key space this port's own.
     assert.equal(operation, EXECUTION_OPERATION, "executions reserve under their own operation name");
     const existing = keys.get(key);
     if (existing) {
@@ -112,19 +155,62 @@ function createReserveDouble() {
 
 // --- fixtures ----------------------------------------------------------------
 
+/**
+ * A domain's declared `identity_ladder`, lowest assurance first. Read from the
+ * domain rather than written here on purpose: the two shipped domains spell
+ * their levels differently (`CHANNEL-LINKED` against `CHANNEL_VERIFIED`), and
+ * a fixture that invents a spelling would pass against a port that invented
+ * the same one. That is exactly how the deleted
+ * `SUFFICIENT_IDENTITY_LEVELS = ["CHANNEL_LINKED", "VERIFIED"]` - a vocabulary
+ * no domain uses - survived a full round of these tests.
+ */
+const identityLadder = (domain: string): string[] => {
+  const block = readFileSync(`domains/${domain}/domain.yaml`, "utf8").split(/^identity_ladder:.*$/m)[1] ?? "";
+  const levels: string[] = [];
+  for (const line of block.split("\n")) {
+    if (/^\S/.test(line)) break; // dedent ends the block
+    const match = line.match(/^\s+-\s*([A-Z][A-Z0-9_-]*)/);
+    if (match) levels.push(match[1]);
+  }
+  assert.ok(levels.length > 2, `${domain} declares an identity ladder to read`);
+  assert.equal(levels[0], "ANONYMOUS", `${domain}'s ladder starts at ANONYMOUS`);
+  return levels;
+};
+
+const TUNISIA_LADDER = identityLadder("tunisia-dtc");
+const BOOKING_LADDER = identityLadder("demo-booking");
+// The two domains disagree on every word above ANONYMOUS; the port must know none of them.
+assert.deepEqual(
+  TUNISIA_LADDER.filter((level) => BOOKING_LADDER.includes(level)),
+  ["ANONYMOUS"],
+  "the fixtures are only meaningful while the domains' vocabularies differ",
+);
+
+/** Domain policy for this fixture's action: everything above ANONYMOUS clears it. */
+const SUFFICIENT_LEVELS = TUNISIA_LADDER.filter((level) => level !== "ANONYMOUS");
+const SUFFICIENT_LEVEL = SUFFICIENT_LEVELS[0]; // CHANNEL-LINKED, as tunisia-dtc spells it
+const HIGHER_LEVEL = SUFFICIENT_LEVELS[SUFFICIENT_LEVELS.length - 1];
+
+// uuids, because `authorizations.action_id` is one and references `actions.id`.
+const ACTION_ID = "6f1e7e8a-0b2c-4d3e-8f90-1a2b3c4d5e6f";
+const OTHER_ACTION_ID = "9c8b7a65-4321-4fed-8cba-0987654321fe";
+const ACTIONS = new Set([ACTION_ID, OTHER_ACTION_ID]);
+const IDEMPOTENCY_KEY = "cart_add:conv_123:1";
+
 const REQUEST: ActionRequest = {
-  action_id: "act_123",
+  action_id: ACTION_ID,
   action_type: "cart_add",
   actor: "customer:cust_1",
-  identity_assurance: "CHANNEL_LINKED",
+  identity_assurance: SUFFICIENT_LEVEL,
   target: "cart:cart_1",
   requested_at: "2026-10-03T10:00:00.000Z",
-  idempotency_key: "cart_add:conv_123:1",
+  idempotency_key: IDEMPOTENCY_KEY,
 };
 
 const CONTEXT: AuthorizationContext = {
   domain: "tunisia-dtc",
-  identity_assurance: "CHANNEL_LINKED",
+  identity_assurance: SUFFICIENT_LEVEL,
+  sufficient_identity_levels: SUFFICIENT_LEVELS,
   allowlisted_actions: ["cart_add", "cart_remove"],
   policy_version: "wf10-v4.1",
   request_id: "req_123",
@@ -135,8 +221,8 @@ const CONTEXT: AuthorizationContext = {
 
 const execution = (over: Partial<ExecutionRequest> = {}): ExecutionRequest => ({
   authorization_id: "",
-  action_id: REQUEST.action_id,
-  idempotency_key: REQUEST.idempotency_key,
+  action_id: ACTION_ID,
+  idempotency_key: IDEMPOTENCY_KEY,
   request_hash: "h1",
   domain: "tunisia-dtc",
   workflow_id: "WF-20",
@@ -186,6 +272,15 @@ assert.ok(workflowFiles.length > 20, "the scan must actually find the workflow f
 // a workflow manufacturing one. Naming the key to REFUSE it
 // (`'execution_allowed' in x`) is neither, so the patterns are member access,
 // index access and property assignment - not the bare quoted name.
+//
+// ponytail: a syntactic scan, and its ceiling is named rather than chased. It
+// does not see a computed key (`const k='execution_allowed'; $json[k]=true`),
+// a destructured read, or a node this file never executes. That is accepted
+// because it is defence in depth only: the enforcement is the port, and a
+// workflow that manufactures the flag still gets nowhere, because the gate
+// reads the column from the stored record and WF-20 refuses the key outright.
+// Upgrade path if the graphs ever stop being placeholders: parse the jsCode
+// and walk it, or execute every node and assert on the outputs.
 const forbidden = [/\.execution_allowed\b/, /\[\s*["']execution_allowed["']\s*\]/, /execution_allowed\s*:/];
 const offenders = workflowFiles.flatMap((file) => {
   const contents = readFileSync(file, "utf8");
@@ -203,7 +298,7 @@ const wf10Auth = codeOf(WF10, "Refuse Caller-Supplied Authority");
 const PLAUSIBLE = {
   action: { allowlisted: true },
   scope: { valid: true },
-  identity: { assurance: "CHANNEL_LINKED" },
+  identity: { assurance: SUFFICIENT_LEVEL },
 };
 
 const granted = runCode(wf10Auth, { ...PLAUSIBLE });
@@ -240,13 +335,23 @@ assert.equal(
 
 // WF-20's gate accepts an authorization_id as the only authority it carries.
 const wf20Gate = codeOf("runtime/n8n/workflows/WF-20.json", "Execution Gate");
-const EXEC_PAYLOAD = { allowlisted_operation: "cart_add", idempotency_key: REQUEST.idempotency_key };
+const EXEC_PAYLOAD = { allowlisted_operation: "cart_add", idempotency_key: IDEMPOTENCY_KEY };
 
-assert.throws(
-  () => runCode(wf20Gate, { ...EXEC_PAYLOAD, execution_allowed: true }),
-  /caller_supplied_authorization_fields/,
-  "WF-20 refuses a payload flag outright",
-);
+// Each forbidden key, and each of them ALONGSIDE a well-formed authorization
+// id: the refusal is of the key itself, not a side effect of the id being
+// missing. Checking only `execution_allowed` left the other two droppable.
+for (const key of ["execution_allowed", "authorization_decision", "decision"] as const) {
+  assert.throws(
+    () => runCode(wf20Gate, { ...EXEC_PAYLOAD, [key]: true }),
+    /caller_supplied_authorization_fields/,
+    `WF-20 refuses a payload carrying ${key}`,
+  );
+  assert.throws(
+    () => runCode(wf20Gate, { ...EXEC_PAYLOAD, authorization_id: randomUUID(), [key]: "AUTHORIZED" }),
+    /caller_supplied_authorization_fields/,
+    `WF-20 refuses ${key} even next to a real authorization id`,
+  );
+}
 assert.throws(
   () => runCode(wf20Gate, { ...EXEC_PAYLOAD }),
   /authorization_id_required/,
@@ -259,27 +364,29 @@ assert.equal(
 );
 
 // --- 5b. the pre-change gate, to show these cases are not vacuous ------------
+//
+// The body of WF-20's Execution Gate as it stood at f732d44, inlined. An
+// earlier round read it out of `git show origin/main:` instead, which was
+// wrong in both directions: once this merges, origin/main IS this change, the
+// gate throws, and the suite goes red on main for everyone who fetched it;
+// while in a shallow PR checkout the ref is absent and the whole block
+// silently passed, proving nothing exactly where it runs. A string executed
+// under the same `runCode` proves the same thing and depends on nothing.
+const PRE_CHANGE_GATE =
+  "const x=$json;if(x.execution_allowed!==true)throw new Error('execution_not_authorized');" +
+  "if(!x.allowlisted_operation)throw new Error('operation_not_allowlisted');" +
+  "if(x.client_supplied_credentials)throw new Error('client_credentials_forbidden');return items;";
 
-const show = spawnSync("git", ["show", "origin/main:runtime/n8n/workflows/WF-20.json"], {
-  encoding: "utf8",
-});
-if (show.status === 0) {
-  const before: Workflow = JSON.parse(show.stdout);
-  const beforeGate = before.nodes.find((n) => n.name === "Execution Gate")?.parameters.jsCode;
-  assert.ok(beforeGate, "origin/main has an Execution Gate to compare against");
-  assert.equal(
-    runCode(beforeGate, { ...EXEC_PAYLOAD, execution_allowed: true }).length,
-    1,
-    "the gate on origin/main granted execution on a payload flag: that is what this file removes",
-  );
-  assert.throws(
-    () => runCode(beforeGate, { ...EXEC_PAYLOAD, authorization_id: randomUUID() }),
-    /execution_not_authorized/,
-    "and refused a real authorization id, having nothing to verify it against",
-  );
-} else {
-  console.log("note: origin/main not available; the pre-change comparison was skipped");
-}
+assert.equal(
+  runCode(PRE_CHANGE_GATE, { ...EXEC_PAYLOAD, execution_allowed: true }).length,
+  1,
+  "the pre-change gate granted execution on a payload flag: that is what this task removes",
+);
+assert.throws(
+  () => runCode(PRE_CHANGE_GATE, { ...EXEC_PAYLOAD, authorization_id: randomUUID() }),
+  /execution_not_authorized/,
+  "and refused a real authorization id, having nothing to verify it against",
+);
 
 // --- the port and the gate ---------------------------------------------------
 
@@ -317,11 +424,23 @@ async function main() {
       "no part of the record carries the authority the caller asked for",
     );
 
-    // Same request, via the LLM-reachable proposal type. The port's input is
-    // untrusted JSON, so the cast is the real call shape.
-    const fromProposal = await authorizeAction(store, proposal as unknown as UntrustedActionRequest, CONTEXT);
-    assert.equal(fromProposal.decision, "DENIED", "an LLM proposal cannot authorize itself");
-    assert.equal(fromProposal.execution_allowed, false);
+    // Same attempt via the LLM-reachable proposal type. The port's input is
+    // untrusted JSON, so the cast is the real call shape. A proposal names no
+    // action id, so the denial cannot be stored - what is asserted is the
+    // decision the port tried to write.
+    const proposed = createCaptureStore();
+    await assert.rejects(
+      () => authorizeAction(proposed.store, proposal as unknown as UntrustedActionRequest, CONTEXT),
+      /22P02/,
+      "a proposal has no action to bind a record to",
+    );
+    assert.equal(proposed.attempted()?.decision, "DENIED", "an LLM proposal cannot authorize itself");
+    assert.equal(proposed.attempted()?.execution_allowed, false);
+    assert.match(
+      String(proposed.attempted()?.scope.reasons),
+      /caller_supplied_authorization_fields:execution_allowed/,
+      "and the flag it carried is named as the reason, not honoured",
+    );
   }
 
   // --- the AUTHORIZED path, so the denials above are not vacuous -----------
@@ -337,7 +456,11 @@ async function main() {
     const stored = await store.findById(record.authorization_id);
     assert.ok(stored);
     assert.equal(stored.execution_allowed, true, "the authority is in the row, not in a payload");
-    assert.equal(stored.identity_level, "CHANNEL_LINKED", "the durable identity level is recorded");
+    assert.equal(
+      stored.identity_level,
+      SUFFICIENT_LEVEL,
+      "the durable identity level is recorded, in the domain's own spelling",
+    );
     assert.equal(stored.request_id, "req_123");
     assert.equal(stored.conversation_id, "conv_123");
     assert.equal(stored.state_version, 27);
@@ -367,6 +490,20 @@ async function main() {
       await denied({ ...REQUEST }, { ...CONTEXT, identity_assurance: "ANONYMOUS" }, "anonymous identity"),
       /identity_assurance_insufficient/,
     );
+    // ANONYMOUS is the one level the platform rules out itself: a domain that
+    // lists it as sufficient still gets a denial.
+    assert.match(
+      await denied(
+        { ...REQUEST, identity_assurance: "ANONYMOUS" },
+        {
+          ...CONTEXT,
+          identity_assurance: "ANONYMOUS",
+          sufficient_identity_levels: [...TUNISIA_LADDER],
+        },
+        "a domain cannot make ANONYMOUS sufficient",
+      ),
+      /identity_assurance_insufficient/,
+    );
     assert.match(
       await denied({ ...REQUEST }, { ...CONTEXT, identity_assurance: "" }, "absent identity level"),
       /identity_assurance_insufficient/,
@@ -375,14 +512,53 @@ async function main() {
       await denied(
         { ...REQUEST },
         { ...CONTEXT, identity_assurance: "SUPERUSER" },
-        "a level the platform does not recognise",
+        "a level invented by the model is in no ladder",
+      ),
+      /identity_assurance_insufficient/,
+    );
+    // The sufficient levels are the DOMAIN's, so another domain's vocabulary
+    // does not clear this one's gate - in either direction. A port carrying its
+    // own list of level names passes one of these and fails the other.
+    assert.match(
+      await denied(
+        { ...REQUEST, identity_assurance: BOOKING_LADDER[1] },
+        { ...CONTEXT, identity_assurance: BOOKING_LADDER[1] },
+        "demo-booking's level against tunisia-dtc's ladder",
+      ),
+      /identity_assurance_insufficient/,
+    );
+    assert.match(
+      await denied(
+        { ...REQUEST },
+        { ...CONTEXT, sufficient_identity_levels: BOOKING_LADDER.slice(1) },
+        "tunisia-dtc's level against demo-booking's ladder",
+      ),
+      /identity_assurance_insufficient/,
+    );
+    assert.match(
+      await denied(
+        { ...REQUEST },
+        { ...CONTEXT, sufficient_identity_levels: [] },
+        "no sufficient level declared denies everything",
+      ),
+      /identity_assurance_insufficient/,
+    );
+    // A level of the same ladder, one rung lower than the action needs.
+    assert.match(
+      await denied(
+        { ...REQUEST },
+        { ...CONTEXT, sufficient_identity_levels: [HIGHER_LEVEL] },
+        "a level below what this action requires",
       ),
       /identity_assurance_insufficient/,
     );
     // Identity promotion by the model: the request claims a level the durable
-    // context does not hold (08-WF-10-SECURITY-OWASP-TESTS.md:7).
+    // context does not hold, and the claimed level is itself sufficient, so
+    // only the comparison against the context catches it
+    // (08-WF-10-SECURITY-OWASP-TESTS.md:7).
+    assert.ok(SUFFICIENT_LEVELS.includes(HIGHER_LEVEL), "the claimed level is one that would pass");
     assert.match(
-      await denied({ ...REQUEST, identity_assurance: "VERIFIED" }, CONTEXT, "claimed identity promotion"),
+      await denied({ ...REQUEST, identity_assurance: HIGHER_LEVEL }, CONTEXT, "claimed identity promotion"),
       /identity_claim_mismatch/,
     );
     assert.match(
@@ -398,6 +574,31 @@ async function main() {
     for (const field of ACTION_REQUEST_FIELDS) {
       const partial: UntrustedActionRequest = { ...REQUEST };
       delete partial[field];
+
+      if (field === "action_id") {
+        // The decision is still a denial, but it cannot be STORED: the row has
+        // no action to bind to and `action_id` is `uuid NOT NULL REFERENCES
+        // actions(id)`, so the real table raises 22P02. Nothing is authorized
+        // either way; what is lost is the audit row. Captured rather than
+        // asserted through the store, so both halves are pinned - the port's
+        // decision and the limitation. The fix belongs with the grant path
+        // (NAD-006), and this case fails if it is ever changed quietly.
+        const capture = createCaptureStore();
+        await assert.rejects(
+          () => authorizeAction(capture.store, partial, CONTEXT),
+          /22P02/,
+          "a denial with no action id cannot be stored against the real table",
+        );
+        assert.equal(
+          capture.attempted()?.decision,
+          "DENIED",
+          "and the decision it tried to store was a denial",
+        );
+        assert.equal(capture.attempted()?.execution_allowed, false);
+        assert.match(String(capture.attempted()?.scope.reasons), /action_request_incomplete:action_id/);
+        continue;
+      }
+
       assert.match(
         await denied(partial, CONTEXT, `missing ${field}`),
         new RegExp(`action_request_incomplete:${field}`),
@@ -428,6 +629,30 @@ async function main() {
       /authorization_not_found/,
       "an id that is not in the table authorizes nothing",
     );
+
+    // The idempotency reservation is what stops a replay, so its inputs are
+    // required before anything executes: `idempotency_keys.request_hash` is
+    // NOT NULL, and `request_hash <> NULL` is never true, so a missing hash
+    // would make every replay look like a first delivery.
+    for (const [label, over] of [
+      ["no idempotency key", { idempotency_key: "" }],
+      ["no request hash", { request_hash: "" }],
+    ] as const) {
+      await assert.rejects(
+        () => requireAuthorizedExecution(deps, execution({ authorization_id: put({}), ...over })),
+        label === "no request hash" ? /request_hash_required/ : /idempotency_key_required/,
+        label,
+      );
+    }
+
+    // The domain name becomes a path segment under domains/.
+    for (const domain of ["../../etc", "tunisia dtc", "Tunisia-DTC", ""]) {
+      await assert.rejects(
+        () => requireAuthorizedExecution(deps, execution({ authorization_id: put({}), domain })),
+        /domain_invalid/,
+        `a domain name of '${domain}' never reaches the filesystem`,
+      );
+    }
 
     // A DENIED record, and the same record with a payload flag alongside it:
     // the flag changes nothing because nothing reads it.
@@ -485,7 +710,11 @@ async function main() {
       "a record with no expiry has no execution window",
     );
     await assert.rejects(
-      () => requireAuthorizedExecution(deps, execution({ authorization_id: put({ action_id: "act_999" }) })),
+      () =>
+        requireAuthorizedExecution(
+          deps,
+          execution({ authorization_id: put({ action_id: OTHER_ACTION_ID }) }),
+        ),
       /authorization_action_mismatch/,
       "an authorization is bound to the action it was issued for",
     );
@@ -498,6 +727,27 @@ async function main() {
       /authorization_idempotency_mismatch/,
       "and to the idempotency key it was issued against",
     );
+
+    // Absent, not merely wrong. Every one of these is a row the port would
+    // never write but storage can hold: 0006 made the correlation columns
+    // nullable, and a tampered or part-migrated row can be missing anything.
+    // Checks written as `!== expected` cover all three today; these cases stop
+    // a later relaxation to `field && field !== expected` shipping green.
+    for (const [label, record, expected] of [
+      ["no decision at all", { decision: undefined }, /execution_not_authorized/],
+      ["no action binding", { action_id: undefined }, /authorization_action_mismatch/],
+      ["a null idempotency key", { idempotency_key: null }, /authorization_idempotency_mismatch/],
+    ] as const) {
+      await assert.rejects(
+        () =>
+          requireAuthorizedExecution(
+            deps,
+            execution({ authorization_id: put(record as Partial<AuthorizationRecord>) }),
+          ),
+        expected,
+        `storage with ${label} authorizes nothing`,
+      );
+    }
   }
 
   // --- 5. role resolution comes from the domain, never from a literal ------
@@ -509,6 +759,14 @@ async function main() {
     assert.equal(workflowForRole("tunisia-dtc", "privileged_external_execution"), "WF-20");
     assert.equal(workflowForRole("tunisia-dtc", AUTHORIZATION_ROLE), "WF-10");
     assert.equal(workflowForRole("demo-booking", AUTHORIZATION_ROLE), "BOOK-AUTHZ");
+    // The guard is on the resolver, where every caller passes, not on the one
+    // call site above it.
+    assert.throws(() => workflowForRole("../../etc", AUTHORIZATION_ROLE), /domain_invalid/);
+    assert.equal(
+      workflowForRole("tunisia-dtc", "no_such_role"),
+      undefined,
+      "an unfilled role resolves to nothing",
+    );
 
     await assert.rejects(
       () =>
@@ -545,6 +803,11 @@ async function main() {
     assert.equal(record.authorization_id, authorized);
     assert.equal(record.execution_allowed, true, "the gate returns the record it verified");
     assert.equal(keys.size, 1, "a verified execution reserves its idempotency key");
+    // WHICH key, not just how many. Reserving the authorization_id instead
+    // counts the same and defends nothing: ids are unique per authorization, so
+    // two authorizations of one operation would both execute.
+    assert.deepEqual([...keys.keys()], [IDEMPOTENCY_KEY], "the key reserved is the action's idempotency key");
+    assert.equal(keys.get(IDEMPOTENCY_KEY)?.hash, "h1", "and it is reserved under this request's hash");
 
     await assert.rejects(
       () => requireAuthorizedExecution(deps, execution({ authorization_id: authorized })),
@@ -552,6 +815,19 @@ async function main() {
       "replaying an authorized execution is refused by the idempotency gate",
     );
     assert.equal(keys.size, 1, "and reserves nothing new");
+
+    // A SECOND authorization record over the same idempotency key. This is the
+    // replay that matters - one business operation authorized twice - and it is
+    // caught only because the key, not the authorization, is what gets
+    // reserved (IDEMP-001).
+    const reauthorized = put({});
+    assert.notEqual(reauthorized, authorized, "a distinct record for the same operation");
+    await assert.rejects(
+      () => requireAuthorizedExecution(deps, execution({ authorization_id: reauthorized })),
+      /execution_already_reserved/,
+      "a second authorization over the same key does not buy a second execution",
+    );
+    assert.equal(keys.size, 1);
 
     await assert.rejects(
       () => requireAuthorizedExecution(deps, execution({ authorization_id: authorized, request_hash: "h2" })),
@@ -570,7 +846,7 @@ async function main() {
       action_id: REQUEST.action_id,
       request_id: null,
       conversation_id: null,
-      identity_level: "CHANNEL_LINKED",
+      identity_level: SUFFICIENT_LEVEL,
       state_version: null,
       idempotency_key: REQUEST.idempotency_key,
       decision: "DENIED",
