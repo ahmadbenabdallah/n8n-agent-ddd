@@ -1,23 +1,3 @@
-## Phase 11.9 — Pre-Phase-12 Completion
-
-Completed the remaining Phase 11 architecture implementation:
-- complete 15-table Drizzle/PostgreSQL domain schema parity
-- upstream n8n/Supabase skill integration registry and provenance controls
-- executable skill routing
-- executable tool policy
-- plugin registry/manifest model
-- MCP registry and permission boundary
-- capability execution schema
-- architecture validation tests
-- final repository architecture documentation
-
-Phase 10 external staging evidence remains separate and is not fabricated by local validation.
-
-
-## Phase 11 — Production Deployment
-
-Implementation foundation added in v0.11.0. Production promotion remains blocked until Phase 10 staging evidence and required approvals are complete.
-
 # Roadmap
 
 ## Foundation
@@ -69,21 +49,22 @@ Implementation foundation added in v0.11.0. Production promotion remains blocked
 - [x] Append-only audit protection
 - [x] pgTAP security tests
 
-## Phase 8 — Executable n8n Runtime Foundation
-- [x] WF-00 → WF-20 workflow artifacts
-- [x] WooCommerce, Meta Messenger and LLM contracts
-- [x] Integration test matrix
-- [x] Red-team test matrix
-- [ ] Phase 9: staging E2E, load and disaster recovery
-
-
 ## Phase 8 — Executable n8n Runtime
-- [x] 21 importable workflow artifacts
-- [x] WF-10 deny-by-default authorization
-- [x] WF-20 execution boundary
-- [x] WF-16 verified response boundary
+
+Status: **contracts, skeletons and the platform-side authorization decision are in place; no graph executes.**
+
+All 21 of the reference domain's runtime workflows are placeholders; four real graphs exist in the shared library.
+
+- [x] 21 importable workflow artifacts for the reference domain (placeholders: three or four Code nodes, no trigger, inactive)
+- [x] WooCommerce, Meta Messenger and LLM contracts
+- [x] Deny-by-default authorization decision in platform code (`platform/authorization/port.ts`, behaviourally tested)
+- [x] Inbound webhook signature verification (HMAC-SHA256 over the raw body, before normalisation)
 - [x] Credential externalization
 - [x] Workflow implementation manifest
+- [x] Integration test matrix
+- [x] Red-team test matrix
+- [ ] The graphs call the authorization role, the execution role and the verified response boundary
+- [ ] Any workflow imported and activated in a running n8n
 - [ ] Phase 9: staging E2E, load, failure injection and DR
 
 ## Phase 9 — Staging Integration & Validation
@@ -110,6 +91,25 @@ Status: **complete foundation**
 The platform can now model channels and commerce systems as replaceable
 infrastructure adapters around a provider-neutral DDD/application core.
 
+
+## Phase 11 — Production Deployment
+
+Implementation foundation added in v0.11.0. Production promotion remains blocked until Phase 10 staging evidence and required approvals are complete.
+
+## Phase 11.9 — Pre-Phase-12 Completion
+
+Completed the remaining Phase 11 architecture implementation:
+- complete 15-table Drizzle/PostgreSQL domain schema parity
+- upstream n8n/Supabase skill integration registry and provenance controls
+- executable skill routing
+- executable tool policy
+- plugin registry/manifest model
+- MCP registry and permission boundary
+- capability execution schema
+- architecture validation tests
+- final repository architecture documentation
+
+Phase 10 external staging evidence remains separate and is not fabricated by local validation.
 
 ## Phase 12 — Autonomous Operations
 

@@ -54,10 +54,11 @@ The repository holds the architectural foundation: contracts, specifications, th
 
 The runtime is not built yet:
 
-- 4 of the 21 workflows are real n8n workflows (WF-00, WF-01, WF-02, WF-04); the rest are placeholders
-- the WF-10 to WF-20 authorization handshake is specified but not enforced
-- inbound webhook signatures are not verified
+- all 21 of the reference domain's runtime workflows are placeholders; four real graphs exist in the shared library (`platform/workflows/` and `domains/tunisia-dtc/workflow-packages/`)
+- the authorization and execution roles are enforced in platform code (`platform/authorization/port.ts`, behaviourally tested), but no n8n graph calls them
+- inbound webhook signatures are verified before normalisation (`platform/channels/meta-signature.ts`: HMAC-SHA256 over the raw body, constant-time)
 - deployment and operations scripts are placeholders
+- no workflow has been imported or activated in a running n8n
 
 Nothing here has been run end to end. Contracts and scaffolding are not proof of a working system, and certainly not of production certification.
 
