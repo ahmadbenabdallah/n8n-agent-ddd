@@ -41,6 +41,10 @@ patterns=(
   "any@@signatur[a-z-]*[^.]{0,40}\b(are|is)[^.]{0,6}(\bnot\b|n't|\bun)[a-z ]{0,16}(verif|check|implement)"
   "any@@(skip|ignor)[a-z]*[^.]{0,30}(signature|verification)"
   "any@@signatur[a-z-]*[^.]{0,40}(is|are) (ignored|skipped|bypassed|optional)"
+  "any@@(boundary|handshake|authorization port|execution gate|signature (verification|checking|check))[^.]{0,30}\b(is|are|remains|stays)\b[^.]{0,20}(absent|missing|unimplemented|aspirational|todo|planned|notional|theoretical)"
+  "any@@(boundary|handshake|authoriz[a-z]*|execution gate|signature)[^.]{0,30}(exists?|lives?|holds?|remains?) only (in|on)\b"
+  "any@@only (in|on) (specification|spec|paper)\b"
+  "any@@specified only"
   "count@@[0-9]+ ?(of|out of|/) ?(the )?[0-9]+[a-z'’ -]{0,40}workflow"
   "count@@[0-9]+ ?(of|out of|/) ?(the )?21\b"
   "count@@(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)[a-z-]* of (the )?(twenty|[0-9]+)[a-z'’ -]{0,40}workflow"
@@ -141,14 +145,34 @@ if scan any "${shipped[@]}"; then
 fi
 
 # --- 4. the claims the prose rests on, asserted -----------------------------
-# AC #1: the leading blockquote and the Project status table must agree, so
-# both are pinned. A target-wide grep is not enough - README states the count
-# three times, and the blockquote may not be the one that drops it.
-grep -E '^> \*\*Status:' README.md | grep -qF "$canonical" ||
-  fail "README.md's leading status blockquote must carry the canonical sentence"
+# Every pattern above forbids an UNDERSTATEMENT. Nothing in them would stop a
+# document from dropping the limiting half and reading "the authorization and
+# execution boundary is enforced in platform code." full stop - which is the
+# more dangerous direction: an understating document makes a contributor add a
+# redundant check, an overstating one invites a deployment of a boundary that
+# holds nowhere the platform code does not run. So the limit is pinned as
+# required text, one canonical clause in all four documents, exactly as the
+# count is. The object varies with the subject (calls it / calls them), so the
+# pinned string stops at the verb.
+limit="no n8n graph calls"
+for f in "${targets[@]}"; do
+  grep -qF "$limit" "$f" ||
+    fail "$f drops the canonical limiting clause \"$limit it/them\", leaving the boundary claim overstated"
+done
 
-grep -qE "^\| Authorization boundary \| Enforced in platform code" README.md ||
-  fail "README.md's Project status table must still say the boundary is enforced in platform code"
+# AC #1: the leading blockquote and the Project status table must agree, so
+# both halves of both are pinned. A target-wide grep is not enough - README
+# states the count three times and the limit twice, and the blockquote may not
+# be the copy that drops one.
+blockquote="$(grep -E '^> \*\*Status:' README.md || true)"
+[ -n "$blockquote" ] || fail "README.md has no leading status blockquote"
+printf '%s\n' "$blockquote" | grep -qF "$canonical" ||
+  fail "README.md's leading status blockquote must carry the canonical sentence"
+printf '%s\n' "$blockquote" | grep -qF "$limit" ||
+  fail "README.md's leading status blockquote must carry the canonical limiting clause \"$limit it\""
+
+grep -qE "^\| Authorization boundary \| Enforced in platform code.*not yet wired into the n8n graphs \|$" README.md ||
+  fail "README.md's Project status row must say both halves: enforced in platform code, not yet wired into the n8n graphs"
 
 if grep -nE "^- \[x\].*(WF-10 deny-by-default|WF-20 execution boundary|WF-16 verified response|execution boundary|verified response boundary|imported and activated|graphs call the)" ROADMAP.md; then
   fail "ROADMAP.md ticks a runtime capability that does not run (above)"
@@ -193,6 +217,14 @@ all 17 of the reference domain's runtime workflows are placeholders
 17 Workflows are stubs
 seventeen of the twenty-one workflows are stubs
 4 of the 21 are real
+The authorization boundary is absent.
+The authorization boundary is missing.
+The execution boundary remains aspirational.
+Webhook signature verification is planned.
+Signature checking is TODO.
+The boundary exists only in specification.
+The authorization handshake exists only on paper.
+The boundary is specified only, never built.
 STALE
 
 # True sentences the patterns must leave alone.
@@ -207,6 +239,9 @@ Purpose: fail closed when the signature is missing.
 Which component may call the authorization port or the execution gate is not checked and is not checkable there.
 A placeholder is a valid n8n workflow of three or four Code nodes that passes data through.
 - [x] 21 importable workflow artifacts for the reference domain (placeholders: three or four Code nodes, no trigger, inactive)
+- Credentials live only in n8n credentials/environment secret storage.
+Critical business state must not live only in n8n execution history.
+Identity, Payment, Knowledge and Observability ports are planned.
 ACCURATE
 
 hits=" $(flagged_lines all "$stale" | tr '\n' ' ') "

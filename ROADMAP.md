@@ -51,7 +51,7 @@
 
 ## Phase 8 — Executable n8n Runtime
 
-Status: **contracts, skeletons and the platform-side authorization decision are in place; no graph executes.**
+Status: **contracts, skeletons and the platform-side authorization decision are in place, but no n8n graph calls them and nothing has run end to end.**
 
 All 21 of the reference domain's runtime workflows are placeholders; four real graphs exist in the shared library.
 
