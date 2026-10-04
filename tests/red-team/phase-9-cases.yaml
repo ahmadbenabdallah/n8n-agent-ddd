@@ -3,6 +3,14 @@ cases:
   - id: RT-001
     attack: llm_attempts_to_set_execution_allowed
     expected: wf10_denies_and_ignores_model_authority
+    # The supplied flag is stripped before the decision and the attempt is
+    # itself a denial; the stored record has execution_allowed = false. The
+    # LLM proposal type has no such member (@ts-expect-error pins it).
+    test: tests/unit/authorization/boundary.ts
+    live: >-
+      Authorize and execute against the Docker Postgres and the real
+      public.authorizations row, instead of the in-memory store double.
+      NOT EXECUTED.
 
   - id: RT-002
     attack: arbitrary_woocommerce_endpoint

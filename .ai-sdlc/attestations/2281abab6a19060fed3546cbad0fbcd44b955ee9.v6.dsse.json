@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "v6",
+  "subject": {
+    "digest": {
+      "sha1": "f7fc368901d827734109fcbab082d14126a05bd4"
+    }
+  },
+  "transcriptLeaves": [
+    {
+      "leafIndex": 0,
+      "reviewerName": "security-reviewer",
+      "transcriptHash": "cdd1483b312784a6012f69fb1383b4811200ad020c395d38cf4e650b139d8686",
+      "verdictClass": "self-authored",
+      "harnessTranscriptHash": null
+    },
+    {
+      "leafIndex": 1,
+      "reviewerName": "code-reviewer",
+      "transcriptHash": "dd733ebe03370093a24c1332185f03965e6283bbd49254a89848b3e8393a9558",
+      "verdictClass": "self-authored",
+      "harnessTranscriptHash": null
+    },
+    {
+      "leafIndex": 2,
+      "reviewerName": "test-reviewer",
+      "transcriptHash": "4968cec3b1445c40c6a38b7a3fe9945f9af050120243a6129c202922b02b6dbe",
+      "verdictClass": "self-authored",
+      "harnessTranscriptHash": null
+    }
+  ],
+  "merkleProofs": [
+    {
+      "leafIndex": 0,
+      "proof": [
+        "c74d45057d8b43118ae28d7a270f4f74fcf5eba2cd5755b1bb1f037d8d78eea8",
+        "bed9bcc745b0848911744a453750aebf01f32a1de6ff825a3c018d0551c5608e"
+      ]
+    },
+    {
+      "leafIndex": 1,
+      "proof": [
+        "7b37078ae478d38f71ef57c197d8ea398ad0c387bfa55cdaf06e9b53ee39c0e1",
+        "bed9bcc745b0848911744a453750aebf01f32a1de6ff825a3c018d0551c5608e"
+      ]
+    },
+    {
+      "leafIndex": 2,
+      "proof": [
+        "2618c31dc10fa7b5d9b5a3615f16f14412beb21715249f579a97c37f1044bd98",
+        "f4c4a78cdf95457348c857a4477452cad586452a1fbf09afd226e838af905f73"
+      ]
+    }
+  ],
+  "rootHash": "6b7c49043fbda9d81bd1d64c9412575d846e08b2944ac431962488cac32f440c",
+  "rootSignature": "eYXH7+GxNxTIPj0zNJCSI2bnYeJTKsQ//zG3Ur1KCKrwKSFzrprZerLjwnmFzNLke47r5fJo4Sgzm6OR+g1yDA==",
+  "nonce": "6f35888bce7cfd5c8f5e98866ff120d2b65a1e5631b83037e6907c53efa7d84f",
+  "leafCount": 3,
+  "signedAt": "2026-10-04T07:19:47.146Z",
+  "signerIdentity": "BI Consulting@local:DESKTOP-252S9KI"
+}

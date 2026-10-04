@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "jsCode": "const x=$json;if(x.execution_allowed!==true)throw new Error('execution_not_authorized');if(!x.allowlisted_operation)throw new Error('operation_not_allowlisted');if(x.client_supplied_credentials)throw new Error('client_credentials_forbidden');return items;"
+        "jsCode": "// Authority is an authorization_id, verified against public.authorizations by requireAuthorizedExecution() in platform/authorization/port.ts. A payload flag is not authority and is refused outright.\nconst x=$json;for(const k of ['execution_allowed','authorization_decision','decision'])if(k in x)throw new Error('caller_supplied_authorization_fields');if(typeof x.authorization_id!=='string'||x.authorization_id.length===0)throw new Error('authorization_id_required');if(!x.allowlisted_operation)throw new Error('operation_not_allowlisted');if(x.client_supplied_credentials)throw new Error('client_credentials_forbidden');return items;"
       },
       "id": "gate",
       "name": "Execution Gate",

@@ -160,6 +160,13 @@ export const authorizations = pgTable(
     policyVersion: text("policy_version"),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    // Correlation and binding fields of 04-WF-10-AUTHORIZATION-RECORD.md,
+    // added nullable by migration 0006 (expand-only, nothing to backfill).
+    requestId: text("request_id"),
+    conversationId: text("conversation_id"),
+    identityLevel: text("identity_level"),
+    stateVersion: integer("state_version"),
+    idempotencyKey: text("idempotency_key"),
   },
   (t) => ({
     actionIdx: index("idx_authorization_action").on(t.actionId),

@@ -16,10 +16,10 @@
     },
     {
       "parameters": {
-        "jsCode": "const x=$json;const ok=x.action.allowlisted===true&&x.scope.valid===true&&x.identity.assurance!=='ANONYMOUS'&&x.human_ownership!==true;return [{json:{...x,execution_allowed:ok,authorization_decision:ok?'AUTHORIZED':'DENIED'}}];"
+        "jsCode": "// Authorization is decided by platform/authorization/port.ts authorizeAction() and persisted to public.authorizations. This node must never compute authority from its own input.\nconst x=$json;for(const k of ['execution_allowed','authorization_decision','decision','authorization_id'])if(k in x)throw new Error('caller_supplied_authorization_fields');return items;"
       },
       "id": "auth",
-      "name": "Deny-by-Default Authorization",
+      "name": "Refuse Caller-Supplied Authority",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -29,7 +29,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{json:{...$json,audit_event_type:$json.execution_allowed?'ActionAuthorized':'ActionRejected'}}];"
+        "jsCode": "// The decision, and so the audit event type, comes from the stored authorization record, never from this payload.\nreturn [{json:{...$json,audit_event_type:'AuthorizationRequested'}}];"
       },
       "id": "evidence",
       "name": "Authorization Evidence",
@@ -46,14 +46,14 @@
       "main": [
         [
           {
-            "node": "Deny-by-Default Authorization",
+            "node": "Refuse Caller-Supplied Authority",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Deny-by-Default Authorization": {
+    "Refuse Caller-Supplied Authority": {
       "main": [
         [
           {

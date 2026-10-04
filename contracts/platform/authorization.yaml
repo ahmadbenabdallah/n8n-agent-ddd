@@ -13,6 +13,10 @@ states:
 
 # Rules name platform roles, never workflow ids. A domain maps roles to its own
 # ids in domain.yaml under workflow_roles (ADR 0001).
+#
+# These are now behaviour, not prose: tests/unit/authorization/boundary.ts
+# calls the port and the execution gate and executes the WF-10 and WF-20 Code
+# nodes. RT-001 in tests/red-team/phase-9-cases.yaml points at it.
 rules:
   - only_authorization_role_can_authorize_execution
   - only_privileged_execution_role_can_mutate_external_system
@@ -20,3 +24,69 @@ rules:
   - audit_does_not_authorize
   - llm_does_not_authorize
   - unknown_external_outcome_requires_reconciliation
+
+# The port that decides. Enforcement is platform/authorization/port.ts, not
+# this file and not an n8n graph: the graphs are placeholders and a contract
+# nothing reads is a comment. Behaviour is bound by
+# tests/unit/authorization/boundary.ts.
+port:
+  decide:
+    operation: authorizeAction
+    input:
+      action_request: contracts/platform/action.yaml   # fields, untrusted
+      # Durable: the established identity level, the levels the domain's
+      # identity_ladder makes sufficient for this action, the action allowlist,
+      # the policy version. Platform code names no level except ANONYMOUS,
+      # which is the platform's own default for customer_identities
+      # .assurance_level (0001_domain_state.sql:130) and is never sufficient.
+      context: durable
+    output: a record persisted to public.authorizations
+    # Deny-by-default, and an empty list permits nothing. NAD-015 ships two of
+    # the gates in 01-WF-10-AUTHORIZATION-SPEC.md:9-20; the rest are domain
+    # policy.
+    gates:
+      - identity_assurance_sufficient   # against the domain's ladder, not a platform constant
+      - action_allowlisted
+  verify:
+    operation: requireAuthorizedExecution
+    input: authorization_id
+    requires:
+      - decision == AUTHORIZED
+      - execution_allowed == true
+      - expires_at in the future
+      - action_id == the action being executed
+      - idempotency_key == the key the authorization was issued against
+      - request_hash present, so a replay with another body conflicts
+      # Configuration consistency, not caller identity: workflow_id is a string
+      # the caller supplies about itself. Restricting who may call at all is
+      # runtime credential scoping.
+      - workflow_id == the id the domain nominated for privileged_external_execution
+      - domain is a plain name, validated before it resolves to a path
+    on_failure: throws
+    then: reserves the idempotency key, so one authorized operation executes once
+
+# The record: 04-WF-10-AUTHORIZATION-RECORD.md, stored in public.authorizations
+# (0001_domain_state.sql:22-31 plus the nullable fields of 0006).
+record:
+  authorization_id: required
+  action_id: required
+  decision: required            # one of states, above
+  execution_allowed: required   # written by the port, never read from a payload
+  scope: required               # action_type, target, actor, normalized_parameters, order_scope_id, reasons
+  policy_version: required
+  expires_at: required_when_authorized
+  created_at: required
+  request_id: optional
+  conversation_id: optional
+  identity_level: optional
+  state_version: optional
+  idempotency_key: optional
+
+# An action request reaching an executor carries an authorization_id and no
+# decision of its own. execution_allowed is not a payload field.
+executor_payload:
+  authorization_id: required
+  forbidden:
+    - execution_allowed
+    - authorization_decision
+    - decision
