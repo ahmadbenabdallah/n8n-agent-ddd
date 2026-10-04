@@ -54,7 +54,7 @@ The repository holds the architectural foundation: contracts, specifications, th
 
 The runtime is not built yet:
 
-- all 21 of the reference domain's runtime workflows are placeholders; four real graphs exist in the shared library (`platform/workflows/` and `domains/tunisia-dtc/workflow-packages/`)
+- all 21 of the reference domain's runtime workflows are placeholders; four real graphs exist in the shared library (`platform/workflows/`); the reference domain keeps its own provenance copies under `domains/tunisia-dtc/workflow-packages/`
 - the authorization and execution roles are enforced in platform code (`platform/authorization/port.ts`, behaviourally tested), but no n8n graph calls them
 - inbound webhook signatures are verified before normalisation (`platform/channels/meta-signature.ts`: HMAC-SHA256 over the raw body, constant-time)
 - deployment and operations scripts are placeholders

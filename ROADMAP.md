@@ -58,7 +58,7 @@ All 21 of the reference domain's runtime workflows are placeholders; four real g
 - [x] 21 importable workflow artifacts for the reference domain (placeholders: three or four Code nodes, no trigger, inactive)
 - [x] WooCommerce, Meta Messenger and LLM contracts
 - [x] Deny-by-default authorization decision in platform code (`platform/authorization/port.ts`, behaviourally tested)
-- [x] Inbound webhook signature verification (HMAC-SHA256 over the raw body, before normalisation)
+- [x] Inbound webhook signature verification (HMAC-SHA256 over the raw body, before normalisation); unit-tested, not yet exercised against Meta
 - [x] Credential externalization
 - [x] Workflow implementation manifest
 - [x] Integration test matrix
