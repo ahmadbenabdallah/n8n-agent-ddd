@@ -53,4 +53,4 @@ Channels and commerce platforms sit behind ports (`contracts/platform/`), so a d
 
 ## Current state
 
-The layers, contracts and the database schema exist. The runtime does not yet: 17 of the 21 workflows are stubs, the WF-10 to WF-20 authorization handshake is not enforced, and the deployment scripts are placeholders. See the project status section of `README.md`.
+The layers, contracts and the database schema exist; the runtime does not. All 21 of the reference domain's runtime workflows are placeholders; four real graphs exist in the shared library (`platform/workflows/`). The authorization and execution roles are enforced in platform code (`platform/authorization/port.ts`, behaviourally tested), but no n8n graph calls them and the deployment scripts are placeholders. Nothing has run end to end. See the project status section of `README.md`.

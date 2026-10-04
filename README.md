@@ -8,7 +8,7 @@
 
 Repository: [github.com/ahmadbenabdallah/n8n-agent-ddd](https://github.com/ahmadbenabdallah/n8n-agent-ddd) · Documentation: [`documentation/`](documentation/) · Licence: [Apache-2.0](LICENSE)
 
-> **Status: the architecture and contracts are in place; the runtime is not.** Every workflow in `runtime/n8n/workflows/` is a placeholder, the authorization and execution boundary is not enforced yet, and the deployment scripts print rather than deploy. The system has never run end to end. See [Project status](#project-status) before planning anything on top of it.
+> **Status: the architecture and contracts are in place; the runtime is not.** All 21 of the reference domain's runtime workflows are placeholders; four real graphs exist in the shared library. The authorization and execution boundary is enforced in platform code ([`platform/authorization/port.ts`](platform/authorization/port.ts), behaviourally tested), but no n8n graph calls it, and the deployment scripts print rather than deploy. The system has never run end to end. See [Project status](#project-status) before planning anything on top of it.
 
 ---
 
@@ -142,7 +142,7 @@ customer message
   WF-17 audit · WF-19 reconciliation and monitoring
 ```
 
-All 21 of the reference domain's workflows are currently placeholders. The table gives each one's purpose and where its contract lives.
+All 21 of the reference domain's runtime workflows are placeholders; four real graphs exist in the shared library ([`platform/workflows/`](platform/workflows/)). The table gives each one's purpose and where its contract lives.
 
 | ID | Name | Category | Runtime status |
 |---|---|---|---|
@@ -418,7 +418,7 @@ In order, because each step depends on the one before it:
 |---|---|
 | Domain model, contracts, specifications | Complete for the reference domain, and validated |
 | Database schema and migrations | Implemented, provider-neutral, verifiable with Docker |
-| Workflows | All 21 of the reference domain's are placeholders; earlier full versions are reference material only |
+| Workflows | All 21 of the reference domain's runtime workflows are placeholders; four real graphs exist in the shared library ([`platform/workflows/`](platform/workflows/)) |
 | Authorization boundary | Enforced in platform code ([`platform/authorization/port.ts`](platform/authorization/port.ts), behaviourally tested); not yet wired into the n8n graphs |
 | Webhook signature verification | Implemented (HMAC-SHA256 over the raw body, verified before normalisation; not yet exercised against Meta) |
 | Adapters (Messenger, WooCommerce) | Contracts only |
