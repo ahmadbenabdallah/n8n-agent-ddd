@@ -55,15 +55,23 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * that: it exists to put the gate in front of storage the port would never
  * have produced (tampered, or migrated from a laxer schema - 0006 made the
  * correlation columns nullable, so a null `idempotency_key` is a real state).
+ *
+ * `attempted()` is whatever the port last tried to write, recorded before the
+ * constraints run. That is how a decision which cannot be stored is asserted:
+ * the same real constraint decides storability, so a port that substituted a
+ * sentinel uuid for a missing `action_id` would store the row, or fail the
+ * foreign key instead, rather than look identical to a refusal.
  */
 function createStoreDouble() {
   const rows = new Map<string, AuthorizationRecord>();
+  let attempted: NewAuthorizationRecord | undefined;
   const checkUuid = (value: unknown, column: string) => {
     if (typeof value !== "string" || !UUID.test(value))
       throw new Error(`22P02: invalid input syntax for type uuid: ${column}=${String(value)}`);
   };
   const store: AuthorizationStore = {
     async insert(record: NewAuthorizationRecord) {
+      attempted = record;
       checkUuid(record.action_id, "action_id");
       if (!ACTIONS.has(record.action_id))
         throw new Error("23503: insert on authorizations violates authorizations_action_id_fkey");
@@ -103,28 +111,7 @@ function createStoreDouble() {
     });
     return id;
   };
-  return { store, rows, put };
-}
-
-/**
- * A store that refuses every write the way the real table refuses a row whose
- * `action_id` is not a uuid referencing `actions.id`, and keeps what the port
- * tried to write. For the cases where the decision is what matters and the row
- * cannot exist at all: an incomplete request has no action to bind to. Nothing
- * is authorized; the audit row is what is lost (see the NAD-006 follow-up).
- */
-function createCaptureStore() {
-  let attempted: NewAuthorizationRecord | undefined;
-  const store: AuthorizationStore = {
-    async insert(record) {
-      attempted = record;
-      throw new Error("22P02: invalid input syntax for type uuid: action_id=");
-    },
-    async findById() {
-      return undefined;
-    },
-  };
-  return { store, attempted: () => attempted };
+  return { store, rows, put, attempted: () => attempted };
 }
 
 /**
@@ -428,12 +415,13 @@ async function main() {
     // untrusted JSON, so the cast is the real call shape. A proposal names no
     // action id, so the denial cannot be stored - what is asserted is the
     // decision the port tried to write.
-    const proposed = createCaptureStore();
+    const proposed = createStoreDouble();
     await assert.rejects(
       () => authorizeAction(proposed.store, proposal as unknown as UntrustedActionRequest, CONTEXT),
       /22P02/,
       "a proposal has no action to bind a record to",
     );
+    assert.equal(proposed.rows.size, 0, "and nothing was stored");
     assert.equal(proposed.attempted()?.decision, "DENIED", "an LLM proposal cannot authorize itself");
     assert.equal(proposed.attempted()?.execution_allowed, false);
     assert.match(
@@ -543,6 +531,19 @@ async function main() {
       ),
       /identity_assurance_insufficient/,
     );
+    // The comparison is exact. Normalising separators - treating
+    // CHANNEL_LINKED as CHANNEL-LINKED - is the same bug this round removed,
+    // in the lenient direction: it would make one domain's spelling clear
+    // another's gate.
+    assert.notEqual(SUFFICIENT_LEVEL, SUFFICIENT_LEVEL.replace("-", "_"), "the level has a separator");
+    assert.match(
+      await denied(
+        { ...REQUEST },
+        { ...CONTEXT, sufficient_identity_levels: [SUFFICIENT_LEVEL.replace("-", "_")] },
+        "the same level with the separator swapped is a different level",
+      ),
+      /identity_assurance_insufficient/,
+    );
     // A level of the same ladder, one rung lower than the action needs.
     assert.match(
       await denied(
@@ -583,12 +584,13 @@ async function main() {
         // asserted through the store, so both halves are pinned - the port's
         // decision and the limitation. The fix belongs with the grant path
         // (NAD-006), and this case fails if it is ever changed quietly.
-        const capture = createCaptureStore();
+        const capture = createStoreDouble();
         await assert.rejects(
           () => authorizeAction(capture.store, partial, CONTEXT),
           /22P02/,
           "a denial with no action id cannot be stored against the real table",
         );
+        assert.equal(capture.rows.size, 0, "no row exists, under any substituted id");
         assert.equal(
           capture.attempted()?.decision,
           "DENIED",
@@ -645,12 +647,28 @@ async function main() {
       );
     }
 
-    // The domain name becomes a path segment under domains/.
-    for (const domain of ["../../etc", "tunisia dtc", "Tunisia-DTC", ""]) {
+    // The domain name becomes a path segment under domains/. Each character
+    // class is pinned separately: '../../etc' alone needs both the dot and the
+    // slash refused, so a regex that admitted only one of them survived it -
+    // and '..' alone resolves to <repo>/domain.yaml, one level above domains/.
+    // `undefined` is in the list because DOMAIN_NAME.test(undefined) coerces to
+    // the string "undefined", which MATCHES, so the typeof guard is the only
+    // thing refusing it.
+    for (const domain of [
+      "../../etc",
+      "..",
+      "a.b",
+      "a/b",
+      "a\b",
+      "tunisia dtc",
+      "Tunisia-DTC",
+      "",
+      undefined as unknown as string,
+    ]) {
       await assert.rejects(
         () => requireAuthorizedExecution(deps, execution({ authorization_id: put({}), domain })),
         /domain_invalid/,
-        `a domain name of '${domain}' never reaches the filesystem`,
+        `a domain name of '${String(domain)}' never reaches the filesystem`,
       );
     }
 
@@ -709,6 +727,19 @@ async function main() {
       /authorization_expired/,
       "a record with no expiry has no execution window",
     );
+    // The boundary itself: expiry is exclusive, so a record does not execute at
+    // the instant it expires. `<` instead of `<=` reads the same on every other
+    // case in this file.
+    const expiresNow = new Date("2026-10-03T10:05:00.000Z");
+    await assert.rejects(
+      () =>
+        requireAuthorizedExecution(
+          { store, reserve, now: expiresNow },
+          execution({ authorization_id: put({ expires_at: expiresNow }) }),
+        ),
+      /authorization_expired/,
+      "an authorization does not execute at exactly its expiry instant",
+    );
     await assert.rejects(
       () =>
         requireAuthorizedExecution(
@@ -737,6 +768,10 @@ async function main() {
       ["no decision at all", { decision: undefined }, /execution_not_authorized/],
       ["no action binding", { action_id: undefined }, /authorization_action_mismatch/],
       ["a null idempotency key", { idempotency_key: null }, /authorization_idempotency_mismatch/],
+      // Unreachable from the real table - the column is `boolean NOT NULL` and
+      // 0006 did not touch it - but `=== false` instead of `!== true` would let
+      // it through, and the trio above would not notice.
+      ["no execution_allowed column", { execution_allowed: undefined }, /execution_not_authorized/],
     ] as const) {
       await assert.rejects(
         () =>

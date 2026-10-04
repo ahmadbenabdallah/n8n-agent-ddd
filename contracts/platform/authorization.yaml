@@ -36,8 +36,9 @@ port:
       action_request: contracts/platform/action.yaml   # fields, untrusted
       # Durable: the established identity level, the levels the domain's
       # identity_ladder makes sufficient for this action, the action allowlist,
-      # the policy version. The platform names no level except ANONYMOUS
-      # (contracts/platform/identity.yaml), which is never sufficient.
+      # the policy version. Platform code names no level except ANONYMOUS,
+      # which is the platform's own default for customer_identities
+      # .assurance_level (0001_domain_state.sql:130) and is never sufficient.
       context: durable
     output: a record persisted to public.authorizations
     # Deny-by-default, and an empty list permits nothing. NAD-015 ships two of

@@ -45,12 +45,22 @@ export const AUTHORIZATION_ROLE = "authorization";
 export const EXECUTION_OPERATION = "privileged_external_execution";
 
 /**
- * The one identity level the platform itself rules out, from
- * `contracts/platform/identity.yaml:5`. Every other level is a domain's own
- * vocabulary - `tunisia-dtc` says `CHANNEL-LINKED`, `demo-booking` says
- * `CHANNEL_VERIFIED` - so which levels are *sufficient* arrives in the
- * context, from the domain's `identity_ladder`, and never as a constant here
- * (ADR 0001: the platform does not know a domain's words).
+ * The only identity level platform code names. It is the platform's own
+ * default, not a borrowed word: `customer_identities.assurance_level` is
+ * `text DEFAULT 'ANONYMOUS' NOT NULL` (`0001_domain_state.sql:130`,
+ * `schema/core.ts:23`), so this is what an identity row reads when nothing was
+ * ever established, and the port refuses it.
+ *
+ * Every other level is a domain's own vocabulary - `tunisia-dtc` says
+ * `CHANNEL-LINKED`, `demo-booking` says `CHANNEL_VERIFIED` - so which levels
+ * are *sufficient* arrives in the context, from the domain's
+ * `identity_ladder`, and never as a constant here (ADR 0001).
+ *
+ * The distinction that makes one word acceptable: the leak class is platform
+ * code asserting a GRANT vocabulary, where a spelling mismatch changes who
+ * gets in. This is a DENY on one word, where a mismatch could at worst fail to
+ * override a level the domain itself listed as sufficient - which is domain
+ * policy prevailing, the ADR 0001 default.
  */
 export const ANONYMOUS_IDENTITY = "ANONYMOUS";
 

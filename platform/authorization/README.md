@@ -40,9 +40,14 @@ is not answerable here.
 The domain's vocabulary stays the domain's: the levels that clear the identity
 gate arrive in the context, read from the domain's `identity_ladder`
 (`tunisia-dtc` spells one `CHANNEL-LINKED`, `demo-booking` spells its own
-`CHANNEL_VERIFIED`). The only level the platform names is `ANONYMOUS`, from
-`contracts/platform/identity.yaml`, which is refused even if a domain lists it
-as sufficient.
+`CHANNEL_VERIFIED`). The only level platform *code* names is `ANONYMOUS`, and
+it names it because it is the platform's own default:
+`customer_identities.assurance_level` is `text DEFAULT 'ANONYMOUS' NOT NULL`,
+so that is what an identity row reads when nothing was ever established. The
+port refuses it even if a domain lists it as sufficient. One word is defensible
+where a list would not be: the leak class is platform code asserting a grant
+vocabulary, and this is a deny on the default, where a spelling mismatch could
+only fail to override a level the domain itself allowed.
 
 In scope today: deny-by-default with the identity gate and the action
 allowlist. The other gates of
