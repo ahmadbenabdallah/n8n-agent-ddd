@@ -103,7 +103,7 @@ jobs:
       # c8 writes lcov to coverage/ (see package.json test:coverage).
       - name: Publish coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-node22
           path: coverage/
